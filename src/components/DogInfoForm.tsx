@@ -1,13 +1,29 @@
 "use client";
 
+import { useState } from "react";
 import type { CapturedPhoto } from "@/lib/imageStore";
+import type { DogInfo } from "@/types/dog";
 
 type DogInfoFormProps = {
   photo: CapturedPhoto;
+  onConfirm: (dogInfo: DogInfo) => void;
   onCancel: () => void;
 };
 
-export function DogInfoForm({ photo, onCancel }: DogInfoFormProps) {
+export function DogInfoForm({ photo, onConfirm, onCancel }: DogInfoFormProps) {
+  const [dogInfo, setDogInfo] = useState<DogInfo>({
+    dogName: "",
+    dogBreed: "",
+    dogAge: "",
+  });
+
+  function updateField(field: keyof DogInfo, value: string) {
+    setDogInfo((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  }
+
   return (
     <section className="form-panel" aria-label="わんちゃん情報入力">
       <div className="selected-preview">
@@ -24,23 +40,48 @@ export function DogInfoForm({ photo, onCancel }: DogInfoFormProps) {
         <div className="form-grid">
           <label className="field-label">
             <span>わんちゃんの名前</span>
-            <input type="text" name="dogName" placeholder="例: こむぎ" autoComplete="off" />
+            <input
+              type="text"
+              name="dogName"
+              value={dogInfo.dogName}
+              placeholder="例: こむぎ"
+              autoComplete="off"
+              onChange={(event) => updateField("dogName", event.target.value)}
+            />
           </label>
 
           <label className="field-label">
             <span>犬種</span>
-            <input type="text" name="dogBreed" placeholder="例: トイプードル" autoComplete="off" />
+            <input
+              type="text"
+              name="dogBreed"
+              value={dogInfo.dogBreed}
+              placeholder="例: トイプードル"
+              autoComplete="off"
+              onChange={(event) => updateField("dogBreed", event.target.value)}
+            />
           </label>
 
           <label className="field-label">
             <span>犬齢</span>
-            <input type="text" name="dogAge" placeholder="例: 3歳" autoComplete="off" />
+            <input
+              type="text"
+              name="dogAge"
+              value={dogInfo.dogAge}
+              placeholder="例: 3歳"
+              autoComplete="off"
+              onChange={(event) => updateField("dogAge", event.target.value)}
+            />
           </label>
         </div>
 
         <div className="toolbar">
-          <button className="action-button" type="button">
-            入力内容を仮保持
+          <button
+            className="action-button primary-wide"
+            type="button"
+            onClick={() => onConfirm(dogInfo)}
+          >
+            この内容で確定（画像加工へ）
           </button>
           <button className="action-button danger" type="button" onClick={onCancel}>
             キャンセル
