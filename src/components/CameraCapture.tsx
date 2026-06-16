@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { DogInfoForm } from "@/components/DogInfoForm";
+import { MosaicCanvas } from "@/components/MosaicCanvas";
 import { PhotoPicker } from "@/components/PhotoPicker";
 import { requestCameraStream, stopCameraStream } from "@/lib/camera";
 import {
@@ -11,10 +12,11 @@ import {
   releaseCapturedPhotos,
 } from "@/lib/imageStore";
 import { phaseZeroStore } from "@/config/stores";
+import type { DogInfo } from "@/types/dog";
 
 const MAX_PHOTOS = 3;
 
-type Step = "capture" | "pick" | "info";
+type Step = "capture" | "pick" | "info" | "process";
 
 function getTodayLabel() {
   return new Intl.DateTimeFormat("ja-JP", {
@@ -32,6 +34,7 @@ export function CameraCapture() {
   const [step, setStep] = useState<Step>("capture");
   const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<CapturedPhoto | null>(null);
+  const [dogInfo, setDogInfo] = useState<DogInfo | null>(null);
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [message, setMessage] = useState("カメラを開始してください。");
 
@@ -68,6 +71,7 @@ export function CameraCapture() {
 
       setIsCameraReady(true);
       setStep("capture");
+      setDogInfo(null);
       setMessage("撮影できます。最大3枚まで一時保持します。");
     } catch (error) {
       setIsCameraReady(false);
@@ -129,8 +133,15 @@ export function CameraCapture() {
     releaseCapturedPhotos(unselectedPhotos);
     replacePhotos([]);
     replaceSelectedPhoto(photo);
+    setDogInfo(null);
     setStep("info");
     setMessage("1枚を確定画像として保持しました。追加情報を入力してください。");
+  }
+
+  function confirmDogInfo(nextDogInfo: DogInfo) {
+    setDogInfo(nextDogInfo);
+    setStep("process");
+    setMessage("入力内容を保持しました。Canvasで画像加工プレビューを作成します。");
   }
 
   function retakePhotos() {
@@ -140,6 +151,7 @@ export function CameraCapture() {
       releaseCapturedPhoto(selectedPhotoRef.current);
       replaceSelectedPhoto(null);
     }
+    setDogInfo(null);
     setStep("capture");
     setMessage("一時保持データを破棄しました。撮り直せます。");
     void startCamera();
@@ -152,6 +164,7 @@ export function CameraCapture() {
       releaseCapturedPhoto(selectedPhotoRef.current);
       replaceSelectedPhoto(null);
     }
+    setDogInfo(null);
     stopCameraStream(streamRef.current);
     streamRef.current = null;
     setIsCameraReady(false);
@@ -178,7 +191,20 @@ export function CameraCapture() {
   if (step === "info" && selectedPhoto) {
     return (
       <div className="camera-panel">
-        <DogInfoForm photo={selectedPhoto} onCancel={cancelSession} />
+        <DogInfoForm
+          photo={selectedPhoto}
+          onConfirm={confirmDogInfo}
+          onCancel={cancelSession}
+        />
+        <p className="notice">{message}</p>
+      </div>
+    );
+  }
+
+  if (step === "process" && selectedPhoto && dogInfo) {
+    return (
+      <div className="camera-panel">
+        <MosaicCanvas photo={selectedPhoto} dogInfo={dogInfo} onCancel={cancelSession} />
         <p className="notice">{message}</p>
       </div>
     );
