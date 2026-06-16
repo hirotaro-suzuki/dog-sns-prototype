@@ -45,6 +45,10 @@ const CANVAS_HEIGHT = 890;
 const MOSAIC_RADIUS = 52;
 const MOSAIC_SAMPLE_SIZE = 12;
 
+function createStrokeId() {
+  return `stroke-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 function getTodayLabel() {
   const date = new Date();
   const year = date.getFullYear();
@@ -290,7 +294,7 @@ export function MosaicCanvas({ photo, dogInfo, onCancel }: MosaicCanvasProps) {
 
   function startMosaicStroke(point: CanvasPoint) {
     const stroke: MosaicStroke = {
-      id: crypto.randomUUID(),
+      id: createStrokeId(),
       points: [point],
       radius: MOSAIC_RADIUS,
     };
@@ -306,7 +310,7 @@ export function MosaicCanvas({ photo, dogInfo, onCancel }: MosaicCanvasProps) {
     if (!activeStrokeId) return;
 
     const lastStroke = strokesRef.current.find((stroke) => stroke.id === activeStrokeId);
-    const lastPoint = lastStroke?.points.at(-1);
+    const lastPoint = lastStroke?.points[lastStroke.points.length - 1];
     if (lastPoint && Math.hypot(point.x - lastPoint.x, point.y - lastPoint.y) < 18) {
       return;
     }
