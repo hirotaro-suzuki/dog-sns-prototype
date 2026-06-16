@@ -309,6 +309,11 @@ p {
   -webkit-touch-callout: none;
 }
 
+.canvas-frame.is-mosaic-mode {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 4px rgba(184, 69, 53, 0.18), var(--shadow);
+}
+
 .canvas-frame canvas {
   display: block;
   width: 100%;
@@ -317,6 +322,21 @@ p {
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
+}
+
+.final-image-panel {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 14px;
+}
+
+.final-image-panel img {
+  display: block;
+  width: 100%;
+  border-radius: 8px;
 }
 
 .notice {
