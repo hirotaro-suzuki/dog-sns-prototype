@@ -285,7 +285,6 @@ export function MosaicCanvas({ photo, dogInfo, onCancel }: MosaicCanvasProps) {
         <button className="action-button secondary" type="button" onClick={onCancel}>
           キャンセル
         </button>
-        <span className="status-pill">タッチ調整対応</span>
       </div>
 
       <p className="notice">{status}</p>
