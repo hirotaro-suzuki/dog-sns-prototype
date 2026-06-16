@@ -1,6 +1,7 @@
 "use client";
 
-import { TouchEvent, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { TouchEvent } from "react";
 import type { CapturedPhoto } from "@/lib/imageStore";
 import { phaseZeroStore } from "@/config/stores";
 import type { DogInfo } from "@/types/dog";
@@ -37,7 +38,7 @@ function getTodayLabel() {
   return `${year}-${month}-${day}`;
 }
 
-function getTouchPoint(canvas: HTMLCanvasElement, touch: React.Touch) {
+function getTouchPoint(canvas: HTMLCanvasElement, touch: Touch) {
   const rect = canvas.getBoundingClientRect();
   const scaleX = CANVAS_WIDTH / rect.width;
   const scaleY = CANVAS_HEIGHT / rect.height;
@@ -48,7 +49,7 @@ function getTouchPoint(canvas: HTMLCanvasElement, touch: React.Touch) {
   };
 }
 
-function getTouchGeometry(canvas: HTMLCanvasElement, touches: React.TouchList) {
+function getTouchGeometry(canvas: HTMLCanvasElement, touches: TouchList) {
   const first = getTouchPoint(canvas, touches[0]);
 
   if (touches.length === 1) {
