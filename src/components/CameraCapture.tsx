@@ -22,6 +22,7 @@ function getTodayLabel() {
 export function CameraCapture() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const photosRef = useRef<CapturedPhoto[]>([]);
   const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [message, setMessage] = useState("カメラを開始してください。");
@@ -29,9 +30,14 @@ export function CameraCapture() {
   useEffect(() => {
     return () => {
       stopCameraStream(streamRef.current);
-      releaseCapturedPhotos(photos);
+      releaseCapturedPhotos(photosRef.current);
     };
-  }, [photos]);
+  }, []);
+
+  function replacePhotos(nextPhotos: CapturedPhoto[]) {
+    photosRef.current = nextPhotos;
+    setPhotos(nextPhotos);
+  }
 
   async function startCamera() {
     try {
@@ -58,7 +64,7 @@ export function CameraCapture() {
 
   async function capturePhoto() {
     const video = videoRef.current;
-    if (!video || photos.length >= MAX_PHOTOS) return;
+    if (!video || photosRef.current.length >= MAX_PHOTOS) return;
 
     const canvas = document.createElement("canvas");
     canvas.width = video.videoWidth || 1280;
@@ -79,11 +85,12 @@ export function CameraCapture() {
           return;
         }
 
-        setPhotos((current) => {
-          const next = [...current, createCapturedPhoto(blob)].slice(0, MAX_PHOTOS);
-          setMessage(`${next.length}枚を一時保持中です。クラウドには送信していません。`);
-          return next;
-        });
+        const next = [
+          ...photosRef.current,
+          createCapturedPhoto(blob),
+        ].slice(0, MAX_PHOTOS);
+        replacePhotos(next);
+        setMessage(`${next.length}枚を一時保持中です。クラウドには送信していません。`);
       },
       "image/jpeg",
       0.9
@@ -91,14 +98,14 @@ export function CameraCapture() {
   }
 
   function resetPhotos() {
-    releaseCapturedPhotos(photos);
-    setPhotos([]);
+    releaseCapturedPhotos(photosRef.current);
+    replacePhotos([]);
     setMessage("一時保持データを破棄しました。撮り直せます。");
   }
 
   function cancelSession() {
-    releaseCapturedPhotos(photos);
-    setPhotos([]);
+    releaseCapturedPhotos(photosRef.current);
+    replacePhotos([]);
     stopCameraStream(streamRef.current);
     streamRef.current = null;
     setIsCameraReady(false);
