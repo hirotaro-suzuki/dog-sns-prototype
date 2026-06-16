@@ -1,15 +1,20 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { DogInfoForm } from "@/components/DogInfoForm";
+import { PhotoPicker } from "@/components/PhotoPicker";
 import { requestCameraStream, stopCameraStream } from "@/lib/camera";
 import {
   CapturedPhoto,
   createCapturedPhoto,
+  releaseCapturedPhoto,
   releaseCapturedPhotos,
 } from "@/lib/imageStore";
 import { phaseZeroStore } from "@/config/stores";
 
 const MAX_PHOTOS = 3;
+
+type Step = "capture" | "pick" | "info";
 
 function getTodayLabel() {
   return new Intl.DateTimeFormat("ja-JP", {
@@ -23,7 +28,10 @@ export function CameraCapture() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const photosRef = useRef<CapturedPhoto[]>([]);
+  const selectedPhotoRef = useRef<CapturedPhoto | null>(null);
+  const [step, setStep] = useState<Step>("capture");
   const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
+  const [selectedPhoto, setSelectedPhoto] = useState<CapturedPhoto | null>(null);
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [message, setMessage] = useState("カメラを開始してください。");
 
@@ -31,12 +39,20 @@ export function CameraCapture() {
     return () => {
       stopCameraStream(streamRef.current);
       releaseCapturedPhotos(photosRef.current);
+      if (selectedPhotoRef.current) {
+        releaseCapturedPhoto(selectedPhotoRef.current);
+      }
     };
   }, []);
 
   function replacePhotos(nextPhotos: CapturedPhoto[]) {
     photosRef.current = nextPhotos;
     setPhotos(nextPhotos);
+  }
+
+  function replaceSelectedPhoto(photo: CapturedPhoto | null) {
+    selectedPhotoRef.current = photo;
+    setSelectedPhoto(photo);
   }
 
   async function startCamera() {
@@ -51,6 +67,7 @@ export function CameraCapture() {
       }
 
       setIsCameraReady(true);
+      setStep("capture");
       setMessage("撮影できます。最大3枚まで一時保持します。");
     } catch (error) {
       setIsCameraReady(false);
@@ -90,6 +107,16 @@ export function CameraCapture() {
           createCapturedPhoto(blob),
         ].slice(0, MAX_PHOTOS);
         replacePhotos(next);
+
+        if (next.length === MAX_PHOTOS) {
+          stopCameraStream(streamRef.current);
+          streamRef.current = null;
+          setIsCameraReady(false);
+          setStep("pick");
+          setMessage("3枚の撮影が完了しました。ベストショットを1枚選んでください。");
+          return;
+        }
+
         setMessage(`${next.length}枚を一時保持中です。クラウドには送信していません。`);
       },
       "image/jpeg",
@@ -97,22 +124,65 @@ export function CameraCapture() {
     );
   }
 
-  function resetPhotos() {
+  function selectPhoto(photo: CapturedPhoto) {
+    const unselectedPhotos = photosRef.current.filter((item) => item.id !== photo.id);
+    releaseCapturedPhotos(unselectedPhotos);
+    replacePhotos([]);
+    replaceSelectedPhoto(photo);
+    setStep("info");
+    setMessage("1枚を確定画像として保持しました。追加情報を入力してください。");
+  }
+
+  function retakePhotos() {
     releaseCapturedPhotos(photosRef.current);
     replacePhotos([]);
+    if (selectedPhotoRef.current) {
+      releaseCapturedPhoto(selectedPhotoRef.current);
+      replaceSelectedPhoto(null);
+    }
+    setStep("capture");
     setMessage("一時保持データを破棄しました。撮り直せます。");
+    void startCamera();
   }
 
   function cancelSession() {
     releaseCapturedPhotos(photosRef.current);
     replacePhotos([]);
+    if (selectedPhotoRef.current) {
+      releaseCapturedPhoto(selectedPhotoRef.current);
+      replaceSelectedPhoto(null);
+    }
     stopCameraStream(streamRef.current);
     streamRef.current = null;
     setIsCameraReady(false);
+    setStep("capture");
     setMessage("キャンセルしました。写真データは残していません。");
   }
 
   const canCapture = isCameraReady && photos.length < MAX_PHOTOS;
+
+  if (step === "pick") {
+    return (
+      <div className="camera-panel">
+        <PhotoPicker
+          photos={photos}
+          onSelect={selectPhoto}
+          onRetake={retakePhotos}
+          onCancel={cancelSession}
+        />
+        <p className="notice">{message}</p>
+      </div>
+    );
+  }
+
+  if (step === "info" && selectedPhoto) {
+    return (
+      <div className="camera-panel">
+        <DogInfoForm photo={selectedPhoto} onCancel={cancelSession} />
+        <p className="notice">{message}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="camera-panel">
@@ -145,7 +215,7 @@ export function CameraCapture() {
         <button
           className="action-button secondary"
           type="button"
-          onClick={resetPhotos}
+          onClick={retakePhotos}
           disabled={photos.length === 0}
         >
           やり直し
