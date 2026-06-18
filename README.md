@@ -66,6 +66,7 @@ VercelでこのGitHubリポジトリをImportしてください。
 ## 重要ドキュメント
 
 - 詳しい開発方針: `dog_sns_design.md`
+- Supabaseセットアップ手順: `supabase/README.md`
 - Supabaseテーブル設計: `supabase/schema.sql`
 - Supabaseサンプルデータ: `supabase/seed.example.sql`
 - 運用引き渡しメモ: `docs/ownership-handoff.md`
