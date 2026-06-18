@@ -9,8 +9,31 @@ Supabase SQL Editorで、以下の順番で実行する。
 1. `schema.sql`
 2. `seed.example.sql`
 
-`schema.sql` はテーブル、制約、インデックス、updated_atトリガー、RLS有効化を作成する。
+`schema.sql` はテーブル、制約、インデックス、updated_atトリガー、RLS有効化、サーバー用APIキーからのテーブル操作権限を作成する。
 `seed.example.sql` はログイン動作確認用のデモ店舗とデモ担当者を作成する。
+
+## 既にschema.sqlを適用済みで権限エラーが出る場合
+
+ログイン画面で以下のような確認用メッセージが出た場合は、Supabase SQL Editorで下のSQLだけを実行する。
+
+```text
+permission denied for table stores
+```
+
+```sql
+grant usage on schema public to service_role;
+grant select, insert, update, delete on table
+  public.stores,
+  public.staff_members,
+  public.admin_users,
+  public.assets,
+  public.store_frames
+  to service_role;
+
+alter default privileges in schema public grant select, insert, update, delete on tables to service_role;
+```
+
+これはブラウザから誰でも読めるようにする設定ではない。Vercel上のサーバー処理だけが、必要なテーブルを扱えるようにする設定である。
 
 ## seed.example.sql の内容
 
