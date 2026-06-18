@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { CameraCapture } from "@/components/CameraCapture";
 import type { StoreSession, StoreSessionStaff } from "@/types/storeSession";
 
 const STORE_SESSION_KEY = "dog-sns-store-session";
@@ -8,6 +9,7 @@ const STORE_SESSION_KEY = "dog-sns-store-session";
 export function StoreHome() {
   const [session, setSession] = useState<StoreSession | null>(null);
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
+  const [isCapturing, setIsCapturing] = useState(false);
 
   useEffect(() => {
     const storedValue = window.localStorage.getItem(STORE_SESSION_KEY);
@@ -26,6 +28,7 @@ export function StoreHome() {
     window.localStorage.removeItem(STORE_SESSION_KEY);
     setSession(null);
     setSelectedStaffId(null);
+    setIsCapturing(false);
   }
 
   if (!session) {
@@ -43,6 +46,16 @@ export function StoreHome() {
   const selectedStaff = session.staffMembers.find(
     (staff) => staff.id === selectedStaffId
   );
+
+  if (isCapturing) {
+    return (
+      <CameraCapture
+        store={session.store}
+        staff={selectedStaff}
+        onBack={() => setIsCapturing(false)}
+      />
+    );
+  }
 
   return (
     <section className="login-panel" aria-label="店舗ホーム">
@@ -74,7 +87,12 @@ export function StoreHome() {
       </div>
 
       <div className="toolbar">
-        <button className="action-button primary-wide" type="button" disabled>
+        <button
+          className="action-button primary-wide"
+          type="button"
+          disabled={!selectedStaff}
+          onClick={() => setIsCapturing(true)}
+        >
           撮影へ進む
         </button>
         <button className="action-button secondary" type="button" onClick={handleLogout}>
@@ -83,7 +101,7 @@ export function StoreHome() {
       </div>
 
       <p className="notice">
-        この画面は店舗ログイン後の受け皿です。次の実装で撮影画面へ店舗設定と担当者情報を渡します。
+        撮影データはまだクラウドへ保存しません。店舗設定と担当者情報を既存の撮影フローへ渡します。
       </p>
     </section>
   );
