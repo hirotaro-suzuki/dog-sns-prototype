@@ -1,0 +1,92 @@
+-- Example seed data for dog-sns-prototype.
+-- Review and replace all demo values before using in production.
+-- This inserts one demo store and four demo staff members.
+
+with demo_store as (
+  insert into public.stores (
+    store_code,
+    store_name,
+    display_name,
+    login_code,
+    pin_hash,
+    logo_url,
+    frame_url,
+    theme_color,
+    print_template_type,
+    timezone,
+    sns_display_name,
+    instagram_account,
+    default_hashtags,
+    is_active,
+    sort_order,
+    notes
+  ) values (
+    'DEMO_STORE',
+    'Demo Store',
+    '今日のわんちゃん Demo',
+    'DEMO',
+    -- Demo PIN: 0000
+    -- Generate a real value with: node scripts/create-store-pin-hash.mjs <PIN>
+    'scrypt:5f2d7aab8d17a3432b7c14bbfa4b2874:34499d6cc6f344587df29ae8dfe7ab4e454ca0aac365d5db40f4fe21f0fb29af',
+    null,
+    null,
+    '#176f62',
+    'default',
+    'Asia/Tokyo',
+    '今日のわんちゃん Demo',
+    null,
+    '#今日のわんちゃん #犬同伴OK',
+    true,
+    0,
+    'Demo data only. Replace before production use.'
+  )
+  on conflict (store_code) do update set
+    store_name = excluded.store_name,
+    display_name = excluded.display_name,
+    login_code = excluded.login_code,
+    pin_hash = excluded.pin_hash,
+    logo_url = excluded.logo_url,
+    frame_url = excluded.frame_url,
+    theme_color = excluded.theme_color,
+    print_template_type = excluded.print_template_type,
+    timezone = excluded.timezone,
+    sns_display_name = excluded.sns_display_name,
+    instagram_account = excluded.instagram_account,
+    default_hashtags = excluded.default_hashtags,
+    is_active = excluded.is_active,
+    sort_order = excluded.sort_order,
+    notes = excluded.notes
+  returning id
+), staff_seed as (
+  select * from (values
+    ('manager', '店長', '責任者', true, 10),
+    ('staff-a', '山田', 'ホール', false, 20),
+    ('staff-b', '佐藤', 'ホール', false, 30),
+    ('staff-c', '鈴木', 'キッチン', false, 40)
+  ) as staff(staff_code, display_name, role_label, can_approve_sns, sort_order)
+)
+insert into public.staff_members (
+  store_id,
+  staff_code,
+  display_name,
+  role_label,
+  can_approve_sns,
+  is_active,
+  sort_order
+)
+select
+  demo_store.id,
+  staff_seed.staff_code,
+  staff_seed.display_name,
+  staff_seed.role_label,
+  staff_seed.can_approve_sns,
+  true,
+  staff_seed.sort_order
+from demo_store
+cross join staff_seed
+on conflict (store_id, staff_code) do update set
+  display_name = excluded.display_name,
+  role_label = excluded.role_label,
+  can_approve_sns = excluded.can_approve_sns,
+  is_active = excluded.is_active,
+  sort_order = excluded.sort_order;
