@@ -3,11 +3,14 @@
 import { TouchEvent, useEffect, useRef, useState } from "react";
 import type { CapturedPhoto } from "@/lib/imageStore";
 import { phaseZeroStore } from "@/config/stores";
+import type { CaptureStaff, CaptureStore } from "@/types/captureContext";
 import type { DogInfo } from "@/types/dog";
 
 type MosaicCanvasProps = {
   photo: CapturedPhoto;
   dogInfo: DogInfo;
+  store?: CaptureStore;
+  staff?: CaptureStaff;
   onCancel: () => void;
 };
 
@@ -107,6 +110,14 @@ function getBaseImageScale(image: HTMLImageElement) {
   );
 }
 
+function getStoreDisplayName(store?: CaptureStore) {
+  return store?.displayName ?? phaseZeroStore.displayName;
+}
+
+function getLogoLabel(store?: CaptureStore) {
+  return store?.storeName ?? "DEMO STORE LOGO";
+}
+
 function transformPhotoPointToCanvas(
   image: HTMLImageElement,
   transform: PhotoTransform,
@@ -182,7 +193,9 @@ function drawPhotoLayer(
 
 function drawFixedFrame(
   context: CanvasRenderingContext2D,
-  dogInfo: DogInfo
+  dogInfo: DogInfo,
+  store?: CaptureStore,
+  staff?: CaptureStaff
 ) {
   context.fillStyle = "rgba(0, 0, 0, 0.34)";
   context.fillRect(0, 0, CANVAS_WIDTH, 120);
@@ -196,7 +209,7 @@ function drawFixedFrame(
   context.textBaseline = "middle";
   context.font = "700 52px Arial, sans-serif";
   context.textAlign = "left";
-  context.fillText(phaseZeroStore.displayName, 56, 70);
+  context.fillText(getStoreDisplayName(store), 56, 70);
 
   context.font = "700 38px Arial, sans-serif";
   context.textAlign = "right";
@@ -216,7 +229,12 @@ function drawFixedFrame(
 
   context.textAlign = "right";
   context.font = "700 34px Arial, sans-serif";
-  context.fillText("DEMO STORE LOGO", CANVAS_WIDTH - 56, CANVAS_HEIGHT - 64);
+  context.fillText(getLogoLabel(store), CANVAS_WIDTH - 56, CANVAS_HEIGHT - 64);
+
+  if (staff) {
+    context.font = "500 24px Arial, sans-serif";
+    context.fillText(`担当: ${staff.displayName}`, CANVAS_WIDTH - 56, CANVAS_HEIGHT - 28);
+  }
 }
 
 function clampScale(scale: number) {
@@ -292,7 +310,7 @@ function drawMosaicStrokes(
   });
 }
 
-export function MosaicCanvas({ photo, dogInfo, onCancel }: MosaicCanvasProps) {
+export function MosaicCanvas({ photo, dogInfo, store, staff, onCancel }: MosaicCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const transformRef = useRef<PhotoTransform>({
@@ -319,7 +337,7 @@ export function MosaicCanvas({ photo, dogInfo, onCancel }: MosaicCanvasProps) {
     context.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     drawPhotoLayer(context, image, transformRef.current);
     drawMosaicStrokes(context, image, transformRef.current, strokesRef.current);
-    drawFixedFrame(context, dogInfo);
+    drawFixedFrame(context, dogInfo, store, staff);
   }
 
   function switchMode(nextMode: EditMode) {
@@ -365,7 +383,7 @@ export function MosaicCanvas({ photo, dogInfo, onCancel }: MosaicCanvasProps) {
 
   useEffect(() => {
     renderCanvas();
-  }, [dogInfo]);
+  }, [dogInfo, store, staff]);
 
   function createMosaicPoint(canvasPoint: CanvasPoint): MosaicPoint | null {
     const image = imageRef.current;
