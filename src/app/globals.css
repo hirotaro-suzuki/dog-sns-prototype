@@ -54,6 +54,10 @@ canvas {
   margin: 0 auto;
 }
 
+.narrow-workspace {
+  max-width: 680px;
+}
+
 .page-heading,
 .section-heading {
   margin-bottom: 20px;
@@ -89,6 +93,28 @@ p {
 .camera-panel {
   display: grid;
   gap: 18px;
+}
+
+.login-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.login-form {
+  display: grid;
+  gap: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 18px;
+  box-shadow: var(--shadow);
+}
+
+.login-summary {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 18px;
 }
 
 .camera-stage {
