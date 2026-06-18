@@ -31,10 +31,19 @@ type CanvasPoint = {
   y: number;
 };
 
+type PhotoPoint = {
+  x: number;
+  y: number;
+};
+
+type MosaicPoint = {
+  point: PhotoPoint;
+  radius: number;
+};
+
 type MosaicStroke = {
   id: string;
-  points: CanvasPoint[];
-  radius: number;
+  points: MosaicPoint[];
 };
 
 type EditMode = "adjust" | "mosaic";
@@ -96,6 +105,62 @@ function getBaseImageScale(image: HTMLImageElement) {
     CANVAS_WIDTH / image.naturalWidth,
     CANVAS_HEIGHT / image.naturalHeight
   );
+}
+
+function transformPhotoPointToCanvas(
+  image: HTMLImageElement,
+  transform: PhotoTransform,
+  point: PhotoPoint
+) {
+  const baseScale = getBaseImageScale(image);
+  const width = image.naturalWidth * baseScale;
+  const height = image.naturalHeight * baseScale;
+  const localX = point.x * baseScale - width / 2;
+  const localY = point.y * baseScale - height / 2;
+  const scaledX = localX * transform.scale;
+  const scaledY = localY * transform.scale;
+  const cos = Math.cos(transform.rotation);
+  const sin = Math.sin(transform.rotation);
+
+  return {
+    x: transform.x + scaledX * cos - scaledY * sin,
+    y: transform.y + scaledX * sin + scaledY * cos,
+  };
+}
+
+function transformCanvasPointToPhoto(
+  image: HTMLImageElement,
+  transform: PhotoTransform,
+  point: CanvasPoint
+): PhotoPoint | null {
+  const baseScale = getBaseImageScale(image);
+  const width = image.naturalWidth * baseScale;
+  const height = image.naturalHeight * baseScale;
+  const dx = point.x - transform.x;
+  const dy = point.y - transform.y;
+  const cos = Math.cos(-transform.rotation);
+  const sin = Math.sin(-transform.rotation);
+  const unrotatedX = dx * cos - dy * sin;
+  const unrotatedY = dx * sin + dy * cos;
+  const localX = unrotatedX / transform.scale;
+  const localY = unrotatedY / transform.scale;
+  const photoX = (localX + width / 2) / baseScale;
+  const photoY = (localY + height / 2) / baseScale;
+
+  if (
+    photoX < 0 ||
+    photoX > image.naturalWidth ||
+    photoY < 0 ||
+    photoY > image.naturalHeight
+  ) {
+    return null;
+  }
+
+  return { x: photoX, y: photoY };
+}
+
+function getPhotoSpaceRadius(image: HTMLImageElement, transform: PhotoTransform) {
+  return MOSAIC_RADIUS / (getBaseImageScale(image) * transform.scale);
 }
 
 function drawPhotoLayer(
@@ -209,10 +274,21 @@ function drawMosaicSpot(
 
 function drawMosaicStrokes(
   context: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  transform: PhotoTransform,
   strokes: MosaicStroke[]
 ) {
+  const baseScale = getBaseImageScale(image);
+  const canvasScale = baseScale * transform.scale;
+
   strokes.forEach((stroke) => {
-    stroke.points.forEach((point) => drawMosaicSpot(context, point, stroke.radius));
+    stroke.points.forEach(({ point, radius }) => {
+      drawMosaicSpot(
+        context,
+        transformPhotoPointToCanvas(image, transform, point),
+        radius * canvasScale
+      );
+    });
   });
 }
 
@@ -242,7 +318,7 @@ export function MosaicCanvas({ photo, dogInfo, onCancel }: MosaicCanvasProps) {
 
     context.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     drawPhotoLayer(context, image, transformRef.current);
-    drawMosaicStrokes(context, strokesRef.current);
+    drawMosaicStrokes(context, image, transformRef.current, strokesRef.current);
     drawFixedFrame(context, dogInfo);
   }
 
@@ -291,11 +367,30 @@ export function MosaicCanvas({ photo, dogInfo, onCancel }: MosaicCanvasProps) {
     renderCanvas();
   }, [dogInfo]);
 
-  function startMosaicStroke(point: CanvasPoint) {
+  function createMosaicPoint(canvasPoint: CanvasPoint): MosaicPoint | null {
+    const image = imageRef.current;
+    if (!image) return null;
+
+    const photoPoint = transformCanvasPointToPhoto(
+      image,
+      transformRef.current,
+      canvasPoint
+    );
+    if (!photoPoint) return null;
+
+    return {
+      point: photoPoint,
+      radius: getPhotoSpaceRadius(image, transformRef.current),
+    };
+  }
+
+  function startMosaicStroke(canvasPoint: CanvasPoint) {
+    const mosaicPoint = createMosaicPoint(canvasPoint);
+    if (!mosaicPoint) return;
+
     const stroke: MosaicStroke = {
       id: createStrokeId(),
-      points: [point],
-      radius: MOSAIC_RADIUS,
+      points: [mosaicPoint],
     };
     strokesRef.current = [...strokesRef.current, stroke];
     activeStrokeIdRef.current = stroke.id;
@@ -304,19 +399,28 @@ export function MosaicCanvas({ photo, dogInfo, onCancel }: MosaicCanvasProps) {
     renderCanvas();
   }
 
-  function appendMosaicPoint(point: CanvasPoint) {
+  function appendMosaicPoint(canvasPoint: CanvasPoint) {
     const activeStrokeId = activeStrokeIdRef.current;
     if (!activeStrokeId) return;
 
+    const mosaicPoint = createMosaicPoint(canvasPoint);
+    if (!mosaicPoint) return;
+
     const lastStroke = strokesRef.current.find((stroke) => stroke.id === activeStrokeId);
     const lastPoint = lastStroke?.points[lastStroke.points.length - 1];
-    if (lastPoint && Math.hypot(point.x - lastPoint.x, point.y - lastPoint.y) < 18) {
+    if (
+      lastPoint &&
+      Math.hypot(
+        mosaicPoint.point.x - lastPoint.point.x,
+        mosaicPoint.point.y - lastPoint.point.y
+      ) < mosaicPoint.radius * 0.35
+    ) {
       return;
     }
 
     strokesRef.current = strokesRef.current.map((stroke) =>
       stroke.id === activeStrokeId
-        ? { ...stroke, points: [...stroke.points, point] }
+        ? { ...stroke, points: [...stroke.points, mosaicPoint] }
         : stroke
     );
     renderCanvas();
