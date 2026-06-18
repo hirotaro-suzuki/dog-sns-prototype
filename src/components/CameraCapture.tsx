@@ -12,11 +12,18 @@ import {
   releaseCapturedPhotos,
 } from "@/lib/imageStore";
 import { phaseZeroStore } from "@/config/stores";
+import type { CaptureStaff, CaptureStore } from "@/types/captureContext";
 import type { DogInfo } from "@/types/dog";
 
 const MAX_PHOTOS = 3;
 
 type Step = "capture" | "pick" | "info" | "process";
+
+type CameraCaptureProps = {
+  store?: CaptureStore;
+  staff?: CaptureStaff;
+  onBack?: () => void;
+};
 
 function getTodayLabel() {
   return new Intl.DateTimeFormat("ja-JP", {
@@ -26,7 +33,11 @@ function getTodayLabel() {
   }).format(new Date());
 }
 
-export function CameraCapture() {
+function getDisplayStore(store?: CaptureStore) {
+  return store?.displayName ?? phaseZeroStore.displayName;
+}
+
+export function CameraCapture({ store, staff, onBack }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const photosRef = useRef<CapturedPhoto[]>([]);
@@ -173,6 +184,7 @@ export function CameraCapture() {
   }
 
   const canCapture = isCameraReady && photos.length < MAX_PHOTOS;
+  const displayStore = getDisplayStore(store);
 
   if (step === "pick") {
     return (
@@ -193,6 +205,7 @@ export function CameraCapture() {
       <div className="camera-panel">
         <DogInfoForm
           photo={selectedPhoto}
+          staff={staff}
           onConfirm={confirmDogInfo}
           onCancel={cancelSession}
         />
@@ -204,7 +217,13 @@ export function CameraCapture() {
   if (step === "process" && selectedPhoto && dogInfo) {
     return (
       <div className="camera-panel">
-        <MosaicCanvas photo={selectedPhoto} dogInfo={dogInfo} onCancel={cancelSession} />
+        <MosaicCanvas
+          photo={selectedPhoto}
+          dogInfo={dogInfo}
+          store={store}
+          staff={staff}
+          onCancel={cancelSession}
+        />
         <p className="notice">{message}</p>
       </div>
     );
@@ -212,6 +231,14 @@ export function CameraCapture() {
 
   return (
     <div className="camera-panel">
+      {(store || staff) && (
+        <div className="login-summary">
+          <p className="eyebrow">撮影店舗</p>
+          <h2>{displayStore}</h2>
+          <p>{staff ? `担当: ${staff.displayName}` : "担当者未選択"}</p>
+        </div>
+      )}
+
       <div className="camera-stage" aria-label="カメラプレビュー">
         <video ref={videoRef} playsInline muted />
         {!isCameraReady && (
@@ -221,7 +248,7 @@ export function CameraCapture() {
         )}
         <div
           className="frame-overlay"
-          data-store={phaseZeroStore.displayName}
+          data-store={displayStore}
           data-date={getTodayLabel()}
         />
       </div>
@@ -249,6 +276,11 @@ export function CameraCapture() {
         <button className="action-button danger" type="button" onClick={cancelSession}>
           キャンセル
         </button>
+        {onBack && (
+          <button className="action-button secondary" type="button" onClick={onBack}>
+            店舗ホームへ戻る
+          </button>
+        )}
         <span className="status-pill">{photos.length} / {MAX_PHOTOS} 枚</span>
       </div>
 
