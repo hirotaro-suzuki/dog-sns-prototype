@@ -10,6 +10,30 @@ type StoreLoginRequest = {
   pin?: unknown;
 };
 
+type StoreLoginRow = {
+  id: string;
+  store_code: string;
+  store_name: string;
+  display_name: string;
+  pin_hash: string;
+  logo_url: string | null;
+  frame_url: string | null;
+  theme_color: string | null;
+  print_template_type: string;
+  timezone: string;
+  sns_display_name: string | null;
+  instagram_account: string | null;
+  default_hashtags: string | null;
+};
+
+type StaffLoginRow = {
+  id: string;
+  staff_code: string;
+  display_name: string;
+  role_label: string | null;
+  can_approve_sns: boolean;
+};
+
 function normalizeLoginCode(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -36,14 +60,15 @@ export async function POST(request: Request) {
 
   try {
     const supabase = createServerSupabaseClient();
-    const { data: store, error: storeError } = await supabase
+    const { data: storeData, error: storeError } = await supabase
       .from("stores")
       .select(
-        "id, store_code, store_name, display_name, login_code, pin_hash, logo_url, frame_url, theme_color, print_template_type, timezone, sns_display_name, instagram_account, default_hashtags, is_active"
+        "id, store_code, store_name, display_name, pin_hash, logo_url, frame_url, theme_color, print_template_type, timezone, sns_display_name, instagram_account, default_hashtags"
       )
       .eq("login_code", loginCode)
       .eq("is_active", true)
       .maybeSingle();
+    const store = storeData as StoreLoginRow | null;
 
     if (storeError) {
       return NextResponse.json({ message: "店舗情報を確認できませんでした。" }, { status: 500 });
@@ -53,13 +78,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "店舗コードまたはPINが違います。" }, { status: 401 });
     }
 
-    const { data: staffMembers, error: staffError } = await supabase
+    const { data: staffData, error: staffError } = await supabase
       .from("staff_members")
       .select("id, staff_code, display_name, role_label, can_approve_sns")
       .eq("store_id", store.id)
       .eq("is_active", true)
       .order("sort_order", { ascending: true })
       .order("display_name", { ascending: true });
+    const staffMembers = (staffData ?? []) as StaffLoginRow[];
 
     if (staffError) {
       return NextResponse.json({ message: "担当者一覧を確認できませんでした。" }, { status: 500 });
@@ -80,7 +106,7 @@ export async function POST(request: Request) {
         instagramAccount: store.instagram_account,
         defaultHashtags: store.default_hashtags,
       },
-      staffMembers: (staffMembers ?? []).map((staff) => ({
+      staffMembers: staffMembers.map((staff) => ({
         id: staff.id,
         staffCode: staff.staff_code,
         displayName: staff.display_name,
