@@ -42,6 +42,11 @@ function normalizePin(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function formatSupabaseError(error: { code?: string; message?: string; details?: string; hint?: string }) {
+  const parts = [error.code, error.message, error.details, error.hint].filter(Boolean);
+  return parts.join(" / ");
+}
+
 export async function POST(request: Request) {
   let body: StoreLoginRequest;
 
@@ -71,7 +76,13 @@ export async function POST(request: Request) {
     const store = storeData as StoreLoginRow | null;
 
     if (storeError) {
-      return NextResponse.json({ message: "店舗情報を確認できませんでした。" }, { status: 500 });
+      return NextResponse.json(
+        {
+          message: "店舗情報を確認できませんでした。",
+          detail: formatSupabaseError(storeError),
+        },
+        { status: 500 }
+      );
     }
 
     if (!store || !verifyStorePin(pin, store.pin_hash)) {
@@ -88,7 +99,13 @@ export async function POST(request: Request) {
     const staffMembers = (staffData ?? []) as StaffLoginRow[];
 
     if (staffError) {
-      return NextResponse.json({ message: "担当者一覧を確認できませんでした。" }, { status: 500 });
+      return NextResponse.json(
+        {
+          message: "担当者一覧を確認できませんでした。",
+          detail: formatSupabaseError(staffError),
+        },
+        { status: 500 }
+      );
     }
 
     const session: StoreSession = {
