@@ -2,15 +2,17 @@
 
 import { useState } from "react";
 import type { CapturedPhoto } from "@/lib/imageStore";
+import type { CaptureStaff } from "@/types/captureContext";
 import type { DogInfo } from "@/types/dog";
 
 type DogInfoFormProps = {
   photo: CapturedPhoto;
+  staff?: CaptureStaff;
   onConfirm: (dogInfo: DogInfo) => void;
   onCancel: () => void;
 };
 
-export function DogInfoForm({ photo, onConfirm, onCancel }: DogInfoFormProps) {
+export function DogInfoForm({ photo, staff, onConfirm, onCancel }: DogInfoFormProps) {
   const [dogInfo, setDogInfo] = useState<DogInfo>({
     dogName: "",
     dogBreed: "",
@@ -36,6 +38,13 @@ export function DogInfoForm({ photo, onConfirm, onCancel }: DogInfoFormProps) {
           <h2>わんちゃん情報</h2>
           <p>この画面ではまだクラウド保存しません。確定画像はブラウザメモリ内だけに保持しています。</p>
         </div>
+
+        {staff && (
+          <div className="login-summary compact-summary">
+            <p className="eyebrow">担当</p>
+            <p>{staff.displayName}</p>
+          </div>
+        )}
 
         <div className="form-grid">
           <label className="field-label">
