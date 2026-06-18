@@ -5,17 +5,24 @@ import type { StoreSession } from "@/types/storeSession";
 
 const STORE_SESSION_KEY = "dog-sns-store-session";
 
+type LoginResponse = StoreSession & {
+  message?: string;
+  detail?: string;
+};
+
 export function StoreLoginForm() {
   const [loginCode, setLoginCode] = useState("");
   const [pin, setPin] = useState("");
   const [session, setSession] = useState<StoreSession | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState("店舗コードとPINを入力してください。");
+  const [detail, setDetail] = useState("");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsSubmitting(true);
     setMessage("店舗情報を確認しています。");
+    setDetail("");
 
     try {
       const response = await fetch("/api/store-login", {
@@ -23,11 +30,12 @@ export function StoreLoginForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ loginCode, pin }),
       });
-      const data = await response.json();
+      const data = (await response.json()) as LoginResponse;
 
       if (!response.ok) {
         setSession(null);
         setMessage(data.message ?? "ログインできませんでした。");
+        setDetail(data.detail ? `確認用: ${data.detail}` : "");
         return;
       }
 
@@ -35,9 +43,11 @@ export function StoreLoginForm() {
       window.localStorage.setItem(STORE_SESSION_KEY, JSON.stringify(nextSession));
       setSession(nextSession);
       setMessage(`${nextSession.store.displayName} としてログインしました。`);
+      setDetail("");
     } catch {
       setSession(null);
       setMessage("通信に失敗しました。時間をおいてもう一度お試しください。");
+      setDetail("");
     } finally {
       setIsSubmitting(false);
     }
@@ -88,6 +98,7 @@ export function StoreLoginForm() {
       )}
 
       <p className="notice">{message}</p>
+      {detail && <p className="notice subtle">{detail}</p>}
     </section>
   );
 }
