@@ -136,8 +136,20 @@ iPadは個人ではなく「店舗」としてログインする。
 - `frame_url`: 写真枠画像URL
 - `theme_color`: 店舗テーマ色
 - `print_template_type`: 印刷テンプレート種別
+- `timezone`: 店舗のタイムゾーン
+- `sns_display_name`: SNS投稿時の表示名
+- `instagram_account`: Instagramアカウント名
+- `default_hashtags`: 標準ハッシュタグ
+- `address`: 店舗住所
+- `phone`: 店舗電話番号
+- `business_hours_note`: 営業時間メモ
 - `is_active`: 有効/無効
+- `sort_order`: 管理画面での表示順
+- `notes`: 管理用メモ
 - `created_at`: 作成日時
+- `updated_at`: 更新日時
+
+店舗が閉店・休止した場合も物理削除せず、原則として `is_active = false` にする。過去の素材データとのつながりを壊さないためである。
 
 ### staff_members
 
@@ -147,9 +159,15 @@ iPadは個人ではなく「店舗」としてログインする。
 - `store_id`: storesへの参照
 - `staff_code`: 担当者コード
 - `display_name`: 表示名
+- `role_label`: 役割ラベル
+- `can_approve_sns`: SNS掲載確認を担当できるか
 - `is_active`: 有効/無効
 - `sort_order`: 表示順
+- `notes`: 管理用メモ
 - `created_at`: 作成日時
+- `updated_at`: 更新日時
+
+担当者が退職・異動した場合も物理削除せず、原則として `is_active = false` にする。過去の素材データには保存時点の `staff_display_name` も残す。
 
 ### assets
 
@@ -159,6 +177,7 @@ iPadは個人ではなく「店舗」としてログインする。
 - `manage_code`: 店舗コード・日付・連番から作る管理コード
 - `store_id`: storesへの参照
 - `store_code`: 検索・表示用の店舗コード
+- `store_display_name`: 保存時点の店舗表示名
 - `staff_id`: staff_membersへの参照
 - `staff_display_name`: 保存時点の担当者表示名
 - `captured_date`: 撮影日
@@ -166,13 +185,49 @@ iPadは個人ではなく「店舗」としてログインする。
 - `dog_name`: わんちゃんの名前
 - `dog_breed`: 犬種
 - `dog_age`: 犬齢
+- `staff_comment`: スタッフの一言コメント
 - `sns_consent`: SNS掲載の最終合意
 - `mosaic_required`: モザイク要否
 - `final_processed_url`: 完成画像URL
+- `frame_url_snapshot`: 保存時点の写真枠URL
+- `logo_url_snapshot`: 保存時点のロゴURL
+- `theme_color_snapshot`: 保存時点のテーマカラー
+- `print_template_type_snapshot`: 保存時点の印刷テンプレート種別
+- `printed_at`: 印刷した日時
+- `consent_confirmed_at`: SNS掲載合意を確認した日時
 - `status`: `ready` / `archived`
 - `created_at`: 登録日時
+- `updated_at`: 更新日時
 
-将来的には、季節限定フレームやイベント用フレームを扱うために `store_frames` を別テーブルに分けてもよい。ただし、最初は `stores.frame_url` だけで十分。
+完成画像は、印刷後にお客様からSNS掲載OKをもらえた場合だけ保存する。未許諾写真、ボツ写真、途中データは保存しない。
+
+### admin_users
+
+本部・管理者画面用の管理者マスタ。管理機能の作り込みは後回しでも、DB設計としては最初から用意する。
+
+- `id`: UUID
+- `auth_user_id`: Supabase AuthユーザーID
+- `display_name`: 管理画面での表示名
+- `role`: 管理者権限
+- `is_active`: 有効/無効
+- `created_at`: 作成日時
+- `updated_at`: 更新日時
+
+### store_frames
+
+季節限定フレームやイベント用フレームを頻繁に扱う場合に追加する候補テーブル。最初は `stores.frame_url` だけでもよい。
+
+- `id`: UUID
+- `store_id`: storesへの参照
+- `frame_name`: フレーム名
+- `frame_url`: フレーム画像URL
+- `is_default`: 標準フレームか
+- `is_active`: 有効/無効
+- `starts_at`: 利用開始日時
+- `ends_at`: 利用終了日時
+- `sort_order`: 表示順
+- `created_at`: 作成日時
+- `updated_at`: 更新日時
 
 ## 7. フェーズ1の画面フロー案
 
@@ -202,13 +257,39 @@ iPadは個人ではなく「店舗」としてログインする。
    Supabase Databaseへメタデータを保存
 ```
 
-## 8. クラウド保存ポリシー
+## 8. 次フェーズの作業手順
+
+店舗ログインと店舗設定連携に入る前に、以下の順序で進める。
+
+1. `dog_sns_design.md` と README に、店舗ログイン・担当者選択・DBマスタ管理方針を反映する
+2. Supabaseのテーブル設計SQLを作成する
+3. Next.jsにSupabase接続設定を追加する
+4. `/store/login` を作成し、店舗コード + PINで店舗ログインできるようにする
+5. ログイン後に `stores` と `staff_members` から店舗設定と担当者一覧を取得する
+6. 既存の撮影・加工画面に店舗設定を流し込み、仮店舗名・仮ロゴ・仮枠を置き換える
+7. 撮影ごとの担当者選択を追加する
+8. 完成画像生成まで、選択された `staff_id` と `staff_display_name` を保持する
+9. 店舗ログインと担当者選択が安定してから、最終合意OK後のSupabase保存へ進む
+
+現場用画面と管理用画面は分ける。
+
+```text
+/store
+店舗iPad用。店舗ログイン、撮影、加工、印刷、合意後保存を行う。
+
+/admin
+本部・管理者用。店舗、担当者、ロゴ、枠、表示設定を管理する。
+```
+
+管理画面の機能作り込みは後回しでもよい。ただし、DB項目としては店舗・担当者・管理者・完成素材の運用に必要なものを最初から準備する。
+
+## 9. クラウド保存ポリシー
 
 クラウド保存は、印刷した写真をお客様に見せ、SNS掲載の最終合意OKをもらえた段階で初めて行う。
 
 お客様からOKがもらえなかった場合、途中離脱した場合、キャンセルされた場合、やり直しされた場合は、クラウドへ1ミリもデータを送らない。
 
-## 9. 禁止事項
+## 10. 禁止事項
 
 - ローカルWindows環境での開発・ビルド・依存インストールを前提にしない。
 - APIキー、DB URL、Storage URL、店舗名、環境固有URLをコードへ直書きしない。
