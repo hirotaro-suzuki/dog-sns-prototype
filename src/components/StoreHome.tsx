@@ -37,8 +37,15 @@ export function StoreHome() {
         <div className="login-summary">
           <p className="eyebrow">Store</p>
           <h2>店舗ログインが必要です</h2>
-          <p>/store/login から店舗コードとPINでログインしてください。</p>
+          <p>店舗コードとPINでログインしてください。</p>
         </div>
+        <button
+          className="action-button primary-wide"
+          type="button"
+          onClick={() => window.location.assign("/store/login")}
+        >
+          店舗ログインへ
+        </button>
       </section>
     );
   }
