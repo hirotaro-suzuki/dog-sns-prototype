@@ -173,5 +173,18 @@ alter table public.admin_users enable row level security;
 alter table public.assets enable row level security;
 alter table public.store_frames enable row level security;
 
+-- The application reads and writes through server-side API routes using the service role key.
+-- Browser clients still remain blocked by RLS unless narrow policies are added later.
+grant usage on schema public to service_role;
+grant select, insert, update, delete on table
+  public.stores,
+  public.staff_members,
+  public.admin_users,
+  public.assets,
+  public.store_frames
+  to service_role;
+
+alter default privileges in schema public grant select, insert, update, delete on tables to service_role;
+
 -- RLS policies are intentionally not opened here.
 -- Add narrow policies when the store login/API flow and admin authentication flow are implemented.
