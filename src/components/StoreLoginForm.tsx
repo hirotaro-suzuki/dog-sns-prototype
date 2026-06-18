@@ -44,6 +44,7 @@ export function StoreLoginForm() {
       setSession(nextSession);
       setMessage(`${nextSession.store.displayName} としてログインしました。`);
       setDetail("");
+      window.location.assign("/store");
     } catch {
       setSession(null);
       setMessage("通信に失敗しました。時間をおいてもう一度お試しください。");
