@@ -12,6 +12,25 @@
 - ローカルPCでは `npm install`、`npm run dev`、Next.js初期化を原則行わない
 - CodexはGitHubへ直接Pushし、ユーザーはVercel URLをiPad Safariで確認する
 
+## Codex新スレッド開始時の指示
+
+新しいCodexスレッドで作業を再開するときは、最初に以下を伝える。
+
+```text
+GitHub の hirotaro-suzuki/dog-sns-prototype が最新版です。
+ローカルの Dropbox フォルダは参照しないでください。
+まず GitHub 上の README.md と dog_sns_design.md を読んで、そこに書かれた方針を最優先してください。
+このプロジェクトは「ローカルに何も持たない」方針です。
+Codex は GitHub の main を正として作業してください。
+先走って実装せず、読んだ内容と次に進む候補を確認してから止まってください。
+```
+
+短く伝える場合は以下でもよい。
+
+```text
+hirotaro-suzuki/dog-sns-prototype の GitHub最新版を正として、README.md と dog_sns_design.md を読んで続きから。ローカルは見ないで。先走らないで。
+```
+
 ## フェーズ0で確認済みのこと
 
 1. ブラウザでカメラを起動できる
