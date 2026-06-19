@@ -12,6 +12,7 @@ type MosaicCanvasProps = {
   store?: CaptureStore;
   staff?: CaptureStaff;
   onCancel: () => void;
+  onBackToPhotos?: () => void;
   onLogout?: () => void;
 };
 
@@ -401,7 +402,15 @@ function StoreSettingsSummary({ store, staff }: { store?: CaptureStore; staff?: 
   );
 }
 
-export function MosaicCanvas({ photo, dogInfo, store, staff, onCancel, onLogout }: MosaicCanvasProps) {
+export function MosaicCanvas({
+  photo,
+  dogInfo,
+  store,
+  staff,
+  onCancel,
+  onBackToPhotos,
+  onLogout,
+}: MosaicCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const logoImageRef = useRef<HTMLImageElement | null>(null);
@@ -728,6 +737,11 @@ export function MosaicCanvas({ photo, dogInfo, store, staff, onCancel, onLogout 
         <button className="action-button primary-wide" type="button" onClick={finalizeImage}>
           確定して完成画像にする
         </button>
+        {onBackToPhotos && (
+          <button className="action-button secondary" type="button" onClick={onBackToPhotos}>
+            写真選択へ戻る
+          </button>
+        )}
         <button className="action-button secondary" type="button" onClick={onCancel}>
           キャンセル
         </button>
