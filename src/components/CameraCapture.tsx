@@ -24,6 +24,7 @@ type CameraCaptureProps = {
   store?: CaptureStore;
   staff?: CaptureStaff;
   onBack?: () => void;
+  onLogout?: () => void;
 };
 
 function getTodayLabel() {
@@ -83,7 +84,7 @@ function StoreSettingsSummary({ store, staff }: { store?: CaptureStore; staff?: 
   );
 }
 
-export function CameraCapture({ store, staff, onBack }: CameraCaptureProps) {
+export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const photosRef = useRef<CapturedPhoto[]>([]);
@@ -113,6 +114,24 @@ export function CameraCapture({ store, staff, onBack }: CameraCaptureProps) {
   function replaceSelectedPhoto(photo: CapturedPhoto | null) {
     selectedPhotoRef.current = photo;
     setSelectedPhoto(photo);
+  }
+
+  function clearCaptureData() {
+    releaseCapturedPhotos(photosRef.current);
+    replacePhotos([]);
+    if (selectedPhotoRef.current) {
+      releaseCapturedPhoto(selectedPhotoRef.current);
+      replaceSelectedPhoto(null);
+    }
+    setDogInfo(null);
+    stopCameraStream(streamRef.current);
+    streamRef.current = null;
+    setIsCameraReady(false);
+  }
+
+  function handleLogout() {
+    clearCaptureData();
+    onLogout?.();
   }
 
   async function startCamera() {
@@ -202,29 +221,14 @@ export function CameraCapture({ store, staff, onBack }: CameraCaptureProps) {
   }
 
   function retakePhotos() {
-    releaseCapturedPhotos(photosRef.current);
-    replacePhotos([]);
-    if (selectedPhotoRef.current) {
-      releaseCapturedPhoto(selectedPhotoRef.current);
-      replaceSelectedPhoto(null);
-    }
-    setDogInfo(null);
+    clearCaptureData();
     setStep("capture");
     setMessage("一時保持データを破棄しました。撮り直せます。");
     void startCamera();
   }
 
   function cancelSession() {
-    releaseCapturedPhotos(photosRef.current);
-    replacePhotos([]);
-    if (selectedPhotoRef.current) {
-      releaseCapturedPhoto(selectedPhotoRef.current);
-      replaceSelectedPhoto(null);
-    }
-    setDogInfo(null);
-    stopCameraStream(streamRef.current);
-    streamRef.current = null;
-    setIsCameraReady(false);
+    clearCaptureData();
     setStep("capture");
     setMessage("キャンセルしました。写真データは残していません。");
   }
@@ -242,6 +246,13 @@ export function CameraCapture({ store, staff, onBack }: CameraCaptureProps) {
           onRetake={retakePhotos}
           onCancel={cancelSession}
         />
+        {onLogout && (
+          <div className="toolbar utility-toolbar">
+            <button className="action-button secondary" type="button" onClick={handleLogout}>
+              ログアウト
+            </button>
+          </div>
+        )}
         <p className="notice">{message}</p>
       </div>
     );
@@ -256,6 +267,13 @@ export function CameraCapture({ store, staff, onBack }: CameraCaptureProps) {
           onConfirm={confirmDogInfo}
           onCancel={cancelSession}
         />
+        {onLogout && (
+          <div className="toolbar utility-toolbar">
+            <button className="action-button secondary" type="button" onClick={handleLogout}>
+              ログアウト
+            </button>
+          </div>
+        )}
         <p className="notice">{message}</p>
       </div>
     );
@@ -270,6 +288,7 @@ export function CameraCapture({ store, staff, onBack }: CameraCaptureProps) {
           store={store}
           staff={staff}
           onCancel={cancelSession}
+          onLogout={onLogout ? handleLogout : undefined}
         />
         <p className="notice">{message}</p>
       </div>
@@ -278,13 +297,18 @@ export function CameraCapture({ store, staff, onBack }: CameraCaptureProps) {
 
   return (
     <div className="camera-panel" style={themeStyle}>
-      {(store || staff) && (
-        <div className="login-summary">
+      <div className="top-action-bar">
+        <div>
           <p className="eyebrow">撮影店舗</p>
           <h2>{displayStore}</h2>
           <p>{staff ? `担当: ${staff.displayName}` : "担当者未選択"}</p>
         </div>
-      )}
+        {onLogout && (
+          <button className="action-button secondary" type="button" onClick={handleLogout}>
+            ログアウト
+          </button>
+        )}
+      </div>
 
       <StoreSettingsSummary store={store} staff={staff} />
 
@@ -334,6 +358,11 @@ export function CameraCapture({ store, staff, onBack }: CameraCaptureProps) {
         {onBack && (
           <button className="action-button secondary" type="button" onClick={onBack}>
             店舗ホームへ戻る
+          </button>
+        )}
+        {onLogout && (
+          <button className="action-button secondary" type="button" onClick={handleLogout}>
+            ログアウト
           </button>
         )}
         <span className="status-pill">{photos.length} / {MAX_PHOTOS} 枚</span>
