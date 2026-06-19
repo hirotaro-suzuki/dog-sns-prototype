@@ -692,6 +692,50 @@ export function MosaicCanvas({
     }
   }
 
+  if (completedImageUrl) {
+    return (
+      <section className="final-screen" aria-label="完成画像確認">
+        <div className="section-heading">
+          <p className="eyebrow">Final Image</p>
+          <h2>完成画像確認</h2>
+          <p>この画像を確認してから、印刷や保存の流れへ進みます。</p>
+        </div>
+
+        <div className="final-image-panel final-image-screen-panel">
+          <img src={completedImageUrl} alt="完成画像" />
+        </div>
+
+        <div className="toolbar">
+          <button
+            className="action-button primary-wide"
+            type="button"
+            onClick={() => window.print()}
+          >
+            印刷
+          </button>
+          <button className="action-button secondary" type="button" onClick={() => setCompletedImageUrl(null)}>
+            編集へ戻る
+          </button>
+          {onBackToPhotos && (
+            <button className="action-button secondary" type="button" onClick={onBackToPhotos}>
+              写真選択へ戻る
+            </button>
+          )}
+          <button className="action-button secondary" type="button" onClick={onCancel}>
+            キャンセル
+          </button>
+          {onLogout && (
+            <button className="action-button secondary" type="button" onClick={onLogout}>
+              ログアウト
+            </button>
+          )}
+        </div>
+
+        <p className="notice">完成画像はまだクラウドへ保存していません。</p>
+      </section>
+    );
+  }
+
   return (
     <section className="canvas-panel" aria-label="画像加工プレビュー">
       <div className="section-heading">
@@ -751,13 +795,6 @@ export function MosaicCanvas({
           </button>
         )}
       </div>
-
-      {completedImageUrl && (
-        <div className="final-image-panel">
-          <p className="eyebrow">Final Image</p>
-          <img src={completedImageUrl} alt="完成画像" />
-        </div>
-      )}
 
       <p className="notice">{assetStatus}</p>
       <p className="notice">{status}</p>
