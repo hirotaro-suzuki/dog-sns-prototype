@@ -12,6 +12,7 @@ type MosaicCanvasProps = {
   store?: CaptureStore;
   staff?: CaptureStaff;
   onCancel: () => void;
+  onLogout?: () => void;
 };
 
 type PhotoTransform = {
@@ -277,17 +278,17 @@ function drawFixedFrame(
   context.fillText(detailLabel || "犬種・犬齢未入力", 56, CANVAS_HEIGHT - 45);
 
   if (logoImage) {
-    drawContainedImage(context, logoImage, CANVAS_WIDTH - 336, CANVAS_HEIGHT - 124, 280, 70);
+    drawContainedImage(context, logoImage, CANVAS_WIDTH - 516, CANVAS_HEIGHT - 138, 460, 96);
   } else {
     context.textAlign = "right";
-    context.font = "700 34px Arial, sans-serif";
+    context.font = "700 42px Arial, sans-serif";
     context.fillText(getLogoLabel(store), CANVAS_WIDTH - 56, CANVAS_HEIGHT - 64);
   }
 
   if (staff) {
     context.textAlign = "right";
     context.font = "500 24px Arial, sans-serif";
-    context.fillText(`担当: ${staff.displayName}`, CANVAS_WIDTH - 56, CANVAS_HEIGHT - 28);
+    context.fillText(`担当: ${staff.displayName}`, CANVAS_WIDTH - 56, CANVAS_HEIGHT - 24);
   }
 }
 
@@ -400,7 +401,7 @@ function StoreSettingsSummary({ store, staff }: { store?: CaptureStore; staff?: 
   );
 }
 
-export function MosaicCanvas({ photo, dogInfo, store, staff, onCancel }: MosaicCanvasProps) {
+export function MosaicCanvas({ photo, dogInfo, store, staff, onCancel, onLogout }: MosaicCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const logoImageRef = useRef<HTMLImageElement | null>(null);
@@ -730,6 +731,11 @@ export function MosaicCanvas({ photo, dogInfo, store, staff, onCancel }: MosaicC
         <button className="action-button secondary" type="button" onClick={onCancel}>
           キャンセル
         </button>
+        {onLogout && (
+          <button className="action-button secondary" type="button" onClick={onLogout}>
+            ログアウト
+          </button>
+        )}
       </div>
 
       {completedImageUrl && (
