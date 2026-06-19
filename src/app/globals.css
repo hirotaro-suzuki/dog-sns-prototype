@@ -111,11 +111,23 @@ p {
 }
 
 .login-summary,
-.store-settings-panel {
+.store-settings-panel,
+.top-action-bar {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
   padding: 18px;
+}
+
+.top-action-bar {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.top-action-bar h2 {
+  margin-bottom: 6px;
 }
 
 .store-settings-panel {
@@ -218,12 +230,12 @@ p {
   position: absolute;
   right: 24px;
   bottom: 24px;
-  max-width: min(220px, 36%);
-  max-height: 84px;
+  max-width: min(360px, 52%);
+  max-height: 136px;
   object-fit: contain;
-  padding: 8px;
+  padding: 10px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.9);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
 }
 
@@ -261,6 +273,10 @@ p {
   flex-wrap: wrap;
   gap: 12px;
   align-items: center;
+}
+
+.utility-toolbar {
+  justify-content: flex-end;
 }
 
 .action-button {
@@ -468,7 +484,19 @@ p {
     gap: 2px;
   }
 
+  .top-action-bar {
+    display: grid;
+  }
+
+  .top-action-bar .action-button,
   .action-button.primary-wide {
     width: 100%;
+  }
+
+  .store-logo-badge {
+    right: 16px;
+    bottom: 16px;
+    max-width: min(320px, 62%);
+    max-height: 116px;
   }
 }
