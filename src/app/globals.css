@@ -346,7 +346,8 @@ p {
 
 .picker-panel,
 .form-panel,
-.canvas-panel {
+.canvas-panel,
+.final-screen {
   display: grid;
   gap: 18px;
 }
@@ -453,6 +454,11 @@ p {
   border-radius: 8px;
   background: var(--panel);
   padding: 14px;
+}
+
+.final-image-screen-panel {
+  padding: 18px;
+  box-shadow: var(--shadow);
 }
 
 .final-image-panel img {
