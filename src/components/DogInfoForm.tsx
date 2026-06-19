@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
 import type { CapturedPhoto } from "@/lib/imageStore";
 import type { CaptureStaff } from "@/types/captureContext";
 import type { DogInfo } from "@/types/dog";
 
 type DogInfoFormProps = {
   photo: CapturedPhoto;
+  dogInfo: DogInfo;
   staff?: CaptureStaff;
+  onChange: (dogInfo: DogInfo) => void;
   onConfirm: (dogInfo: DogInfo) => void;
   onBackToPhotos?: () => void;
   onCancel: () => void;
@@ -15,22 +16,18 @@ type DogInfoFormProps = {
 
 export function DogInfoForm({
   photo,
+  dogInfo,
   staff,
+  onChange,
   onConfirm,
   onBackToPhotos,
   onCancel,
 }: DogInfoFormProps) {
-  const [dogInfo, setDogInfo] = useState<DogInfo>({
-    dogName: "",
-    dogBreed: "",
-    dogAge: "",
-  });
-
   function updateField(field: keyof DogInfo, value: string) {
-    setDogInfo((current) => ({
-      ...current,
+    onChange({
+      ...dogInfo,
       [field]: value,
-    }));
+    });
   }
 
   return (
@@ -43,7 +40,7 @@ export function DogInfoForm({
         <div>
           <p className="eyebrow">Selected Photo</p>
           <h2>わんちゃん情報</h2>
-          <p>写真を間違えた場合は、3枚の選択画面へ戻れます。まだクラウド保存しません。</p>
+          <p>写真を選び直しても、入力したわんちゃん情報は残ります。まだクラウド保存しません。</p>
         </div>
 
         {staff && (
