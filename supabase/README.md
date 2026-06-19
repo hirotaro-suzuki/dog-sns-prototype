@@ -41,61 +41,28 @@ alter default privileges in schema public grant select, insert, update, delete o
 
 ### デモ店舗
 
-```text
-store_code: DEMO_STORE
-store_name: Demo Store
-display_name: 今日のわんちゃん Demo
-login_code: DEMO
-PIN: 0000
-theme_color: #176f62
-print_template_type: default
-timezone: Asia/Tokyo
-sns_display_name: 今日のわんちゃん Demo
-default_hashtags: #今日のわんちゃん #犬同伴OK
-```
-
-ログイン画面で試す値は以下。
+2つの店舗を作成する。どちらもPINは `0000`。
 
 ```text
-店舗コード: DEMO
+店舗コード: TOKYO
 PIN: 0000
+表示名: 今日のわんちゃん 東京店
+テーマ色: #176f62
+担当者: 東京 店長 / 東京 山田 / 東京 佐藤
 ```
+
+```text
+店舗コード: KARUIZAWA
+PIN: 0000
+表示名: 今日のわんちゃん 軽井沢店
+テーマ色: #6f4a8e
+担当者: 軽井沢 店長 / 軽井沢 鈴木 / 軽井沢 高橋
+```
+
+`logo_url` と `frame_url` には確認用のSVGデータURLを入れている。これは、ログインした店舗ごとにDBの値が撮影画面と編集画面へ渡っていることを確認しやすくするためである。
+本番店舗では、この2項目をSupabase Storageの公開URLへ置き換える。
 
 `pin_hash` はデモ用に `sha256:` 形式で入れている。本番店舗では `scripts/create-store-pin-hash.mjs` で生成した `scrypt:` 形式を使う。
-
-### デモ担当者
-
-```text
-staff_code: manager
-display_name: 店長
-role_label: 責任者
-can_approve_sns: true
-sort_order: 10
-```
-
-```text
-staff_code: staff-a
-display_name: 山田
-role_label: ホール
-can_approve_sns: false
-sort_order: 20
-```
-
-```text
-staff_code: staff-b
-display_name: 佐藤
-role_label: ホール
-can_approve_sns: false
-sort_order: 30
-```
-
-```text
-staff_code: staff-c
-display_name: 鈴木
-role_label: キッチン
-can_approve_sns: false
-sort_order: 40
-```
 
 ## 本番店舗データを作るとき
 
