@@ -461,6 +461,8 @@ export function MosaicCanvas({
   }
 
   useEffect(() => {
+    if (completedImageUrl) return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -479,7 +481,6 @@ export function MosaicCanvas({
       strokesRef.current = [];
       activeStrokeIdRef.current = null;
       setStrokeCount(0);
-      setCompletedImageUrl(null);
       renderCanvas();
       setStatus("写真調整モードです。モザイクが必要な場合はモザイクボタンを押してください。");
     };
@@ -489,7 +490,7 @@ export function MosaicCanvas({
     };
 
     image.src = photo.objectUrl;
-  }, [photo.objectUrl]);
+  }, [photo.objectUrl, completedImageUrl]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -521,8 +522,10 @@ export function MosaicCanvas({
   }, [store?.logoUrl, store?.frameUrl]);
 
   useEffect(() => {
-    renderCanvas();
-  }, [dogInfo, store, staff]);
+    if (!completedImageUrl) {
+      renderCanvas();
+    }
+  }, [dogInfo, store, staff, completedImageUrl]);
 
   function createMosaicPoint(canvasPoint: CanvasPoint): MosaicPoint | null {
     const image = imageRef.current;
@@ -695,7 +698,7 @@ export function MosaicCanvas({
   if (completedImageUrl) {
     return (
       <section className="final-screen" aria-label="完成画像確認">
-        <div className="section-heading">
+        <div className="section-heading compact-section-heading">
           <p className="eyebrow">Final Image</p>
           <h2>完成画像確認</h2>
           <p>この画像を確認してから、印刷や保存の流れへ進みます。</p>
@@ -738,13 +741,11 @@ export function MosaicCanvas({
 
   return (
     <section className="canvas-panel" aria-label="画像加工プレビュー">
-      <div className="section-heading">
+      <div className="section-heading compact-section-heading">
         <p className="eyebrow">Canvas Preview</p>
         <h2>画像加工プレビュー</h2>
         <p>写真位置を調整し、必要な場所だけ手動でモザイクを追加できます。</p>
       </div>
-
-      <StoreSettingsSummary store={store} staff={staff} />
 
       <div className={`canvas-frame ${editMode === "mosaic" ? "is-mosaic-mode" : ""}`}>
         <canvas
@@ -796,6 +797,7 @@ export function MosaicCanvas({
         )}
       </div>
 
+      <StoreSettingsSummary store={store} staff={staff} />
       <p className="notice">{assetStatus}</p>
       <p className="notice">{status}</p>
     </section>
