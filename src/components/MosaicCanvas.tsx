@@ -55,6 +55,7 @@ const CANVAS_WIDTH = 1270;
 const CANVAS_HEIGHT = 890;
 const MOSAIC_RADIUS = 52;
 const MOSAIC_SAMPLE_SIZE = 12;
+const FALLBACK_THEME_COLOR = "#176f62";
 
 function createStrokeId() {
   return `stroke-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -116,6 +117,42 @@ function getStoreDisplayName(store?: CaptureStore) {
 
 function getLogoLabel(store?: CaptureStore) {
   return store?.storeName ?? "DEMO STORE LOGO";
+}
+
+function getStoreThemeColor(store?: CaptureStore) {
+  return store?.themeColor ?? FALLBACK_THEME_COLOR;
+}
+
+function hexToRgba(hex: string, alpha: number) {
+  const normalized = /^#[0-9A-Fa-f]{6}$/.test(hex) ? hex : FALLBACK_THEME_COLOR;
+  const red = Number.parseInt(normalized.slice(1, 3), 16);
+  const green = Number.parseInt(normalized.slice(3, 5), 16);
+  const blue = Number.parseInt(normalized.slice(5, 7), 16);
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+}
+
+function drawContainedImage(
+  context: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  x: number,
+  y: number,
+  maxWidth: number,
+  maxHeight: number
+) {
+  const scale = Math.min(maxWidth / image.naturalWidth, maxHeight / image.naturalHeight);
+  const width = image.naturalWidth * scale;
+  const height = image.naturalHeight * scale;
+  context.drawImage(image, x + maxWidth - width, y + (maxHeight - height) / 2, width, height);
+}
+
+function loadCanvasImage(url: string): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.onload = () => resolve(image);
+    image.onerror = () => resolve(null);
+    image.src = url;
+  });
 }
 
 function transformPhotoPointToCanvas(
@@ -195,15 +232,27 @@ function drawFixedFrame(
   context: CanvasRenderingContext2D,
   dogInfo: DogInfo,
   store?: CaptureStore,
-  staff?: CaptureStaff
+  staff?: CaptureStaff,
+  logoImage?: HTMLImageElement | null,
+  frameImage?: HTMLImageElement | null
 ) {
-  context.fillStyle = "rgba(0, 0, 0, 0.34)";
+  const themeColor = getStoreThemeColor(store);
+
+  if (frameImage) {
+    context.drawImage(frameImage, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  }
+
+  context.fillStyle = hexToRgba(themeColor, 0.78);
   context.fillRect(0, 0, CANVAS_WIDTH, 120);
   context.fillRect(0, CANVAS_HEIGHT - 150, CANVAS_WIDTH, 150);
 
   context.strokeStyle = "rgba(255, 255, 255, 0.9)";
   context.lineWidth = 10;
   context.strokeRect(32, 32, CANVAS_WIDTH - 64, CANVAS_HEIGHT - 64);
+
+  context.strokeStyle = themeColor;
+  context.lineWidth = 6;
+  context.strokeRect(44, 44, CANVAS_WIDTH - 88, CANVAS_HEIGHT - 88);
 
   context.fillStyle = "#ffffff";
   context.textBaseline = "middle";
@@ -227,11 +276,16 @@ function drawFixedFrame(
     .join(" / ");
   context.fillText(detailLabel || "犬種・犬齢未入力", 56, CANVAS_HEIGHT - 45);
 
-  context.textAlign = "right";
-  context.font = "700 34px Arial, sans-serif";
-  context.fillText(getLogoLabel(store), CANVAS_WIDTH - 56, CANVAS_HEIGHT - 64);
+  if (logoImage) {
+    drawContainedImage(context, logoImage, CANVAS_WIDTH - 336, CANVAS_HEIGHT - 124, 280, 70);
+  } else {
+    context.textAlign = "right";
+    context.font = "700 34px Arial, sans-serif";
+    context.fillText(getLogoLabel(store), CANVAS_WIDTH - 56, CANVAS_HEIGHT - 64);
+  }
 
   if (staff) {
+    context.textAlign = "right";
     context.font = "500 24px Arial, sans-serif";
     context.fillText(`担当: ${staff.displayName}`, CANVAS_WIDTH - 56, CANVAS_HEIGHT - 28);
   }
@@ -310,9 +364,47 @@ function drawMosaicStrokes(
   });
 }
 
+function StoreSettingsSummary({ store, staff }: { store?: CaptureStore; staff?: CaptureStaff }) {
+  if (!store) return null;
+
+  return (
+    <div className="store-settings-panel compact" aria-label="DBから読み込んだ店舗設定">
+      <p className="eyebrow">DBから読み込んだ店舗設定</p>
+      <dl className="settings-list">
+        <div>
+          <dt>店舗コード</dt>
+          <dd>{store.storeCode}</dd>
+        </div>
+        <div>
+          <dt>表示名</dt>
+          <dd>{store.displayName}</dd>
+        </div>
+        <div>
+          <dt>担当者</dt>
+          <dd>{staff?.displayName ?? "未選択"}</dd>
+        </div>
+        <div>
+          <dt>テーマ色</dt>
+          <dd>{store.themeColor ?? "未設定"}</dd>
+        </div>
+        <div>
+          <dt>ロゴURL</dt>
+          <dd>{store.logoUrl ?? "未設定"}</dd>
+        </div>
+        <div>
+          <dt>フレームURL</dt>
+          <dd>{store.frameUrl ?? "未設定"}</dd>
+        </div>
+      </dl>
+    </div>
+  );
+}
+
 export function MosaicCanvas({ photo, dogInfo, store, staff, onCancel }: MosaicCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
+  const logoImageRef = useRef<HTMLImageElement | null>(null);
+  const frameImageRef = useRef<HTMLImageElement | null>(null);
   const transformRef = useRef<PhotoTransform>({
     x: CANVAS_WIDTH / 2,
     y: CANVAS_HEIGHT / 2,
@@ -326,6 +418,7 @@ export function MosaicCanvas({ photo, dogInfo, store, staff, onCancel }: MosaicC
   const [editMode, setEditMode] = useState<EditMode>("adjust");
   const [strokeCount, setStrokeCount] = useState(0);
   const [completedImageUrl, setCompletedImageUrl] = useState<string | null>(null);
+  const [assetStatus, setAssetStatus] = useState("店舗ロゴ・フレームのURLを確認しています。");
   const [status, setStatus] = useState("Canvas加工を準備しています。");
 
   function renderCanvas() {
@@ -337,7 +430,14 @@ export function MosaicCanvas({ photo, dogInfo, store, staff, onCancel }: MosaicC
     context.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     drawPhotoLayer(context, image, transformRef.current);
     drawMosaicStrokes(context, image, transformRef.current, strokesRef.current);
-    drawFixedFrame(context, dogInfo, store, staff);
+    drawFixedFrame(
+      context,
+      dogInfo,
+      store,
+      staff,
+      logoImageRef.current,
+      frameImageRef.current
+    );
   }
 
   function switchMode(nextMode: EditMode) {
@@ -380,6 +480,35 @@ export function MosaicCanvas({ photo, dogInfo, store, staff, onCancel }: MosaicC
 
     image.src = photo.objectUrl;
   }, [photo.objectUrl]);
+
+  useEffect(() => {
+    let isCancelled = false;
+    logoImageRef.current = null;
+    frameImageRef.current = null;
+
+    async function loadStoreImages() {
+      const [logoImage, frameImage] = await Promise.all([
+        store?.logoUrl ? loadCanvasImage(store.logoUrl) : Promise.resolve(null),
+        store?.frameUrl ? loadCanvasImage(store.frameUrl) : Promise.resolve(null),
+      ]);
+
+      if (isCancelled) return;
+
+      logoImageRef.current = logoImage;
+      frameImageRef.current = frameImage;
+
+      const logoState = store?.logoUrl ? (logoImage ? "ロゴ画像を読み込みました" : "ロゴURLはありますが画像は読めませんでした") : "ロゴURL未設定";
+      const frameState = store?.frameUrl ? (frameImage ? "フレーム画像を読み込みました" : "フレームURLはありますが画像は読めませんでした") : "フレームURL未設定";
+      setAssetStatus(`${logoState}。${frameState}。`);
+      renderCanvas();
+    }
+
+    void loadStoreImages();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [store?.logoUrl, store?.frameUrl]);
 
   useEffect(() => {
     renderCanvas();
@@ -543,9 +672,14 @@ export function MosaicCanvas({ photo, dogInfo, store, staff, onCancel }: MosaicC
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const nextUrl = canvas.toDataURL("image/jpeg", 0.92);
-    setCompletedImageUrl(nextUrl);
-    setStatus("完成画像を作成しました。次の段階ではこの画像を印刷・保存に使います。");
+    try {
+      const nextUrl = canvas.toDataURL("image/jpeg", 0.92);
+      setCompletedImageUrl(nextUrl);
+      setStatus("完成画像を作成しました。次の段階ではこの画像を印刷・保存に使います。");
+    } catch {
+      setCompletedImageUrl(null);
+      setStatus("完成画像を作成できませんでした。ロゴまたはフレーム画像の読み込み設定を確認してください。");
+    }
   }
 
   return (
@@ -555,6 +689,8 @@ export function MosaicCanvas({ photo, dogInfo, store, staff, onCancel }: MosaicC
         <h2>画像加工プレビュー</h2>
         <p>写真位置を調整し、必要な場所だけ手動でモザイクを追加できます。</p>
       </div>
+
+      <StoreSettingsSummary store={store} staff={staff} />
 
       <div className={`canvas-frame ${editMode === "mosaic" ? "is-mosaic-mode" : ""}`}>
         <canvas
@@ -603,6 +739,7 @@ export function MosaicCanvas({ photo, dogInfo, store, staff, onCancel }: MosaicC
         </div>
       )}
 
+      <p className="notice">{assetStatus}</p>
       <p className="notice">{status}</p>
     </section>
   );
