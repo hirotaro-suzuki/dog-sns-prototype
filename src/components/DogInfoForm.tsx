@@ -9,10 +9,17 @@ type DogInfoFormProps = {
   photo: CapturedPhoto;
   staff?: CaptureStaff;
   onConfirm: (dogInfo: DogInfo) => void;
+  onBackToPhotos?: () => void;
   onCancel: () => void;
 };
 
-export function DogInfoForm({ photo, staff, onConfirm, onCancel }: DogInfoFormProps) {
+export function DogInfoForm({
+  photo,
+  staff,
+  onConfirm,
+  onBackToPhotos,
+  onCancel,
+}: DogInfoFormProps) {
   const [dogInfo, setDogInfo] = useState<DogInfo>({
     dogName: "",
     dogBreed: "",
@@ -36,7 +43,7 @@ export function DogInfoForm({ photo, staff, onConfirm, onCancel }: DogInfoFormPr
         <div>
           <p className="eyebrow">Selected Photo</p>
           <h2>わんちゃん情報</h2>
-          <p>この画面ではまだクラウド保存しません。確定画像はブラウザメモリ内だけに保持しています。</p>
+          <p>写真を間違えた場合は、3枚の選択画面へ戻れます。まだクラウド保存しません。</p>
         </div>
 
         {staff && (
@@ -92,6 +99,11 @@ export function DogInfoForm({ photo, staff, onConfirm, onCancel }: DogInfoFormPr
           >
             この内容で確定（画像加工へ）
           </button>
+          {onBackToPhotos && (
+            <button className="action-button secondary" type="button" onClick={onBackToPhotos}>
+              写真選択へ戻る
+            </button>
+          )}
           <button className="action-button danger" type="button" onClick={onCancel}>
             キャンセル
           </button>
