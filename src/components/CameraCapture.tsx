@@ -314,7 +314,7 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
 
   return (
     <div className="camera-panel" style={themeStyle}>
-      <div className="top-action-bar">
+      <div className="top-action-bar compact-action-bar">
         <div>
           <p className="eyebrow">撮影店舗</p>
           <h2>{displayStore}</h2>
@@ -326,8 +326,6 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
           </button>
         )}
       </div>
-
-      <StoreSettingsSummary store={store} staff={staff} />
 
       <div className="camera-stage" aria-label="カメラプレビュー">
         <video ref={videoRef} playsInline muted />
@@ -396,6 +394,8 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
           ))}
         </div>
       )}
+
+      <StoreSettingsSummary store={store} staff={staff} />
     </div>
   );
 }
