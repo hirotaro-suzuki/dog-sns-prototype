@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { useEffect, useRef, useState } from "react";
 import { DogInfoForm } from "@/components/DogInfoForm";
 import { MosaicCanvas } from "@/components/MosaicCanvas";
@@ -35,6 +36,51 @@ function getTodayLabel() {
 
 function getDisplayStore(store?: CaptureStore) {
   return store?.displayName ?? phaseZeroStore.displayName;
+}
+
+function getThemeStyle(store?: CaptureStore): CSSProperties | undefined {
+  if (!store?.themeColor) return undefined;
+
+  return {
+    "--accent": store.themeColor,
+    "--accent-dark": store.themeColor,
+  } as CSSProperties;
+}
+
+function StoreSettingsSummary({ store, staff }: { store?: CaptureStore; staff?: CaptureStaff }) {
+  if (!store) return null;
+
+  return (
+    <div className="store-settings-panel compact" aria-label="DBから読み込んだ店舗設定">
+      <p className="eyebrow">DBから読み込んだ店舗設定</p>
+      <dl className="settings-list">
+        <div>
+          <dt>店舗コード</dt>
+          <dd>{store.storeCode}</dd>
+        </div>
+        <div>
+          <dt>表示名</dt>
+          <dd>{store.displayName}</dd>
+        </div>
+        <div>
+          <dt>担当者</dt>
+          <dd>{staff?.displayName ?? "未選択"}</dd>
+        </div>
+        <div>
+          <dt>テーマ色</dt>
+          <dd>{store.themeColor ?? "未設定"}</dd>
+        </div>
+        <div>
+          <dt>ロゴURL</dt>
+          <dd>{store.logoUrl ?? "未設定"}</dd>
+        </div>
+        <div>
+          <dt>フレームURL</dt>
+          <dd>{store.frameUrl ?? "未設定"}</dd>
+        </div>
+      </dl>
+    </div>
+  );
 }
 
 export function CameraCapture({ store, staff, onBack }: CameraCaptureProps) {
@@ -185,10 +231,11 @@ export function CameraCapture({ store, staff, onBack }: CameraCaptureProps) {
 
   const canCapture = isCameraReady && photos.length < MAX_PHOTOS;
   const displayStore = getDisplayStore(store);
+  const themeStyle = getThemeStyle(store);
 
   if (step === "pick") {
     return (
-      <div className="camera-panel">
+      <div className="camera-panel" style={themeStyle}>
         <PhotoPicker
           photos={photos}
           onSelect={selectPhoto}
@@ -202,7 +249,7 @@ export function CameraCapture({ store, staff, onBack }: CameraCaptureProps) {
 
   if (step === "info" && selectedPhoto) {
     return (
-      <div className="camera-panel">
+      <div className="camera-panel" style={themeStyle}>
         <DogInfoForm
           photo={selectedPhoto}
           staff={staff}
@@ -216,7 +263,7 @@ export function CameraCapture({ store, staff, onBack }: CameraCaptureProps) {
 
   if (step === "process" && selectedPhoto && dogInfo) {
     return (
-      <div className="camera-panel">
+      <div className="camera-panel" style={themeStyle}>
         <MosaicCanvas
           photo={selectedPhoto}
           dogInfo={dogInfo}
@@ -230,7 +277,7 @@ export function CameraCapture({ store, staff, onBack }: CameraCaptureProps) {
   }
 
   return (
-    <div className="camera-panel">
+    <div className="camera-panel" style={themeStyle}>
       {(store || staff) && (
         <div className="login-summary">
           <p className="eyebrow">撮影店舗</p>
@@ -239,12 +286,20 @@ export function CameraCapture({ store, staff, onBack }: CameraCaptureProps) {
         </div>
       )}
 
+      <StoreSettingsSummary store={store} staff={staff} />
+
       <div className="camera-stage" aria-label="カメラプレビュー">
         <video ref={videoRef} playsInline muted />
         {!isCameraReady && (
           <div className="empty-camera">
             <p>{message}</p>
           </div>
+        )}
+        {store?.frameUrl && (
+          <img className="store-frame-image" src={store.frameUrl} alt="店舗フレーム" />
+        )}
+        {store?.logoUrl && (
+          <img className="store-logo-badge" src={store.logoUrl} alt="店舗ロゴ" />
         )}
         <div
           className="frame-overlay"
