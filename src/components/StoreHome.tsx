@@ -17,8 +17,15 @@ export function StoreHome() {
 
     try {
       const nextSession = JSON.parse(storedValue) as StoreSession;
+      const firstStaffId = nextSession.staffMembers[0]?.id ?? null;
+      const shouldStartCapture = new URLSearchParams(window.location.search).get("start") === "capture";
       setSession(nextSession);
-      setSelectedStaffId(nextSession.staffMembers[0]?.id ?? null);
+      setSelectedStaffId(firstStaffId);
+      setIsCapturing(Boolean(shouldStartCapture && firstStaffId));
+
+      if (shouldStartCapture) {
+        window.history.replaceState(null, "", "/store");
+      }
     } catch {
       window.localStorage.removeItem(STORE_SESSION_KEY);
     }
@@ -70,6 +77,40 @@ export function StoreHome() {
         <p className="eyebrow">Store</p>
         <h2>{session.store.displayName}</h2>
         <p>{session.store.storeName}</p>
+      </div>
+
+      <div className="store-settings-panel" aria-label="DBから読み込んだ店舗設定">
+        <p className="eyebrow">DBから読み込んだ店舗設定</p>
+        <dl className="settings-list">
+          <div>
+            <dt>店舗ID</dt>
+            <dd>{session.store.id}</dd>
+          </div>
+          <div>
+            <dt>店舗コード</dt>
+            <dd>{session.store.storeCode}</dd>
+          </div>
+          <div>
+            <dt>表示名</dt>
+            <dd>{session.store.displayName}</dd>
+          </div>
+          <div>
+            <dt>テーマ色</dt>
+            <dd>{session.store.themeColor ?? "未設定"}</dd>
+          </div>
+          <div>
+            <dt>ロゴURL</dt>
+            <dd>{session.store.logoUrl ?? "未設定"}</dd>
+          </div>
+          <div>
+            <dt>フレームURL</dt>
+            <dd>{session.store.frameUrl ?? "未設定"}</dd>
+          </div>
+          <div>
+            <dt>担当者数</dt>
+            <dd>{session.staffMembers.length}名</dd>
+          </div>
+        </dl>
       </div>
 
       <div className="login-summary">
