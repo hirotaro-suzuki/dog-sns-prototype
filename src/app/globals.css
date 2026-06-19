@@ -49,9 +49,17 @@ canvas {
   padding: 28px;
 }
 
+.store-app-shell {
+  padding-top: 12px;
+}
+
 .workspace {
   max-width: 1100px;
   margin: 0 auto;
+}
+
+.store-workspace {
+  max-width: 760px;
 }
 
 .narrow-workspace {
@@ -61,6 +69,14 @@ canvas {
 .page-heading,
 .section-heading {
   margin-bottom: 20px;
+}
+
+.compact-section-heading {
+  margin-bottom: 10px;
+}
+
+.compact-section-heading h2 {
+  margin-bottom: 6px;
 }
 
 .eyebrow {
@@ -92,7 +108,7 @@ p {
 
 .camera-panel {
   display: grid;
-  gap: 18px;
+  gap: 12px;
 }
 
 .login-panel {
@@ -126,8 +142,21 @@ p {
   justify-content: space-between;
 }
 
+.compact-action-bar {
+  padding: 10px 12px;
+}
+
 .top-action-bar h2 {
   margin-bottom: 6px;
+}
+
+.compact-action-bar h2 {
+  font-size: 24px;
+  margin-bottom: 2px;
+}
+
+.compact-action-bar .eyebrow {
+  margin-bottom: 2px;
 }
 
 .store-settings-panel {
@@ -271,7 +300,7 @@ p {
 .toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
 }
 
@@ -477,6 +506,10 @@ p {
 @media (max-width: 720px) {
   .app-shell {
     padding: 18px;
+  }
+
+  .store-app-shell {
+    padding-top: 8px;
   }
 
   .photo-grid,
