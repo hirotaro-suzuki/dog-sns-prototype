@@ -100,7 +100,10 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
     return () => {
       stopCameraStream(streamRef.current);
       releaseCapturedPhotos(photosRef.current);
-      if (selectedPhotoRef.current) {
+      const selectedPhotoWasReleased = photosRef.current.some(
+        (photo) => photo.id === selectedPhotoRef.current?.id
+      );
+      if (selectedPhotoRef.current && !selectedPhotoWasReleased) {
         releaseCapturedPhoto(selectedPhotoRef.current);
       }
     };
@@ -118,11 +121,14 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
 
   function clearCaptureData() {
     releaseCapturedPhotos(photosRef.current);
+    const selectedPhotoWasReleased = photosRef.current.some(
+      (photo) => photo.id === selectedPhotoRef.current?.id
+    );
     replacePhotos([]);
-    if (selectedPhotoRef.current) {
+    if (selectedPhotoRef.current && !selectedPhotoWasReleased) {
       releaseCapturedPhoto(selectedPhotoRef.current);
-      replaceSelectedPhoto(null);
     }
+    replaceSelectedPhoto(null);
     setDogInfo(null);
     stopCameraStream(streamRef.current);
     streamRef.current = null;
@@ -205,13 +211,17 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
   }
 
   function selectPhoto(photo: CapturedPhoto) {
-    const unselectedPhotos = photosRef.current.filter((item) => item.id !== photo.id);
-    releaseCapturedPhotos(unselectedPhotos);
-    replacePhotos([]);
     replaceSelectedPhoto(photo);
     setDogInfo(null);
     setStep("info");
-    setMessage("1枚を確定画像として保持しました。追加情報を入力してください。");
+    setMessage("1枚を選びました。間違えた場合は写真選択へ戻れます。");
+  }
+
+  function backToPhotoPicker() {
+    replaceSelectedPhoto(null);
+    setDogInfo(null);
+    setStep("pick");
+    setMessage("3枚の候補写真を保持しています。別の写真を選び直せます。");
   }
 
   function confirmDogInfo(nextDogInfo: DogInfo) {
@@ -265,6 +275,7 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
           photo={selectedPhoto}
           staff={staff}
           onConfirm={confirmDogInfo}
+          onBackToPhotos={backToPhotoPicker}
           onCancel={cancelSession}
         />
         {onLogout && (
@@ -288,6 +299,7 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
           store={store}
           staff={staff}
           onCancel={cancelSession}
+          onBackToPhotos={backToPhotoPicker}
           onLogout={onLogout ? handleLogout : undefined}
         />
         <p className="notice">{message}</p>
