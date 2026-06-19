@@ -36,6 +36,7 @@ export function StoreHome() {
     setSession(null);
     setSelectedStaffId(null);
     setIsCapturing(false);
+    window.location.assign("/store/login");
   }
 
   if (!session) {
@@ -67,6 +68,7 @@ export function StoreHome() {
         store={session.store}
         staff={selectedStaff}
         onBack={() => setIsCapturing(false)}
+        onLogout={handleLogout}
       />
     );
   }
