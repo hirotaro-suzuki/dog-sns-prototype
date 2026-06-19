@@ -17,6 +17,11 @@ import type { CaptureStaff, CaptureStore } from "@/types/captureContext";
 import type { DogInfo } from "@/types/dog";
 
 const MAX_PHOTOS = 3;
+const EMPTY_DOG_INFO: DogInfo = {
+  dogName: "",
+  dogBreed: "",
+  dogAge: "",
+};
 
 type Step = "capture" | "pick" | "info" | "process";
 
@@ -92,7 +97,7 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
   const [step, setStep] = useState<Step>("capture");
   const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<CapturedPhoto | null>(null);
-  const [dogInfo, setDogInfo] = useState<DogInfo | null>(null);
+  const [dogInfo, setDogInfo] = useState<DogInfo>(EMPTY_DOG_INFO);
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [message, setMessage] = useState("カメラを開始してください。");
 
@@ -129,7 +134,7 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
       releaseCapturedPhoto(selectedPhotoRef.current);
     }
     replaceSelectedPhoto(null);
-    setDogInfo(null);
+    setDogInfo(EMPTY_DOG_INFO);
     stopCameraStream(streamRef.current);
     streamRef.current = null;
     setIsCameraReady(false);
@@ -153,7 +158,7 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
 
       setIsCameraReady(true);
       setStep("capture");
-      setDogInfo(null);
+      setDogInfo(EMPTY_DOG_INFO);
       setMessage("撮影できます。最大3枚まで一時保持します。");
     } catch (error) {
       setIsCameraReady(false);
@@ -212,14 +217,12 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
 
   function selectPhoto(photo: CapturedPhoto) {
     replaceSelectedPhoto(photo);
-    setDogInfo(null);
     setStep("info");
     setMessage("1枚を選びました。間違えた場合は写真選択へ戻れます。");
   }
 
   function backToPhotoPicker() {
     replaceSelectedPhoto(null);
-    setDogInfo(null);
     setStep("pick");
     setMessage("3枚の候補写真を保持しています。別の写真を選び直せます。");
   }
@@ -273,7 +276,9 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
       <div className="camera-panel" style={themeStyle}>
         <DogInfoForm
           photo={selectedPhoto}
+          dogInfo={dogInfo}
           staff={staff}
+          onChange={setDogInfo}
           onConfirm={confirmDogInfo}
           onBackToPhotos={backToPhotoPicker}
           onCancel={cancelSession}
@@ -290,7 +295,7 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
     );
   }
 
-  if (step === "process" && selectedPhoto && dogInfo) {
+  if (step === "process" && selectedPhoto) {
     return (
       <div className="camera-panel" style={themeStyle}>
         <MosaicCanvas
