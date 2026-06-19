@@ -94,12 +94,14 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
   const streamRef = useRef<MediaStream | null>(null);
   const photosRef = useRef<CapturedPhoto[]>([]);
   const selectedPhotoRef = useRef<CapturedPhoto | null>(null);
+  const hasAutoStartedCameraRef = useRef(false);
   const [step, setStep] = useState<Step>("capture");
   const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<CapturedPhoto | null>(null);
   const [dogInfo, setDogInfo] = useState<DogInfo>(EMPTY_DOG_INFO);
   const [isCameraReady, setIsCameraReady] = useState(false);
-  const [message, setMessage] = useState("カメラを開始してください。");
+  const [canRetryCamera, setCanRetryCamera] = useState(false);
+  const [message, setMessage] = useState("カメラを準備しています。");
 
   useEffect(() => {
     return () => {
@@ -112,6 +114,12 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
         releaseCapturedPhoto(selectedPhotoRef.current);
       }
     };
+  }, []);
+
+  useEffect(() => {
+    if (hasAutoStartedCameraRef.current) return;
+    hasAutoStartedCameraRef.current = true;
+    void startCamera();
   }, []);
 
   function replacePhotos(nextPhotos: CapturedPhoto[]) {
@@ -138,6 +146,7 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
     stopCameraStream(streamRef.current);
     streamRef.current = null;
     setIsCameraReady(false);
+    setCanRetryCamera(false);
   }
 
   function handleLogout() {
@@ -146,6 +155,9 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
   }
 
   async function startCamera() {
+    setCanRetryCamera(false);
+    setMessage("カメラを準備しています。");
+
     try {
       stopCameraStream(streamRef.current);
       const stream = await requestCameraStream();
@@ -162,6 +174,7 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
       setMessage("撮影できます。最大3枚まで一時保持します。");
     } catch (error) {
       setIsCameraReady(false);
+      setCanRetryCamera(true);
       setMessage(
         error instanceof Error
           ? error.message
@@ -203,6 +216,7 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
           stopCameraStream(streamRef.current);
           streamRef.current = null;
           setIsCameraReady(false);
+          setCanRetryCamera(false);
           setStep("pick");
           setMessage("3枚の撮影が完了しました。ベストショットを1枚選んでください。");
           return;
@@ -235,6 +249,7 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
 
   function retakePhotos() {
     clearCaptureData();
+    hasAutoStartedCameraRef.current = true;
     setStep("capture");
     setMessage("一時保持データを破棄しました。撮り直せます。");
     void startCamera();
@@ -242,8 +257,10 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
 
   function cancelSession() {
     clearCaptureData();
+    hasAutoStartedCameraRef.current = true;
     setStep("capture");
     setMessage("キャンセルしました。写真データは残していません。");
+    void startCamera();
   }
 
   const canCapture = isCameraReady && photos.length < MAX_PHOTOS;
@@ -348,9 +365,11 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
       </div>
 
       <div className="toolbar">
-        <button className="action-button" type="button" onClick={startCamera}>
-          カメラ開始
-        </button>
+        {canRetryCamera && (
+          <button className="action-button" type="button" onClick={startCamera}>
+            カメラ開始
+          </button>
+        )}
         <button
           className="action-button"
           type="button"
