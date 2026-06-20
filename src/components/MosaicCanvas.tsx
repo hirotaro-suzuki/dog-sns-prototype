@@ -54,17 +54,14 @@ type TextBoxSize = "small" | "medium" | "large";
 type TextBox = {
   id: string;
   text: string;
-  x: number;
-  y: number;
+  point: PhotoPoint;
   size: TextBoxSize;
   color: string;
 };
 
 type TextDragSnapshot = {
   id: string;
-  point: CanvasPoint;
-  x: number;
-  y: number;
+  offset: PhotoPoint;
 };
 
 type EditMode = "adjust" | "mosaic" | "text";
@@ -394,19 +391,23 @@ function drawMosaicStrokes(
 
 function getTextBoxBounds(
   context: CanvasRenderingContext2D,
+  image: HTMLImageElement,
   textBox: TextBox
 ) {
+  const baseScale = getBaseImageScale(image);
   const fontSize = TEXT_FONT_SIZES[textBox.size];
   context.font = `700 ${fontSize}px Arial, sans-serif`;
   const metrics = context.measureText(textBox.text || "文字");
   const width = Math.max(metrics.width, 72);
   const height = fontSize + 18;
+  const localX = textBox.point.x * baseScale;
+  const localY = textBox.point.y * baseScale;
 
   return {
-    left: textBox.x - 14,
-    top: textBox.y - height + 6,
-    right: textBox.x + width + 14,
-    bottom: textBox.y + 12,
+    left: localX - 14,
+    top: localY - height + 6,
+    right: localX + width + 14,
+    bottom: localY + 12,
     width: width + 28,
     height,
   };
@@ -414,12 +415,27 @@ function getTextBoxBounds(
 
 function drawTextBoxes(
   context: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  transform: PhotoTransform,
   textBoxes: TextBox[],
   selectedTextBoxId: string | null,
   showSelection: boolean
 ) {
+  const baseScale = getBaseImageScale(image);
+  const width = image.naturalWidth * baseScale;
+  const height = image.naturalHeight * baseScale;
+
+  context.save();
+  context.translate(transform.x, transform.y);
+  context.rotate(transform.rotation);
+  context.scale(transform.scale, transform.scale);
+  context.translate(-width / 2, -height / 2);
+
   textBoxes.forEach((textBox) => {
     const fontSize = TEXT_FONT_SIZES[textBox.size];
+    const x = textBox.point.x * baseScale;
+    const y = textBox.point.y * baseScale;
+
     context.save();
     context.textAlign = "left";
     context.textBaseline = "alphabetic";
@@ -427,11 +443,11 @@ function drawTextBoxes(
     context.lineWidth = Math.max(5, Math.round(fontSize * 0.12));
     context.strokeStyle = textBox.color === "#111111" ? "rgba(255, 255, 255, 0.85)" : "rgba(0, 0, 0, 0.72)";
     context.fillStyle = textBox.color;
-    context.strokeText(textBox.text || "文字", textBox.x, textBox.y);
-    context.fillText(textBox.text || "文字", textBox.x, textBox.y);
+    context.strokeText(textBox.text || "文字", x, y);
+    context.fillText(textBox.text || "文字", x, y);
 
     if (showSelection && textBox.id === selectedTextBoxId) {
-      const bounds = getTextBoxBounds(context, textBox);
+      const bounds = getTextBoxBounds(context, image, textBox);
       context.setLineDash([12, 8]);
       context.lineWidth = 3;
       context.strokeStyle = "rgba(255, 255, 255, 0.95)";
@@ -441,22 +457,38 @@ function drawTextBoxes(
 
     context.restore();
   });
+
+  context.restore();
 }
 
 function findTextBoxAtPoint(
   context: CanvasRenderingContext2D,
+  image: HTMLImageElement,
   textBoxes: TextBox[],
-  point: CanvasPoint
+  point: CanvasPoint,
+  transform: PhotoTransform
 ) {
+  const photoPoint = transformCanvasPointToPhoto(image, transform, point);
+  if (!photoPoint) return null;
+
+  const baseScale = getBaseImageScale(image);
+  const localPoint = {
+    x: photoPoint.x * baseScale,
+    y: photoPoint.y * baseScale,
+  };
+
   for (let index = textBoxes.length - 1; index >= 0; index -= 1) {
-    const bounds = getTextBoxBounds(context, textBoxes[index]);
+    const bounds = getTextBoxBounds(context, image, textBoxes[index]);
     if (
-      point.x >= bounds.left &&
-      point.x <= bounds.right &&
-      point.y >= bounds.top &&
-      point.y <= bounds.bottom
+      localPoint.x >= bounds.left &&
+      localPoint.x <= bounds.right &&
+      localPoint.y >= bounds.top &&
+      localPoint.y <= bounds.bottom
     ) {
-      return textBoxes[index];
+      return {
+        textBox: textBoxes[index],
+        photoPoint,
+      };
     }
   }
 
@@ -541,6 +573,7 @@ export function MosaicCanvas({
     context.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     drawPhotoLayer(context, image, transformRef.current);
     drawMosaicStrokes(context, image, transformRef.current, strokesRef.current);
+    drawTextBoxes(context, image, transformRef.current, textBoxesRef.current, selectedTextBoxIdRef.current, showSelection);
     drawFixedFrame(
       context,
       store,
@@ -548,7 +581,6 @@ export function MosaicCanvas({
       logoImageRef.current,
       frameImageRef.current
     );
-    drawTextBoxes(context, textBoxesRef.current, selectedTextBoxIdRef.current, showSelection);
   }
 
   function syncTextBoxes(nextTextBoxes: TextBox[], nextSelectedId = selectedTextBoxIdRef.current) {
@@ -567,14 +599,12 @@ export function MosaicCanvas({
       nextMode === "mosaic"
         ? "モザイクモードです。隠したい場所を指でなぞってください。"
         : nextMode === "text"
-          ? "文字モードです。文字を追加し、文字の上を指で動かせます。"
+          ? "文字を選択中です。文字の上を指で動かせます。"
           : "写真調整モードです。写真だけを移動・拡大縮小・回転できます。"
     );
   }
 
   useEffect(() => {
-    if (completedImageUrl) return;
-
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -598,7 +628,7 @@ export function MosaicCanvas({
       setTextBoxes([]);
       setSelectedTextBoxId(null);
       renderCanvas();
-      setStatus("写真調整モードです。文字を入れる場合は文字ボタンを押してください。");
+      setStatus("写真調整モードです。文字を入れる場合は文字を追加してください。");
     };
 
     image.onerror = () => {
@@ -606,7 +636,7 @@ export function MosaicCanvas({
     };
 
     image.src = photo.objectUrl;
-  }, [photo.objectUrl, completedImageUrl]);
+  }, [photo.objectUrl]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -703,16 +733,23 @@ export function MosaicCanvas({
   }
 
   function addTextBox() {
+    const image = imageRef.current;
+    if (!image) return;
+
     if (textBoxesRef.current.length >= MAX_TEXT_BOXES) {
       setStatus(`文字は最大${MAX_TEXT_BOXES}個までです。`);
       return;
     }
 
+    const centerPoint = transformCanvasPointToPhoto(
+      image,
+      transformRef.current,
+      { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT / 2 }
+    ) ?? { x: image.naturalWidth / 2, y: image.naturalHeight / 2 };
     const textBox: TextBox = {
       id: createTextBoxId(),
       text: "",
-      x: 120,
-      y: 190 + textBoxesRef.current.length * 58,
+      point: centerPoint,
       size: "medium",
       color: "#ffffff",
     };
@@ -735,44 +772,51 @@ export function MosaicCanvas({
       textBoxesRef.current.filter((textBox) => textBox.id !== selectedId),
       null
     );
+    switchMode("adjust");
     setStatus("選択中の文字を削除しました。");
   }
 
   function startTextDrag(canvasPoint: CanvasPoint) {
     const context = canvasRef.current?.getContext("2d");
-    if (!context) return;
+    const image = imageRef.current;
+    if (!context || !image) return false;
 
-    const hitTextBox = findTextBoxAtPoint(context, textBoxesRef.current, canvasPoint);
-    if (!hitTextBox) {
-      selectedTextBoxIdRef.current = null;
-      setSelectedTextBoxId(null);
-      renderCanvas();
-      return;
+    const hit = findTextBoxAtPoint(context, image, textBoxesRef.current, canvasPoint, transformRef.current);
+    if (!hit) {
+      return false;
     }
 
-    selectedTextBoxIdRef.current = hitTextBox.id;
-    setSelectedTextBoxId(hitTextBox.id);
+    selectedTextBoxIdRef.current = hit.textBox.id;
+    setSelectedTextBoxId(hit.textBox.id);
     textDragRef.current = {
-      id: hitTextBox.id,
-      point: canvasPoint,
-      x: hitTextBox.x,
-      y: hitTextBox.y,
+      id: hit.textBox.id,
+      offset: {
+        x: hit.photoPoint.x - hit.textBox.point.x,
+        y: hit.photoPoint.y - hit.textBox.point.y,
+      },
     };
+    switchMode("text");
     renderCanvas();
+    return true;
   }
 
   function moveTextBox(canvasPoint: CanvasPoint) {
     const drag = textDragRef.current;
-    if (!drag) return;
+    const image = imageRef.current;
+    if (!drag || !image) return;
 
-    const dx = canvasPoint.x - drag.point.x;
-    const dy = canvasPoint.y - drag.point.y;
+    const photoPoint = transformCanvasPointToPhoto(image, transformRef.current, canvasPoint);
+    if (!photoPoint) return;
+
+    const nextPoint = {
+      x: Math.min(Math.max(photoPoint.x - drag.offset.x, 0), image.naturalWidth),
+      y: Math.min(Math.max(photoPoint.y - drag.offset.y, 0), image.naturalHeight),
+    };
     const nextTextBoxes = textBoxesRef.current.map((textBox) =>
       textBox.id === drag.id
         ? {
             ...textBox,
-            x: Math.min(Math.max(drag.x + dx, 24), CANVAS_WIDTH - 80),
-            y: Math.min(Math.max(drag.y + dy, 70), CANVAS_HEIGHT - 24),
+            point: nextPoint,
           }
         : textBox
     );
@@ -792,8 +836,8 @@ export function MosaicCanvas({
       return;
     }
 
-    if (editModeRef.current === "text") {
-      startTextDrag(getTouchPoint(canvas, event.touches[0]));
+    const canvasPoint = getTouchPoint(canvas, event.touches[0]);
+    if (event.touches.length === 1 && startTextDrag(canvasPoint)) {
       return;
     }
 
@@ -802,6 +846,9 @@ export function MosaicCanvas({
       ...geometry,
       transform: { ...transformRef.current },
     };
+    if (editModeRef.current !== "adjust") {
+      switchMode("adjust");
+    }
   }
 
   function handleTouchMove(event: TouchEvent<HTMLCanvasElement>) {
@@ -814,7 +861,7 @@ export function MosaicCanvas({
       return;
     }
 
-    if (editModeRef.current === "text") {
+    if (editModeRef.current === "text" && textDragRef.current) {
       moveTextBox(getTouchPoint(canvas, event.touches[0]));
       return;
     }
@@ -852,9 +899,9 @@ export function MosaicCanvas({
       return;
     }
 
-    if (editModeRef.current === "text") {
+    if (textDragRef.current) {
       textDragRef.current = null;
-      setStatus("文字の位置を調整しました。");
+      setStatus("文字の位置を調整しました。写真を動かすと文字も一緒に動きます。");
       return;
     }
 
@@ -986,13 +1033,6 @@ export function MosaicCanvas({
           onClick={() => switchMode("mosaic")}
         >
           モザイク
-        </button>
-        <button
-          className={`action-button ${editMode === "text" ? "" : "secondary"}`}
-          type="button"
-          onClick={() => switchMode("text")}
-        >
-          文字
         </button>
         <button className="action-button secondary" type="button" onClick={addTextBox} disabled={textBoxes.length >= MAX_TEXT_BOXES}>
           文字を追加
