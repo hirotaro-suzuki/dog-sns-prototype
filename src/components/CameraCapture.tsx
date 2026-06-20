@@ -16,7 +16,7 @@ import { phaseZeroStore } from "@/config/stores";
 import type { CaptureStaff, CaptureStore } from "@/types/captureContext";
 
 const MAX_PHOTOS = 3;
-const MAX_CAPTURE_EDGE = 2000;
+const MAX_CAPTURE_EDGE = 2400;
 const CAPTURE_JPEG_QUALITY = 0.9;
 
 type Step = "capture" | "pick" | "info" | "process";
