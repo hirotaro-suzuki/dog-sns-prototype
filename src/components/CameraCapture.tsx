@@ -16,6 +16,8 @@ import { phaseZeroStore } from "@/config/stores";
 import type { CaptureStaff, CaptureStore } from "@/types/captureContext";
 
 const MAX_PHOTOS = 3;
+const MAX_CAPTURE_EDGE = 2000;
+const CAPTURE_JPEG_QUALITY = 0.9;
 
 type Step = "capture" | "pick" | "info" | "process";
 
@@ -45,6 +47,19 @@ function getThemeStyle(store?: CaptureStore): CSSProperties | undefined {
     "--accent": store.themeColor,
     "--accent-dark": store.themeColor,
   } as CSSProperties;
+}
+
+function getCaptureSize(video: HTMLVideoElement) {
+  const sourceWidth = video.videoWidth || 1280;
+  const sourceHeight = video.videoHeight || 960;
+  const scale = Math.min(1, MAX_CAPTURE_EDGE / Math.max(sourceWidth, sourceHeight));
+
+  return {
+    sourceWidth,
+    sourceHeight,
+    width: Math.round(sourceWidth * scale),
+    height: Math.round(sourceHeight * scale),
+  };
 }
 
 function StoreSettingsSummary({ store, staff }: { store?: CaptureStore; staff?: CaptureStaff }) {
@@ -180,9 +195,10 @@ export function CameraCapture({ store, staffMembers = [], onBack, onLogout }: Ca
     const video = videoRef.current;
     if (!video || photosRef.current.length >= MAX_PHOTOS) return;
 
+    const { sourceWidth, sourceHeight, width, height } = getCaptureSize(video);
     const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth || 1280;
-    canvas.height = video.videoHeight || 960;
+    canvas.width = width;
+    canvas.height = height;
 
     const context = canvas.getContext("2d");
     if (!context) {
@@ -190,7 +206,7 @@ export function CameraCapture({ store, staffMembers = [], onBack, onLogout }: Ca
       return;
     }
 
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    context.drawImage(video, 0, 0, sourceWidth, sourceHeight, 0, 0, width, height);
 
     canvas.toBlob(
       (blob) => {
@@ -218,7 +234,7 @@ export function CameraCapture({ store, staffMembers = [], onBack, onLogout }: Ca
         setMessage(`${next.length}枚を一時保持中です。クラウドには送信していません。`);
       },
       "image/jpeg",
-      0.9
+      CAPTURE_JPEG_QUALITY
     );
   }
 
