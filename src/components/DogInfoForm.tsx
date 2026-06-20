@@ -2,36 +2,30 @@
 
 import type { CapturedPhoto } from "@/lib/imageStore";
 import type { CaptureStaff } from "@/types/captureContext";
-import type { DogInfo } from "@/types/dog";
 
 type DogInfoFormProps = {
   photo: CapturedPhoto;
-  dogInfo: DogInfo;
-  staff?: CaptureStaff;
-  onChange: (dogInfo: DogInfo) => void;
-  onConfirm: (dogInfo: DogInfo) => void;
+  staffMembers: CaptureStaff[];
+  selectedStaffId: string | null;
+  onStaffChange: (staffId: string) => void;
+  onConfirm: () => void;
   onBackToPhotos?: () => void;
   onCancel: () => void;
 };
 
 export function DogInfoForm({
   photo,
-  dogInfo,
-  staff,
-  onChange,
+  staffMembers,
+  selectedStaffId,
+  onStaffChange,
   onConfirm,
   onBackToPhotos,
   onCancel,
 }: DogInfoFormProps) {
-  function updateField(field: keyof DogInfo, value: string) {
-    onChange({
-      ...dogInfo,
-      [field]: value,
-    });
-  }
+  const selectedStaff = staffMembers.find((staff) => staff.id === selectedStaffId);
 
   return (
-    <section className="form-panel" aria-label="わんちゃん情報入力">
+    <section className="form-panel" aria-label="担当者選択">
       <div className="selected-preview">
         <img src={photo.objectUrl} alt="確定画像" />
       </div>
@@ -39,62 +33,43 @@ export function DogInfoForm({
       <div className="form-content">
         <div>
           <p className="eyebrow">Selected Photo</p>
-          <h2>わんちゃん情報</h2>
-          <p>写真を選び直しても、入力したわんちゃん情報は残ります。まだクラウド保存しません。</p>
+          <h2>担当者を選択</h2>
+          <p>この写真を担当したスタッフを選んでから、画像編集へ進みます。</p>
         </div>
 
-        {staff && (
-          <div className="login-summary compact-summary">
-            <p className="eyebrow">担当</p>
-            <p>{staff.displayName}</p>
-          </div>
-        )}
-
-        <div className="form-grid">
-          <label className="field-label">
-            <span>わんちゃんの名前</span>
-            <input
-              type="text"
-              name="dogName"
-              value={dogInfo.dogName}
-              placeholder="例: こむぎ"
-              autoComplete="off"
-              onChange={(event) => updateField("dogName", event.target.value)}
-            />
-          </label>
-
-          <label className="field-label">
-            <span>犬種</span>
-            <input
-              type="text"
-              name="dogBreed"
-              value={dogInfo.dogBreed}
-              placeholder="例: トイプードル"
-              autoComplete="off"
-              onChange={(event) => updateField("dogBreed", event.target.value)}
-            />
-          </label>
-
-          <label className="field-label">
-            <span>犬齢</span>
-            <input
-              type="text"
-              name="dogAge"
-              value={dogInfo.dogAge}
-              placeholder="例: 3歳"
-              autoComplete="off"
-              onChange={(event) => updateField("dogAge", event.target.value)}
-            />
-          </label>
+        <div className="login-summary compact-summary">
+          <p className="eyebrow">本日の担当</p>
+          {staffMembers.length > 0 ? (
+            <div className="staff-selector" aria-label="担当者選択">
+              {staffMembers.map((staff) => (
+                <button
+                  className={`staff-button ${staff.id === selectedStaffId ? "is-selected" : ""}`}
+                  key={staff.id}
+                  type="button"
+                  onClick={() => onStaffChange(staff.id)}
+                >
+                  {staff.displayName}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p>担当者が登録されていません。</p>
+          )}
+          <p>
+            {selectedStaff
+              ? `${selectedStaff.displayName} さんを選択中です。`
+              : "担当者を選択してください。"}
+          </p>
         </div>
 
         <div className="toolbar">
           <button
             className="action-button primary-wide"
             type="button"
-            onClick={() => onConfirm(dogInfo)}
+            disabled={!selectedStaff}
+            onClick={onConfirm}
           >
-            この内容で確定（画像加工へ）
+            画像編集へ進む
           </button>
           {onBackToPhotos && (
             <button className="action-button secondary" type="button" onClick={onBackToPhotos}>
