@@ -14,20 +14,14 @@ import {
 } from "@/lib/imageStore";
 import { phaseZeroStore } from "@/config/stores";
 import type { CaptureStaff, CaptureStore } from "@/types/captureContext";
-import type { DogInfo } from "@/types/dog";
 
 const MAX_PHOTOS = 3;
-const EMPTY_DOG_INFO: DogInfo = {
-  dogName: "",
-  dogBreed: "",
-  dogAge: "",
-};
 
 type Step = "capture" | "pick" | "info" | "process";
 
 type CameraCaptureProps = {
   store?: CaptureStore;
-  staff?: CaptureStaff;
+  staffMembers?: CaptureStaff[];
   onBack?: () => void;
   onLogout?: () => void;
 };
@@ -70,7 +64,7 @@ function StoreSettingsSummary({ store, staff }: { store?: CaptureStore; staff?: 
         </div>
         <div>
           <dt>担当者</dt>
-          <dd>{staff?.displayName ?? "未選択"}</dd>
+          <dd>{staff?.displayName ?? "写真選択後に選択"}</dd>
         </div>
         <div>
           <dt>テーマ色</dt>
@@ -89,7 +83,7 @@ function StoreSettingsSummary({ store, staff }: { store?: CaptureStore; staff?: 
   );
 }
 
-export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureProps) {
+export function CameraCapture({ store, staffMembers = [], onBack, onLogout }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const photosRef = useRef<CapturedPhoto[]>([]);
@@ -98,7 +92,7 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
   const [step, setStep] = useState<Step>("capture");
   const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<CapturedPhoto | null>(null);
-  const [dogInfo, setDogInfo] = useState<DogInfo>(EMPTY_DOG_INFO);
+  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [canRetryCamera, setCanRetryCamera] = useState(false);
   const [message, setMessage] = useState("カメラを準備しています。");
@@ -142,7 +136,7 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
       releaseCapturedPhoto(selectedPhotoRef.current);
     }
     replaceSelectedPhoto(null);
-    setDogInfo(EMPTY_DOG_INFO);
+    setSelectedStaffId(null);
     stopCameraStream(streamRef.current);
     streamRef.current = null;
     setIsCameraReady(false);
@@ -170,7 +164,6 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
 
       setIsCameraReady(true);
       setStep("capture");
-      setDogInfo(EMPTY_DOG_INFO);
       setMessage("撮影できます。最大3枚まで一時保持します。");
     } catch (error) {
       setIsCameraReady(false);
@@ -232,7 +225,7 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
   function selectPhoto(photo: CapturedPhoto) {
     replaceSelectedPhoto(photo);
     setStep("info");
-    setMessage("1枚を選びました。間違えた場合は写真選択へ戻れます。");
+    setMessage("1枚を選びました。担当者を選んでから画像編集へ進みます。");
   }
 
   function backToPhotoPicker() {
@@ -241,10 +234,10 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
     setMessage("3枚の候補写真を保持しています。別の写真を選び直せます。");
   }
 
-  function confirmDogInfo(nextDogInfo: DogInfo) {
-    setDogInfo(nextDogInfo);
+  function confirmStaff() {
+    if (!selectedStaff) return;
     setStep("process");
-    setMessage("入力内容を保持しました。Canvasで画像加工プレビューを作成します。");
+    setMessage("担当者を保持しました。Canvasで画像加工プレビューを作成します。");
   }
 
   function retakePhotos() {
@@ -266,6 +259,7 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
   const canCapture = isCameraReady && photos.length < MAX_PHOTOS;
   const displayStore = getDisplayStore(store);
   const themeStyle = getThemeStyle(store);
+  const selectedStaff = staffMembers.find((staff) => staff.id === selectedStaffId);
 
   if (step === "pick") {
     return (
@@ -293,10 +287,10 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
       <div className="camera-panel" style={themeStyle}>
         <DogInfoForm
           photo={selectedPhoto}
-          dogInfo={dogInfo}
-          staff={staff}
-          onChange={setDogInfo}
-          onConfirm={confirmDogInfo}
+          staffMembers={staffMembers}
+          selectedStaffId={selectedStaffId}
+          onStaffChange={setSelectedStaffId}
+          onConfirm={confirmStaff}
           onBackToPhotos={backToPhotoPicker}
           onCancel={cancelSession}
         />
@@ -317,9 +311,8 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
       <div className="camera-panel" style={themeStyle}>
         <MosaicCanvas
           photo={selectedPhoto}
-          dogInfo={dogInfo}
           store={store}
-          staff={staff}
+          staff={selectedStaff}
           onCancel={cancelSession}
           onBackToPhotos={backToPhotoPicker}
           onLogout={onLogout ? handleLogout : undefined}
@@ -335,7 +328,7 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
         <div>
           <p className="eyebrow">撮影店舗</p>
           <h2>{displayStore}</h2>
-          <p>{staff ? `担当: ${staff.displayName}` : "担当者未選択"}</p>
+          <p>担当者は写真を選んだ後に選択します。</p>
         </div>
         {onLogout && (
           <button className="action-button secondary" type="button" onClick={handleLogout}>
@@ -414,7 +407,7 @@ export function CameraCapture({ store, staff, onBack, onLogout }: CameraCaptureP
         </div>
       )}
 
-      <StoreSettingsSummary store={store} staff={staff} />
+      <StoreSettingsSummary store={store} staff={selectedStaff} />
     </div>
   );
 }
