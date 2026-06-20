@@ -578,3 +578,56 @@ p {
     max-height: 116px;
   }
 }
+
+@media print {
+  @page {
+    margin: 0;
+    size: 127mm 89mm landscape;
+  }
+
+  html,
+  body {
+    width: 127mm;
+    height: 89mm;
+    margin: 0;
+    padding: 0;
+    background: #ffffff;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .final-image-screen-panel,
+  .final-image-screen-panel * {
+    visibility: visible !important;
+  }
+
+  .app-shell,
+  .workspace,
+  .store-workspace,
+  .camera-panel,
+  .final-screen,
+  .final-image-panel,
+  .final-image-screen-panel {
+    display: block !important;
+    width: 127mm !important;
+    max-width: none !important;
+    height: 89mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+  }
+
+  .print-final-image {
+    display: block !important;
+    width: 127mm !important;
+    height: 89mm !important;
+    max-width: none !important;
+    object-fit: cover !important;
+    border-radius: 0 !important;
+  }
+}
