@@ -981,7 +981,7 @@ export function MosaicCanvas({
         </div>
 
         <div className="final-image-panel final-image-screen-panel">
-          <img src={completedImageUrl} alt="完成画像" />
+          <img className="print-final-image" src={completedImageUrl} alt="完成画像" />
         </div>
 
         <div className="toolbar">
