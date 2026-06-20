@@ -2,13 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { CameraCapture } from "@/components/CameraCapture";
-import type { StoreSession, StoreSessionStaff } from "@/types/storeSession";
+import type { StoreSession } from "@/types/storeSession";
 
 const STORE_SESSION_KEY = "dog-sns-store-session";
 
 export function StoreHome() {
   const [session, setSession] = useState<StoreSession | null>(null);
-  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
 
   useEffect(() => {
@@ -17,11 +16,9 @@ export function StoreHome() {
 
     try {
       const nextSession = JSON.parse(storedValue) as StoreSession;
-      const firstStaffId = nextSession.staffMembers[0]?.id ?? null;
       const shouldStartCapture = new URLSearchParams(window.location.search).get("start") === "capture";
       setSession(nextSession);
-      setSelectedStaffId(firstStaffId);
-      setIsCapturing(Boolean(shouldStartCapture && firstStaffId));
+      setIsCapturing(shouldStartCapture);
 
       if (shouldStartCapture) {
         window.history.replaceState(null, "", "/store");
@@ -34,7 +31,6 @@ export function StoreHome() {
   function handleLogout() {
     window.localStorage.removeItem(STORE_SESSION_KEY);
     setSession(null);
-    setSelectedStaffId(null);
     setIsCapturing(false);
     window.location.assign("/store/login");
   }
@@ -58,15 +54,11 @@ export function StoreHome() {
     );
   }
 
-  const selectedStaff = session.staffMembers.find(
-    (staff) => staff.id === selectedStaffId
-  );
-
   if (isCapturing) {
     return (
       <CameraCapture
         store={session.store}
-        staff={selectedStaff}
+        staffMembers={session.staffMembers}
         onBack={() => setIsCapturing(false)}
         onLogout={handleLogout}
       />
@@ -115,32 +107,10 @@ export function StoreHome() {
         </dl>
       </div>
 
-      <div className="login-summary">
-        <p className="eyebrow">本日の担当</p>
-        <div className="staff-selector" aria-label="担当者選択">
-          {session.staffMembers.map((staff: StoreSessionStaff) => (
-            <button
-              className={`staff-button ${staff.id === selectedStaffId ? "is-selected" : ""}`}
-              key={staff.id}
-              type="button"
-              onClick={() => setSelectedStaffId(staff.id)}
-            >
-              {staff.displayName}
-            </button>
-          ))}
-        </div>
-        <p>
-          {selectedStaff
-            ? `${selectedStaff.displayName} さんを選択中です。`
-            : "担当者を選択してください。"}
-        </p>
-      </div>
-
       <div className="toolbar">
         <button
           className="action-button primary-wide"
           type="button"
-          disabled={!selectedStaff}
           onClick={() => setIsCapturing(true)}
         >
           撮影へ進む
@@ -151,7 +121,7 @@ export function StoreHome() {
       </div>
 
       <p className="notice">
-        撮影データはまだクラウドへ保存しません。店舗設定と担当者情報を既存の撮影フローへ渡します。
+        担当者は写真を選んだ後に選択します。撮影データはまだクラウドへ保存しません。
       </p>
     </section>
   );
