@@ -215,6 +215,11 @@ p {
   color: #ffffff;
 }
 
+.compact-button {
+  min-height: 44px;
+  padding: 8px 12px;
+}
+
 .camera-stage {
   position: relative;
   overflow: hidden;
@@ -417,7 +422,8 @@ p {
   object-fit: cover;
 }
 
-.form-content {
+.form-content,
+.text-editor-panel {
   display: grid;
   gap: 18px;
   border: 1px solid var(--line);
@@ -447,6 +453,37 @@ p {
   background: #fffdf8;
   color: var(--foreground);
   padding: 10px 12px;
+}
+
+.segmented-control {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.color-selector {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.color-button {
+  min-height: 48px;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  color: #ffffff;
+  font-weight: 700;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
+}
+
+.color-button.is-selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.color-button[style*="17, 17, 17"],
+.color-button[style*="#111111"] {
+  color: #ffffff;
 }
 
 .canvas-frame {
@@ -514,7 +551,9 @@ p {
 
   .photo-grid,
   .form-grid,
-  .staff-selector {
+  .staff-selector,
+  .segmented-control,
+  .color-selector {
     grid-template-columns: 1fr;
   }
 
