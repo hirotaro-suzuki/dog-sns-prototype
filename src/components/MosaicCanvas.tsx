@@ -4,11 +4,9 @@ import { TouchEvent, useEffect, useRef, useState } from "react";
 import type { CapturedPhoto } from "@/lib/imageStore";
 import { phaseZeroStore } from "@/config/stores";
 import type { CaptureStaff, CaptureStore } from "@/types/captureContext";
-import type { DogInfo } from "@/types/dog";
 
 type MosaicCanvasProps = {
   photo: CapturedPhoto;
-  dogInfo: DogInfo;
   store?: CaptureStore;
   staff?: CaptureStaff;
   onCancel: () => void;
@@ -51,16 +49,57 @@ type MosaicStroke = {
   points: MosaicPoint[];
 };
 
-type EditMode = "adjust" | "mosaic";
+type TextBoxSize = "small" | "medium" | "large";
+
+type TextBox = {
+  id: string;
+  text: string;
+  x: number;
+  y: number;
+  size: TextBoxSize;
+  color: string;
+};
+
+type TextDragSnapshot = {
+  id: string;
+  point: CanvasPoint;
+  x: number;
+  y: number;
+};
+
+type EditMode = "adjust" | "mosaic" | "text";
 
 const CANVAS_WIDTH = 1270;
 const CANVAS_HEIGHT = 890;
 const MOSAIC_RADIUS = 52;
 const MOSAIC_SAMPLE_SIZE = 12;
 const FALLBACK_THEME_COLOR = "#176f62";
+const MAX_TEXT_BOXES = 8;
+const MAX_TEXT_LENGTH = 15;
+const TEXT_COLORS = [
+  { label: "白", value: "#ffffff" },
+  { label: "黒", value: "#111111" },
+  { label: "赤", value: "#d73a31" },
+  { label: "青", value: "#1d64d8" },
+  { label: "黄", value: "#f2c94c" },
+];
+const TEXT_SIZE_LABELS: Record<TextBoxSize, string> = {
+  small: "小",
+  medium: "中",
+  large: "大",
+};
+const TEXT_FONT_SIZES: Record<TextBoxSize, number> = {
+  small: 34,
+  medium: 46,
+  large: 58,
+};
 
 function createStrokeId() {
   return `stroke-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function createTextBoxId() {
+  return `text-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 function getTodayLabel() {
@@ -232,7 +271,6 @@ function drawPhotoLayer(
 
 function drawFixedFrame(
   context: CanvasRenderingContext2D,
-  dogInfo: DogInfo,
   store?: CaptureStore,
   staff?: CaptureStaff,
   logoImage?: HTMLImageElement | null,
@@ -265,18 +303,6 @@ function drawFixedFrame(
   context.font = "700 38px Arial, sans-serif";
   context.textAlign = "right";
   context.fillText(getTodayLabel(), CANVAS_WIDTH - 56, 70);
-
-  context.textAlign = "left";
-  context.font = "700 44px Arial, sans-serif";
-  const nameLabel = dogInfo.dogName.trim() || "お名前未入力";
-  context.fillText(nameLabel, 56, CANVAS_HEIGHT - 92);
-
-  context.font = "500 30px Arial, sans-serif";
-  const detailLabel = [dogInfo.dogBreed, dogInfo.dogAge]
-    .map((value) => value.trim())
-    .filter(Boolean)
-    .join(" / ");
-  context.fillText(detailLabel || "犬種・犬齢未入力", 56, CANVAS_HEIGHT - 45);
 
   if (logoImage) {
     drawContainedImage(context, logoImage, CANVAS_WIDTH - 516, CANVAS_HEIGHT - 138, 460, 96);
@@ -366,6 +392,77 @@ function drawMosaicStrokes(
   });
 }
 
+function getTextBoxBounds(
+  context: CanvasRenderingContext2D,
+  textBox: TextBox
+) {
+  const fontSize = TEXT_FONT_SIZES[textBox.size];
+  context.font = `700 ${fontSize}px Arial, sans-serif`;
+  const metrics = context.measureText(textBox.text || "文字");
+  const width = Math.max(metrics.width, 72);
+  const height = fontSize + 18;
+
+  return {
+    left: textBox.x - 14,
+    top: textBox.y - height + 6,
+    right: textBox.x + width + 14,
+    bottom: textBox.y + 12,
+    width: width + 28,
+    height,
+  };
+}
+
+function drawTextBoxes(
+  context: CanvasRenderingContext2D,
+  textBoxes: TextBox[],
+  selectedTextBoxId: string | null,
+  showSelection: boolean
+) {
+  textBoxes.forEach((textBox) => {
+    const fontSize = TEXT_FONT_SIZES[textBox.size];
+    context.save();
+    context.textAlign = "left";
+    context.textBaseline = "alphabetic";
+    context.font = `700 ${fontSize}px Arial, sans-serif`;
+    context.lineWidth = Math.max(5, Math.round(fontSize * 0.12));
+    context.strokeStyle = textBox.color === "#111111" ? "rgba(255, 255, 255, 0.85)" : "rgba(0, 0, 0, 0.72)";
+    context.fillStyle = textBox.color;
+    context.strokeText(textBox.text || "文字", textBox.x, textBox.y);
+    context.fillText(textBox.text || "文字", textBox.x, textBox.y);
+
+    if (showSelection && textBox.id === selectedTextBoxId) {
+      const bounds = getTextBoxBounds(context, textBox);
+      context.setLineDash([12, 8]);
+      context.lineWidth = 3;
+      context.strokeStyle = "rgba(255, 255, 255, 0.95)";
+      context.strokeRect(bounds.left, bounds.top, bounds.width, bounds.height);
+      context.setLineDash([]);
+    }
+
+    context.restore();
+  });
+}
+
+function findTextBoxAtPoint(
+  context: CanvasRenderingContext2D,
+  textBoxes: TextBox[],
+  point: CanvasPoint
+) {
+  for (let index = textBoxes.length - 1; index >= 0; index -= 1) {
+    const bounds = getTextBoxBounds(context, textBoxes[index]);
+    if (
+      point.x >= bounds.left &&
+      point.x <= bounds.right &&
+      point.y >= bounds.top &&
+      point.y <= bounds.bottom
+    ) {
+      return textBoxes[index];
+    }
+  }
+
+  return null;
+}
+
 function StoreSettingsSummary({ store, staff }: { store?: CaptureStore; staff?: CaptureStaff }) {
   if (!store) return null;
 
@@ -404,7 +501,6 @@ function StoreSettingsSummary({ store, staff }: { store?: CaptureStore; staff?: 
 
 export function MosaicCanvas({
   photo,
-  dogInfo,
   store,
   staff,
   onCancel,
@@ -422,16 +518,21 @@ export function MosaicCanvas({
     rotation: 0,
   });
   const gestureRef = useRef<GestureSnapshot | null>(null);
+  const textDragRef = useRef<TextDragSnapshot | null>(null);
   const strokesRef = useRef<MosaicStroke[]>([]);
+  const textBoxesRef = useRef<TextBox[]>([]);
+  const selectedTextBoxIdRef = useRef<string | null>(null);
   const activeStrokeIdRef = useRef<string | null>(null);
   const editModeRef = useRef<EditMode>("adjust");
   const [editMode, setEditMode] = useState<EditMode>("adjust");
   const [strokeCount, setStrokeCount] = useState(0);
+  const [textBoxes, setTextBoxes] = useState<TextBox[]>([]);
+  const [selectedTextBoxId, setSelectedTextBoxId] = useState<string | null>(null);
   const [completedImageUrl, setCompletedImageUrl] = useState<string | null>(null);
   const [assetStatus, setAssetStatus] = useState("店舗ロゴ・フレームのURLを確認しています。");
   const [status, setStatus] = useState("Canvas加工を準備しています。");
 
-  function renderCanvas() {
+  function renderCanvas(showSelection = true) {
     const canvas = canvasRef.current;
     const context = canvas?.getContext("2d");
     const image = imageRef.current;
@@ -442,12 +543,21 @@ export function MosaicCanvas({
     drawMosaicStrokes(context, image, transformRef.current, strokesRef.current);
     drawFixedFrame(
       context,
-      dogInfo,
       store,
       staff,
       logoImageRef.current,
       frameImageRef.current
     );
+    drawTextBoxes(context, textBoxesRef.current, selectedTextBoxIdRef.current, showSelection);
+  }
+
+  function syncTextBoxes(nextTextBoxes: TextBox[], nextSelectedId = selectedTextBoxIdRef.current) {
+    textBoxesRef.current = nextTextBoxes;
+    selectedTextBoxIdRef.current = nextSelectedId;
+    setTextBoxes(nextTextBoxes);
+    setSelectedTextBoxId(nextSelectedId);
+    setCompletedImageUrl(null);
+    renderCanvas();
   }
 
   function switchMode(nextMode: EditMode) {
@@ -456,7 +566,9 @@ export function MosaicCanvas({
     setStatus(
       nextMode === "mosaic"
         ? "モザイクモードです。隠したい場所を指でなぞってください。"
-        : "写真調整モードです。写真だけを移動・拡大縮小・回転できます。"
+        : nextMode === "text"
+          ? "文字モードです。文字を追加し、文字の上を指で動かせます。"
+          : "写真調整モードです。写真だけを移動・拡大縮小・回転できます。"
     );
   }
 
@@ -479,10 +591,14 @@ export function MosaicCanvas({
         rotation: 0,
       };
       strokesRef.current = [];
+      textBoxesRef.current = [];
+      selectedTextBoxIdRef.current = null;
       activeStrokeIdRef.current = null;
       setStrokeCount(0);
+      setTextBoxes([]);
+      setSelectedTextBoxId(null);
       renderCanvas();
-      setStatus("写真調整モードです。モザイクが必要な場合はモザイクボタンを押してください。");
+      setStatus("写真調整モードです。文字を入れる場合は文字ボタンを押してください。");
     };
 
     image.onerror = () => {
@@ -525,7 +641,7 @@ export function MosaicCanvas({
     if (!completedImageUrl) {
       renderCanvas();
     }
-  }, [dogInfo, store, staff, completedImageUrl]);
+  }, [store, staff, completedImageUrl]);
 
   function createMosaicPoint(canvasPoint: CanvasPoint): MosaicPoint | null {
     const image = imageRef.current;
@@ -586,6 +702,86 @@ export function MosaicCanvas({
     renderCanvas();
   }
 
+  function addTextBox() {
+    if (textBoxesRef.current.length >= MAX_TEXT_BOXES) {
+      setStatus(`文字は最大${MAX_TEXT_BOXES}個までです。`);
+      return;
+    }
+
+    const textBox: TextBox = {
+      id: createTextBoxId(),
+      text: "",
+      x: 120,
+      y: 190 + textBoxesRef.current.length * 58,
+      size: "medium",
+      color: "#ffffff",
+    };
+    switchMode("text");
+    syncTextBoxes([...textBoxesRef.current, textBox], textBox.id);
+    setStatus("文字を追加しました。15文字以内で入力し、文字の上を指で動かせます。");
+  }
+
+  function updateTextBox(id: string, nextValues: Partial<TextBox>) {
+    const nextTextBoxes = textBoxesRef.current.map((textBox) =>
+      textBox.id === id ? { ...textBox, ...nextValues } : textBox
+    );
+    syncTextBoxes(nextTextBoxes, id);
+  }
+
+  function deleteSelectedTextBox() {
+    const selectedId = selectedTextBoxIdRef.current;
+    if (!selectedId) return;
+    syncTextBoxes(
+      textBoxesRef.current.filter((textBox) => textBox.id !== selectedId),
+      null
+    );
+    setStatus("選択中の文字を削除しました。");
+  }
+
+  function startTextDrag(canvasPoint: CanvasPoint) {
+    const context = canvasRef.current?.getContext("2d");
+    if (!context) return;
+
+    const hitTextBox = findTextBoxAtPoint(context, textBoxesRef.current, canvasPoint);
+    if (!hitTextBox) {
+      selectedTextBoxIdRef.current = null;
+      setSelectedTextBoxId(null);
+      renderCanvas();
+      return;
+    }
+
+    selectedTextBoxIdRef.current = hitTextBox.id;
+    setSelectedTextBoxId(hitTextBox.id);
+    textDragRef.current = {
+      id: hitTextBox.id,
+      point: canvasPoint,
+      x: hitTextBox.x,
+      y: hitTextBox.y,
+    };
+    renderCanvas();
+  }
+
+  function moveTextBox(canvasPoint: CanvasPoint) {
+    const drag = textDragRef.current;
+    if (!drag) return;
+
+    const dx = canvasPoint.x - drag.point.x;
+    const dy = canvasPoint.y - drag.point.y;
+    const nextTextBoxes = textBoxesRef.current.map((textBox) =>
+      textBox.id === drag.id
+        ? {
+            ...textBox,
+            x: Math.min(Math.max(drag.x + dx, 24), CANVAS_WIDTH - 80),
+            y: Math.min(Math.max(drag.y + dy, 70), CANVAS_HEIGHT - 24),
+          }
+        : textBox
+    );
+    textBoxesRef.current = nextTextBoxes;
+    setTextBoxes(nextTextBoxes);
+    setCompletedImageUrl(null);
+    renderCanvas();
+  }
+
   function handleTouchStart(event: TouchEvent<HTMLCanvasElement>) {
     event.preventDefault();
     const canvas = canvasRef.current;
@@ -593,6 +789,11 @@ export function MosaicCanvas({
 
     if (editModeRef.current === "mosaic") {
       startMosaicStroke(getTouchPoint(canvas, event.touches[0]));
+      return;
+    }
+
+    if (editModeRef.current === "text") {
+      startTextDrag(getTouchPoint(canvas, event.touches[0]));
       return;
     }
 
@@ -610,6 +811,11 @@ export function MosaicCanvas({
 
     if (editModeRef.current === "mosaic") {
       appendMosaicPoint(getTouchPoint(canvas, event.touches[0]));
+      return;
+    }
+
+    if (editModeRef.current === "text") {
+      moveTextBox(getTouchPoint(canvas, event.touches[0]));
       return;
     }
 
@@ -643,6 +849,12 @@ export function MosaicCanvas({
     if (editModeRef.current === "mosaic") {
       activeStrokeIdRef.current = null;
       setStatus(`${strokesRef.current.length}か所のモザイクを追加しました。`);
+      return;
+    }
+
+    if (editModeRef.current === "text") {
+      textDragRef.current = null;
+      setStatus("文字の位置を調整しました。");
       return;
     }
 
@@ -681,7 +893,7 @@ export function MosaicCanvas({
   }
 
   function finalizeImage() {
-    renderCanvas();
+    renderCanvas(false);
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -694,6 +906,8 @@ export function MosaicCanvas({
       setStatus("完成画像を作成できませんでした。ロゴまたはフレーム画像の読み込み設定を確認してください。");
     }
   }
+
+  const selectedTextBox = textBoxes.find((textBox) => textBox.id === selectedTextBoxId);
 
   if (completedImageUrl) {
     return (
@@ -744,7 +958,7 @@ export function MosaicCanvas({
       <div className="section-heading compact-section-heading">
         <p className="eyebrow">Canvas Preview</p>
         <h2>画像加工プレビュー</h2>
-        <p>写真位置を調整し、必要な場所だけ手動でモザイクを追加できます。</p>
+        <p>写真位置を調整し、必要な場所だけモザイクや文字を追加できます。</p>
       </div>
 
       <div className={`canvas-frame ${editMode === "mosaic" ? "is-mosaic-mode" : ""}`}>
@@ -773,6 +987,16 @@ export function MosaicCanvas({
         >
           モザイク
         </button>
+        <button
+          className={`action-button ${editMode === "text" ? "" : "secondary"}`}
+          type="button"
+          onClick={() => switchMode("text")}
+        >
+          文字
+        </button>
+        <button className="action-button secondary" type="button" onClick={addTextBox} disabled={textBoxes.length >= MAX_TEXT_BOXES}>
+          文字を追加
+        </button>
         <button className="action-button secondary" type="button" onClick={undoLastMosaic} disabled={strokeCount === 0}>
           直前のモザイクを戻す
         </button>
@@ -796,6 +1020,53 @@ export function MosaicCanvas({
           </button>
         )}
       </div>
+
+      {selectedTextBox && (
+        <div className="text-editor-panel" aria-label="選択中の文字編集">
+          <label className="field-label">
+            <span>文字 あと{MAX_TEXT_LENGTH - selectedTextBox.text.length}文字</span>
+            <input
+              type="text"
+              value={selectedTextBox.text}
+              maxLength={MAX_TEXT_LENGTH}
+              autoComplete="off"
+              placeholder="例: こむぎ 3才 オス"
+              onChange={(event) => updateTextBox(selectedTextBox.id, { text: event.target.value.slice(0, MAX_TEXT_LENGTH) })}
+            />
+          </label>
+
+          <div className="segmented-control" aria-label="文字の大きさ">
+            {Object.entries(TEXT_SIZE_LABELS).map(([size, label]) => (
+              <button
+                className={`staff-button compact-button ${selectedTextBox.size === size ? "is-selected" : ""}`}
+                key={size}
+                type="button"
+                onClick={() => updateTextBox(selectedTextBox.id, { size: size as TextBoxSize })}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="color-selector" aria-label="文字色">
+            {TEXT_COLORS.map((color) => (
+              <button
+                className={`color-button ${selectedTextBox.color === color.value ? "is-selected" : ""}`}
+                key={color.value}
+                type="button"
+                style={{ backgroundColor: color.value }}
+                onClick={() => updateTextBox(selectedTextBox.id, { color: color.value })}
+              >
+                <span>{color.label}</span>
+              </button>
+            ))}
+          </div>
+
+          <button className="action-button danger" type="button" onClick={deleteSelectedTextBox}>
+            文字を削除
+          </button>
+        </div>
+      )}
 
       <StoreSettingsSummary store={store} staff={staff} />
       <p className="notice">{assetStatus}</p>
