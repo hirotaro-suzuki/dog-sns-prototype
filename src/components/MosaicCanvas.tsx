@@ -564,11 +564,24 @@ export function MosaicCanvas({
   const [assetStatus, setAssetStatus] = useState("店舗ロゴ・フレームのURLを確認しています。");
   const [status, setStatus] = useState("Canvas加工を準備しています。");
 
+  function prepareCanvas() {
+    const canvas = canvasRef.current;
+    if (!canvas) return false;
+
+    canvas.width = CANVAS_WIDTH;
+    canvas.height = CANVAS_HEIGHT;
+    return true;
+  }
+
   function renderCanvas(showSelection = true) {
     const canvas = canvasRef.current;
     const context = canvas?.getContext("2d");
     const image = imageRef.current;
     if (!canvas || !context || !image) return;
+
+    if (canvas.width !== CANVAS_WIDTH || canvas.height !== CANVAS_HEIGHT) {
+      prepareCanvas();
+    }
 
     context.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     drawPhotoLayer(context, image, transformRef.current);
@@ -605,11 +618,7 @@ export function MosaicCanvas({
   }
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    canvas.width = CANVAS_WIDTH;
-    canvas.height = CANVAS_HEIGHT;
+    if (!prepareCanvas()) return;
 
     const image = new Image();
     image.onload = () => {
@@ -637,6 +646,12 @@ export function MosaicCanvas({
 
     image.src = photo.objectUrl;
   }, [photo.objectUrl]);
+
+  useEffect(() => {
+    if (completedImageUrl) return;
+    if (!prepareCanvas()) return;
+    renderCanvas();
+  }, [completedImageUrl]);
 
   useEffect(() => {
     let isCancelled = false;
