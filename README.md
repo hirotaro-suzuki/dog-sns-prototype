@@ -14,26 +14,12 @@
 
 ## Codex新スレッド開始時の指示
 
-新しいCodexスレッドで作業を再開するときは、最初に以下を伝える。
-
-```text
-GitHub の hirotaro-suzuki/dog-sns-prototype の main が最新版です。
-まず GitHub 上の README.md と dog_sns_design.md を必ず読んでください。
-dog_sns_design.md が現時点の設計・開発方針の正本です。
-必要に応じて docs/ownership-handoff.md と docs/session-2026-06-20.md も読んでください。
-このプロジェクトは GitHub、Vercel、Supabase を正として進めます。
-Codex は GitHub の main を正として作業してください。
-私は73歳の素人で、バイブコーディングにチャレンジ中です。
-できる限り、SQL確認、GitHub確認、Vercel確認、コード修正、手順整理などはCodex側で進めてください。
-私が画面操作しないと進められない場合だけ、専門用語を減らして一歩ずつ案内してください。
-各セッションの終わりや区切りでは、作業内容の記録に加えて、気づいた点や次に良くなる提案を1つ以上ください。
-先走って実装せず、読んだ内容と次に進む候補を確認してから止まってください。
-```
+次のCodexスレッドで作業を再開するときは、`docs/next-thread-start.md` の指示文を最初に貼る。
 
 短く伝える場合は以下でもよい。
 
 ```text
-hirotaro-suzuki/dog-sns-prototype の GitHub main を正として、README.md と dog_sns_design.md を必ず読んで続きから。dog_sns_design.md が現在の設計書です。私は73歳の素人なので、できる限りCodex側で進めて。各セッションで気づいた点や提案も添えて。先走らないで。
+hirotaro-suzuki/dog-sns-prototype の GitHub main を正として、README.md と dog_sns_design.md を必ず読んで続きから。dog_sns_design.md が現在の設計書です。クラウド中心、引き継ぎやすさ優先、Codex一本で進める方針です。次は完成画像のSupabase保存とassets登録へ進む予定ですが、先走らず、読んだ内容と次に進む候補を確認してから止まってください。私は73歳の素人なので、できる限りCodex側で進め、必要な画面操作だけ専門用語を減らして案内してください。
 ```
 
 ## 現在できていること
@@ -96,6 +82,7 @@ VercelでこのGitHubリポジトリをImportしてください。
 
 ## 重要ドキュメント
 
+- 次スレッド開始時の指示文: `docs/next-thread-start.md`
 - 現在の設計・開発方針の正本: `dog_sns_design.md`
 - 直近の作業ログ: `docs/session-2026-06-20.md`
 - Supabaseセットアップ手順: `supabase/README.md`
