@@ -584,6 +584,9 @@ export function MosaicCanvas({
   const [textBoxes, setTextBoxes] = useState<TextBox[]>([]);
   const [selectedTextBoxId, setSelectedTextBoxId] = useState<string | null>(null);
   const [completedImageUrl, setCompletedImageUrl] = useState<string | null>(null);
+  const [printedAt, setPrintedAt] = useState<string | null>(null);
+  const [isSavingAsset, setIsSavingAsset] = useState(false);
+  const [savedAssetCode, setSavedAssetCode] = useState<string | null>(null);
   const [assetStatus, setAssetStatus] = useState("店舗ロゴ・フレームのURLを確認しています。");
   const [status, setStatus] = useState("Canvas加工を準備しています。");
 
@@ -1001,10 +1004,62 @@ export function MosaicCanvas({
     try {
       const nextUrl = canvas.toDataURL("image/jpeg", 0.92);
       setCompletedImageUrl(nextUrl);
+      setPrintedAt(null);
+      setSavedAssetCode(null);
       setStatus("完成画像を作成しました。次の段階ではこの画像を印刷・保存に使います。");
     } catch {
       setCompletedImageUrl(null);
       setStatus("完成画像を作成できませんでした。ロゴまたはフレーム画像の読み込み設定を確認してください。");
+    }
+  }
+
+  function handlePrintFinalImage() {
+    setPrintedAt(new Date().toISOString());
+    window.print();
+  }
+
+  async function saveFinalImage() {
+    if (!completedImageUrl || !store || !staff) {
+      setStatus("店舗または担当者を確認できないため保存できません。");
+      return;
+    }
+
+    setIsSavingAsset(true);
+    setStatus("完成画像をクラウドへ保存しています。");
+
+    try {
+      const response = await fetch("/api/assets", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          storeId: store.id,
+          staffId: staff.id,
+          finalImageDataUrl: completedImageUrl,
+          printedAt,
+        }),
+      });
+      const result = (await response.json()) as {
+        message?: string;
+        detail?: string;
+        manageCode?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error([result.message, result.detail].filter(Boolean).join(" / "));
+      }
+
+      setSavedAssetCode(result.manageCode ?? "保存済み");
+      setStatus(`保存しました。管理コード: ${result.manageCode ?? "確認中"}`);
+    } catch (error) {
+      setStatus(
+        error instanceof Error
+          ? error.message
+          : "完成画像を保存できませんでした。"
+      );
+    } finally {
+      setIsSavingAsset(false);
     }
   }
 
@@ -1052,9 +1107,21 @@ export function MosaicCanvas({
           <button
             className="action-button primary-wide"
             type="button"
-            onClick={() => window.print()}
+            onClick={handlePrintFinalImage}
           >
             印刷
+          </button>
+          <button
+            className="action-button primary-wide"
+            type="button"
+            onClick={saveFinalImage}
+            disabled={isSavingAsset || Boolean(savedAssetCode) || !store || !staff}
+          >
+            {isSavingAsset
+              ? "保存中"
+              : savedAssetCode
+                ? "保存済み"
+                : "SNS掲載OKをもらったので保存"}
           </button>
           <button className="action-button secondary" type="button" onClick={() => setCompletedImageUrl(null)}>
             編集へ戻る
@@ -1074,7 +1141,12 @@ export function MosaicCanvas({
           )}
         </div>
 
-        <p className="notice">完成画像はまだクラウドへ保存していません。</p>
+        <p className="notice">
+          {savedAssetCode
+            ? `クラウドへ保存済みです。管理コード: ${savedAssetCode}`
+            : "印刷後、お客様からSNS掲載OKをもらった完成画像だけクラウドへ保存してください。"}
+        </p>
+        <p className="notice">{status}</p>
       </section>
     );
   }

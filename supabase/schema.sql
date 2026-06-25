@@ -1,6 +1,6 @@
 -- Supabase schema for dog-sns-prototype
 -- Apply manually from the Supabase SQL editor after reviewing.
--- This file defines the first operational data model only; it does not upload photos or enable SNS posting.
+-- GitHub main is the source of truth for this schema.
 
 create extension if not exists pgcrypto;
 
@@ -13,6 +13,15 @@ begin
   return new;
 end;
 $$;
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values
+  ('final-images', 'final-images', true, 10485760, array['image/jpeg']),
+  ('store-assets', 'store-assets', true, 10485760, array['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp'])
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
 
 create table if not exists public.stores (
   id uuid primary key default gen_random_uuid(),
@@ -99,15 +108,14 @@ create table if not exists public.assets (
   store_display_name text not null,
   staff_id uuid references public.staff_members(id) on delete set null,
   staff_display_name text,
+  captured_at timestamptz not null default now(),
   captured_date date not null,
   sequence_number integer not null,
-  dog_name text not null,
-  dog_breed text,
-  dog_age text,
-  staff_comment text,
   sns_consent boolean not null default true,
   mosaic_required boolean not null default false,
   final_processed_url text not null,
+  final_storage_bucket text not null default 'final-images',
+  final_storage_path text not null,
   frame_url_snapshot text,
   logo_url_snapshot text,
   theme_color_snapshot text,
@@ -115,11 +123,12 @@ create table if not exists public.assets (
   printed_at timestamptz,
   consent_confirmed_at timestamptz,
   status text not null default 'ready',
+  saved_at timestamptz not null default now(),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint assets_sequence_number_positive check (sequence_number > 0),
-  constraint assets_dog_name_not_blank check (length(trim(dog_name)) > 0),
   constraint assets_final_processed_url_not_blank check (length(trim(final_processed_url)) > 0),
+  constraint assets_final_storage_path_not_blank check (length(trim(final_storage_path)) > 0),
   constraint assets_status_allowed check (status in ('ready', 'archived')),
   constraint assets_store_date_sequence_unique unique (store_id, captured_date, sequence_number),
   constraint assets_theme_color_snapshot_format check (

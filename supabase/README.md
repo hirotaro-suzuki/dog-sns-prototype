@@ -4,13 +4,46 @@
 
 ## 適用順
 
-Supabase SQL Editorで、以下の順番で実行する。
+新規Supabaseプロジェクトでは、Supabase SQL Editorで以下の順番で実行する。
 
 1. `schema.sql`
 2. `seed.example.sql`
 
 `schema.sql` はテーブル、制約、インデックス、updated_atトリガー、RLS有効化、サーバー用APIキーからのテーブル操作権限を作成する。
 `seed.example.sql` はログイン動作確認用のデモ店舗とデモ担当者を作成する。
+
+既に古い `schema.sql` を適用済みのSupabaseプロジェクトでは、以下を実行する。
+
+```text
+supabase/migrations/20260625_assets_storage_handoff.sql
+```
+
+このmigrationは、現在の方針に合わせて以下を行う。
+
+- `final-images` bucketを作成する
+- `store-assets` bucketを作成する
+- `assets` に `captured_at`、`saved_at`、`final_storage_bucket`、`final_storage_path` を追加する
+- 犬情報項目を必須ではなくす
+
+詳しい引き継ぎメモは `docs/supabase-handoff.md` を読む。
+
+## Storage bucket
+
+現在使うStorage bucketは2つ。
+
+```text
+final-images
+```
+
+印刷後にSNS掲載OKをもらった完成画像だけを保存する。
+
+```text
+store-assets
+```
+
+店舗ロゴ、写真フレームなどを保存する。
+
+店舗マスタ `stores.logo_url` と `stores.frame_url` には、`store-assets` に置いた画像の公開URLを登録する。
 
 ## 既にschema.sqlを適用済みで権限エラーが出る場合
 
@@ -70,6 +103,7 @@ PIN: 0000
 - 本番PINは `scripts/create-store-pin-hash.mjs` でハッシュ化してからSupabaseへ登録する。
 - 店舗や担当者を削除したい場合も、原則として物理削除ではなく `is_active = false` にする。
 - ロゴやフレームはSupabase Storageなど、引き渡し先が管理できる場所に置く。
+- ワンチャン情報はDB項目として保存せず、完成画像に焼き込まれた文字を正とする。
 
 ## Vercel環境変数
 

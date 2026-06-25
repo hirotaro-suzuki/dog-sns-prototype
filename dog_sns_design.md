@@ -112,8 +112,9 @@ Vercel上のプロトタイプで、以下の流れが動作している。
 17. 完成画像確認画面から編集へ戻っても、写真サイズが崩れない
 18. 印刷ボタンでブラウザ標準の印刷画面を開く
 19. 印刷時は完成画像だけをL版横向き想定で出力する
+20. 完成画像確認画面から、SNS掲載OKをもらった完成画像をSupabase StorageとDBへ保存できる
 
-現在は、完成画像のSupabase Storage保存と `assets` テーブルへの登録はまだ実装途中または未実装である。次の主要テーマはここに進む。
+完成画像保存を使うには、Supabase側で現在の `schema.sql` または `supabase/migrations/20260625_assets_storage_handoff.sql` を適用する必要がある。
 
 ## 5. 現在の画面フロー
 
@@ -277,6 +278,8 @@ DBには、文字ボックスの内容や犬情報を個別項目として保存
 - `sns_consent`: SNS掲載の最終合意
 - `mosaic_required`: モザイク要否
 - `final_processed_url`: 完成画像URL
+- `final_storage_bucket`: 完成画像を保存したStorage bucket
+- `final_storage_path`: 完成画像を保存したStorage path
 - `frame_url_snapshot`: 保存時点の写真枠URL
 - `logo_url_snapshot`: 保存時点のロゴURL
 - `theme_color_snapshot`: 保存時点のテーマカラー
@@ -297,6 +300,8 @@ DBには、文字ボックスの内容や犬情報を個別項目として保存
 既存テーブルや既存SQLにこれらの項目が残っている場合は、次のDB保存実装前に整理する。削除するか、互換性のため任意項目として残すかは、実際のSupabase状態を確認してから決める。
 
 完成画像は、印刷後にお客様からSNS掲載OKをもらえた場合だけ保存する。未許諾写真、ボツ写真、途中データは保存しない。
+
+完成画像本体はSupabase Storageの `final-images` bucketへ保存する。店舗ロゴや写真フレームは `store-assets` bucketへ保存し、`stores.logo_url` と `stores.frame_url` に公開URLを登録する。
 
 ### admin_users
 
