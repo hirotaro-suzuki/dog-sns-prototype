@@ -1107,13 +1107,6 @@ export function MosaicCanvas({
           <button
             className="action-button primary-wide"
             type="button"
-            onClick={handlePrintFinalImage}
-          >
-            印刷
-          </button>
-          <button
-            className="action-button primary-wide"
-            type="button"
             onClick={saveFinalImage}
             disabled={isSavingAsset || Boolean(savedAssetCode) || !store || !staff}
           >
@@ -1121,7 +1114,14 @@ export function MosaicCanvas({
               ? "保存中"
               : savedAssetCode
                 ? "保存済み"
-                : "SNS掲載OKをもらったので保存"}
+                : "保存"}
+          </button>
+          <button
+            className="action-button primary-wide"
+            type="button"
+            onClick={handlePrintFinalImage}
+          >
+            印刷
           </button>
           <button className="action-button secondary" type="button" onClick={() => setCompletedImageUrl(null)}>
             編集へ戻る
@@ -1144,7 +1144,7 @@ export function MosaicCanvas({
         <p className="notice">
           {savedAssetCode
             ? `クラウドへ保存済みです。管理コード: ${savedAssetCode}`
-            : "印刷後、お客様からSNS掲載OKをもらった完成画像だけクラウドへ保存してください。"}
+            : "お客様からSNS掲載OKをもらった完成画像だけクラウドへ保存してください。"}
         </p>
         <p className="notice">{status}</p>
       </section>
