@@ -70,6 +70,7 @@ type AssetInsert = {
   dog_breed?: string | null;
   dog_age?: string | null;
   staff_comment?: string | null;
+  description?: string | null;
   sns_consent?: boolean;
   mosaic_required?: boolean;
   final_processed_url: string;
@@ -81,6 +82,8 @@ type AssetInsert = {
   print_template_type_snapshot?: string | null;
   printed_at?: string | null;
   consent_confirmed_at?: string | null;
+  hidden_at?: string | null;
+  hidden_reason?: string | null;
   status?: "ready" | "archived";
   saved_at?: string;
   created_at?: string;
@@ -178,6 +181,7 @@ export type Database = {
           dog_breed: string | null;
           dog_age: string | null;
           staff_comment: string | null;
+          description: string | null;
           sns_consent: boolean;
           mosaic_required: boolean;
           final_processed_url: string;
@@ -189,6 +193,8 @@ export type Database = {
           print_template_type_snapshot: string | null;
           printed_at: string | null;
           consent_confirmed_at: string | null;
+          hidden_at: string | null;
+          hidden_reason: string | null;
           status: "ready" | "archived";
           saved_at: string;
           created_at: string;

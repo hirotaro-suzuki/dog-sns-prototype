@@ -23,6 +23,7 @@ supabase/migrations/20260625_assets_storage_handoff.sql
 - `final-images` bucketを作成する
 - `store-assets` bucketを作成する
 - `assets` に `captured_at`、`saved_at`、`final_storage_bucket`、`final_storage_path` を追加する
+- `assets` に `description`、`hidden_at`、`hidden_reason` を追加する
 - 犬情報項目を必須ではなくす
 
 詳しい引き継ぎメモは `docs/supabase-handoff.md` を読む。
@@ -113,6 +114,8 @@ PIN: 0000
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY
+ADMIN_MAINTENANCE_PIN
 ```
 
 `SUPABASE_SERVICE_ROLE_KEY` はサーバー側だけで使う。ブラウザに出してはいけない。
+`ADMIN_MAINTENANCE_PIN` は本部用 `/admin` を開くための簡易PINである。

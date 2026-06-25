@@ -15,7 +15,10 @@ alter table public.assets
   add column if not exists captured_at timestamptz not null default now(),
   add column if not exists final_storage_bucket text not null default 'final-images',
   add column if not exists final_storage_path text,
-  add column if not exists saved_at timestamptz not null default now();
+  add column if not exists saved_at timestamptz not null default now(),
+  add column if not exists description text,
+  add column if not exists hidden_at timestamptz,
+  add column if not exists hidden_reason text;
 
 update public.assets
 set final_storage_path = coalesce(
@@ -43,3 +46,6 @@ alter table public.assets
 comment on column public.assets.dog_name is 'Deprecated. Dog information is now burned into the final image as free text.';
 comment on column public.assets.dog_breed is 'Deprecated. Dog information is now burned into the final image as free text.';
 comment on column public.assets.dog_age is 'Deprecated. Dog information is now burned into the final image as free text.';
+comment on column public.assets.description is 'Headquarters-maintained note for the finished image. SNS post drafts will be managed separately.';
+comment on column public.assets.hidden_at is 'Set when headquarters hides the image from normal maintenance lists.';
+comment on column public.assets.hidden_reason is 'Optional headquarters note explaining why the image was hidden.';
