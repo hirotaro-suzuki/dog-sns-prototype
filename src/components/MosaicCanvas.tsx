@@ -92,7 +92,6 @@ const TEXT_FONT_SIZES: Record<TextBoxSize, number> = {
   medium: 46,
   large: 58,
 };
-const TEXT_ROTATION_STEP = Math.PI / 18;
 
 function createStrokeId() {
   return `stroke-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -824,6 +823,13 @@ export function MosaicCanvas({
     setStatus("文字の編集を閉じました。文字を動かす場合は、もう一度文字を指で触って動かしてください。");
   }
 
+  function levelSelectedTextBox() {
+    const selectedId = selectedTextBoxIdRef.current;
+    if (!selectedId) return;
+    updateTextBox(selectedId, { rotation: -transformRef.current.rotation });
+    setStatus("選択中の文字を画面上で水平にしました。");
+  }
+
   function startTextDrag(canvasPoint: CanvasPoint) {
     const context = canvasRef.current?.getContext("2d");
     const image = imageRef.current;
@@ -1026,7 +1032,6 @@ export function MosaicCanvas({
     return {
       layerStyle,
       inputStyle,
-      rotationDegrees: Math.round((selectedTextBox.rotation * 180) / Math.PI),
     };
   })();
 
@@ -1117,32 +1122,9 @@ export function MosaicCanvas({
 
             <div className="canvas-text-control-panel" aria-label="選択中の文字編集">
               <div className="canvas-text-control-row">
-                <button
-                  className="mini-control-button"
-                  type="button"
-                  onClick={() =>
-                    updateTextBox(selectedTextBox.id, {
-                      rotation: selectedTextBox.rotation - TEXT_ROTATION_STEP,
-                    })
-                  }
-                >
-                  左回転
+                <button className="mini-control-button" type="button" onClick={levelSelectedTextBox}>
+                  水平
                 </button>
-                <span className="rotation-value">{selectedTextEditor.rotationDegrees}度</span>
-                <button
-                  className="mini-control-button"
-                  type="button"
-                  onClick={() =>
-                    updateTextBox(selectedTextBox.id, {
-                      rotation: selectedTextBox.rotation + TEXT_ROTATION_STEP,
-                    })
-                  }
-                >
-                  右回転
-                </button>
-              </div>
-
-              <div className="canvas-text-control-row">
                 {Object.entries(TEXT_SIZE_LABELS).map(([size, label]) => (
                   <button
                     className={`mini-control-button ${selectedTextBox.size === size ? "is-selected" : ""}`}
