@@ -816,6 +816,14 @@ export function MosaicCanvas({
     setStatus("選択中の文字を削除しました。");
   }
 
+  function clearSelectedTextBox() {
+    selectedTextBoxIdRef.current = null;
+    setSelectedTextBoxId(null);
+    switchMode("adjust");
+    renderCanvas();
+    setStatus("文字の編集を閉じました。文字を動かす場合は、もう一度文字を指で触って動かしてください。");
+  }
+
   function startTextDrag(canvasPoint: CanvasPoint) {
     const context = canvasRef.current?.getContext("2d");
     const image = imageRef.current;
@@ -1160,6 +1168,9 @@ export function MosaicCanvas({
                 ))}
                 <button className="mini-control-button danger" type="button" onClick={deleteSelectedTextBox}>
                   削除
+                </button>
+                <button className="mini-control-button" type="button" onClick={clearSelectedTextBox}>
+                  閉じる
                 </button>
               </div>
 
