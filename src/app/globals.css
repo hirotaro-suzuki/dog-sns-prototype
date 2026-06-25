@@ -682,6 +682,29 @@ p {
   gap: 10px;
 }
 
+.admin-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.admin-tabs button {
+  min-height: 50px;
+  min-width: 120px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffdf8;
+  color: var(--foreground);
+  font-weight: 700;
+  padding: 10px 18px;
+}
+
+.admin-tabs button.is-selected {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #ffffff;
+}
+
 .admin-main-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.85fr);
@@ -693,6 +716,60 @@ p {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
+}
+
+.admin-master-list {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-master-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 10px;
+  align-items: center;
+  min-height: 62px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--foreground);
+  padding: 12px;
+  text-align: left;
+  box-shadow: 0 10px 26px rgba(43, 34, 22, 0.1);
+}
+
+.admin-master-row.is-selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent), var(--shadow);
+}
+
+.admin-master-row.is-archived {
+  opacity: 0.66;
+}
+
+.admin-master-row span {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.admin-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-create-panel {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 14px;
+}
+
+.admin-create-panel h2 {
+  font-size: 22px;
+  margin-bottom: 0;
 }
 
 .admin-photo-card {
@@ -757,9 +834,21 @@ p {
   border: 1px solid var(--line);
 }
 
-.admin-edit-panel textarea {
+.admin-edit-panel textarea,
+.admin-create-panel textarea {
   width: 100%;
   resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffdf8;
+  color: var(--foreground);
+  padding: 10px 12px;
+}
+
+.field-label select,
+.field-label textarea {
+  width: 100%;
+  min-height: 52px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fffdf8;
@@ -790,7 +879,8 @@ p {
   .color-selector,
   .admin-date-row,
   .admin-main-grid,
-  .admin-photo-list {
+  .admin-photo-list,
+  .admin-form-grid {
     grid-template-columns: 1fr;
   }
 
