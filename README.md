@@ -19,7 +19,7 @@
 短く伝える場合は以下でもよい。
 
 ```text
-hirotaro-suzuki/dog-sns-prototype の GitHub main を正として、README.md と dog_sns_design.md を必ず読んで続きから。dog_sns_design.md が現在の設計書です。クラウド中心、引き継ぎやすさ優先、Codex一本で進める方針です。次は完成画像のSupabase保存とassets登録へ進む予定ですが、先走らず、読んだ内容と次に進む候補を確認してから止まってください。私は73歳の素人なので、できる限りCodex側で進め、必要な画面操作だけ専門用語を減らして案内してください。
+hirotaro-suzuki/dog-sns-prototype の GitHub main を正として、README.md と dog_sns_design.md を必ず読んで続きから。dog_sns_design.md が現在の設計書です。クラウド中心、引き継ぎやすさ優先、Codex一本で進める方針です。現在は店舗iPadの撮影・編集・保存、本部の写真管理、店舗マスタ、担当者マスタまで実装済みです。次は保存済み写真からSNS投稿内容を作成・保存する機能へ進む予定ですが、先走らず、読んだ内容と次に進む候補を確認してから止まってください。私は73歳の素人なので、できる限りCodex側で進め、必要な画面操作だけ専門用語を減らして案内してください。
 ```
 
 ## 現在できていること
@@ -89,7 +89,7 @@ VercelでこのGitHubリポジトリをImportしてください。
 - 次スレッド開始時の指示文: `docs/next-thread-start.md`
 - 現在の設計・開発方針の正本: `dog_sns_design.md`
 - Supabase引き継ぎメモ: `docs/supabase-handoff.md`
-- 直近の作業ログ: `docs/session-2026-06-20.md`
+- 直近の作業ログ: `docs/session-2026-06-25.md`
 - Supabaseセットアップ手順: `supabase/README.md`
 - Supabaseテーブル設計: `supabase/schema.sql`
 - Supabaseサンプルデータ: `supabase/seed.example.sql`
