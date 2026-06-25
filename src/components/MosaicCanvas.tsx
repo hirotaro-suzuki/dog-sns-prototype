@@ -1,6 +1,7 @@
 "use client";
 
-import { TouchEvent, useEffect, useRef, useState } from "react";
+import type { CSSProperties, TouchEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CapturedPhoto } from "@/lib/imageStore";
 import { phaseZeroStore } from "@/config/stores";
 import type { CaptureStaff, CaptureStore } from "@/types/captureContext";
@@ -57,6 +58,7 @@ type TextBox = {
   point: PhotoPoint;
   size: TextBoxSize;
   color: string;
+  rotation: number;
 };
 
 type TextDragSnapshot = {
@@ -90,6 +92,7 @@ const TEXT_FONT_SIZES: Record<TextBoxSize, number> = {
   medium: 46,
   large: 58,
 };
+const TEXT_ROTATION_STEP = Math.PI / 18;
 
 function createStrokeId() {
   return `stroke-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -389,28 +392,36 @@ function drawMosaicStrokes(
   });
 }
 
-function getTextBoxBounds(
+function getTextBoxLocalBounds(
   context: CanvasRenderingContext2D,
-  image: HTMLImageElement,
   textBox: TextBox
 ) {
-  const baseScale = getBaseImageScale(image);
   const fontSize = TEXT_FONT_SIZES[textBox.size];
   context.font = `700 ${fontSize}px Arial, sans-serif`;
   const metrics = context.measureText(textBox.text || "文字");
   const width = Math.max(metrics.width, 72);
   const height = fontSize + 18;
-  const localX = textBox.point.x * baseScale;
-  const localY = textBox.point.y * baseScale;
 
   return {
-    left: localX - 14,
-    top: localY - height + 6,
-    right: localX + width + 14,
-    bottom: localY + 12,
+    left: -14,
+    top: -height + 6,
+    right: width + 14,
+    bottom: 12,
     width: width + 28,
     height,
   };
+}
+
+function getTextBoxCanvasPoint(
+  image: HTMLImageElement,
+  transform: PhotoTransform,
+  textBox: TextBox
+) {
+  return transformPhotoPointToCanvas(image, transform, textBox.point);
+}
+
+function getTextBoxCanvasRotation(transform: PhotoTransform, textBox: TextBox) {
+  return transform.rotation + textBox.rotation;
 }
 
 function drawTextBoxes(
@@ -437,17 +448,19 @@ function drawTextBoxes(
     const y = textBox.point.y * baseScale;
 
     context.save();
+    context.translate(x, y);
+    context.rotate(textBox.rotation);
     context.textAlign = "left";
     context.textBaseline = "alphabetic";
     context.font = `700 ${fontSize}px Arial, sans-serif`;
     context.lineWidth = Math.max(5, Math.round(fontSize * 0.12));
     context.strokeStyle = textBox.color === "#111111" ? "rgba(255, 255, 255, 0.85)" : "rgba(0, 0, 0, 0.72)";
     context.fillStyle = textBox.color;
-    context.strokeText(textBox.text || "文字", x, y);
-    context.fillText(textBox.text || "文字", x, y);
+    context.strokeText(textBox.text || "文字", 0, 0);
+    context.fillText(textBox.text || "文字", 0, 0);
 
     if (showSelection && textBox.id === selectedTextBoxId) {
-      const bounds = getTextBoxBounds(context, image, textBox);
+      const bounds = getTextBoxLocalBounds(context, textBox);
       context.setLineDash([12, 8]);
       context.lineWidth = 3;
       context.strokeStyle = "rgba(255, 255, 255, 0.95)";
@@ -478,15 +491,26 @@ function findTextBoxAtPoint(
   };
 
   for (let index = textBoxes.length - 1; index >= 0; index -= 1) {
-    const bounds = getTextBoxBounds(context, image, textBoxes[index]);
+    const textBox = textBoxes[index];
+    const anchorX = textBox.point.x * baseScale;
+    const anchorY = textBox.point.y * baseScale;
+    const dx = localPoint.x - anchorX;
+    const dy = localPoint.y - anchorY;
+    const cos = Math.cos(-textBox.rotation);
+    const sin = Math.sin(-textBox.rotation);
+    const rotatedPoint = {
+      x: dx * cos - dy * sin,
+      y: dx * sin + dy * cos,
+    };
+    const bounds = getTextBoxLocalBounds(context, textBox);
     if (
-      localPoint.x >= bounds.left &&
-      localPoint.x <= bounds.right &&
-      localPoint.y >= bounds.top &&
-      localPoint.y <= bounds.bottom
+      rotatedPoint.x >= bounds.left &&
+      rotatedPoint.x <= bounds.right &&
+      rotatedPoint.y >= bounds.top &&
+      rotatedPoint.y <= bounds.bottom
     ) {
       return {
-        textBox: textBoxes[index],
+        textBox,
         photoPoint,
       };
     }
@@ -767,6 +791,7 @@ export function MosaicCanvas({
       point: centerPoint,
       size: "medium",
       color: "#ffffff",
+      rotation: 0,
     };
     switchMode("text");
     syncTextBoxes([...textBoxesRef.current, textBox], textBox.id);
@@ -970,6 +995,32 @@ export function MosaicCanvas({
   }
 
   const selectedTextBox = textBoxes.find((textBox) => textBox.id === selectedTextBoxId);
+  const selectedTextEditor = (() => {
+    const image = imageRef.current;
+    if (!image || !selectedTextBox) return null;
+
+    const canvasPoint = getTextBoxCanvasPoint(image, transformRef.current, selectedTextBox);
+    const fontSize = TEXT_FONT_SIZES[selectedTextBox.size];
+    const textWidth = Math.max((selectedTextBox.text.length || 4) * fontSize * 0.72, 120);
+    const widthPercent = Math.min(72, Math.max(24, (textWidth / CANVAS_WIDTH) * 100));
+    const layerStyle: CSSProperties = {
+      left: `${(canvasPoint.x / CANVAS_WIDTH) * 100}%`,
+      top: `${(canvasPoint.y / CANVAS_HEIGHT) * 100}%`,
+    };
+    const inputStyle: CSSProperties = {
+      width: `${widthPercent}vw`,
+      maxWidth: `${widthPercent}%`,
+      color: selectedTextBox.color,
+      fontSize: `clamp(16px, ${fontSize / 16}vw, ${Math.round(fontSize * 0.72)}px)`,
+      transform: `translateY(-100%) rotate(${getTextBoxCanvasRotation(transformRef.current, selectedTextBox)}rad)`,
+    };
+
+    return {
+      layerStyle,
+      inputStyle,
+      rotationDegrees: Math.round((selectedTextBox.rotation * 180) / Math.PI),
+    };
+  })();
 
   if (completedImageUrl) {
     return (
@@ -1032,6 +1083,90 @@ export function MosaicCanvas({
           onTouchEnd={handleTouchEnd}
           onTouchCancel={handleTouchEnd}
         />
+        {selectedTextBox && selectedTextEditor && (
+          <div
+            className="canvas-text-editor"
+            style={selectedTextEditor.layerStyle}
+            onTouchStart={(event) => event.stopPropagation()}
+            onTouchMove={(event) => event.stopPropagation()}
+            onTouchEnd={(event) => event.stopPropagation()}
+          >
+            <input
+              className="canvas-text-input"
+              type="text"
+              value={selectedTextBox.text}
+              maxLength={MAX_TEXT_LENGTH}
+              autoComplete="off"
+              autoFocus
+              placeholder="文字"
+              style={selectedTextEditor.inputStyle}
+              onChange={(event) =>
+                updateTextBox(selectedTextBox.id, {
+                  text: event.target.value.slice(0, MAX_TEXT_LENGTH),
+                })
+              }
+            />
+
+            <div className="canvas-text-control-panel" aria-label="選択中の文字編集">
+              <div className="canvas-text-control-row">
+                <button
+                  className="mini-control-button"
+                  type="button"
+                  onClick={() =>
+                    updateTextBox(selectedTextBox.id, {
+                      rotation: selectedTextBox.rotation - TEXT_ROTATION_STEP,
+                    })
+                  }
+                >
+                  左回転
+                </button>
+                <span className="rotation-value">{selectedTextEditor.rotationDegrees}度</span>
+                <button
+                  className="mini-control-button"
+                  type="button"
+                  onClick={() =>
+                    updateTextBox(selectedTextBox.id, {
+                      rotation: selectedTextBox.rotation + TEXT_ROTATION_STEP,
+                    })
+                  }
+                >
+                  右回転
+                </button>
+              </div>
+
+              <div className="canvas-text-control-row">
+                {Object.entries(TEXT_SIZE_LABELS).map(([size, label]) => (
+                  <button
+                    className={`mini-control-button ${selectedTextBox.size === size ? "is-selected" : ""}`}
+                    key={size}
+                    type="button"
+                    onClick={() => updateTextBox(selectedTextBox.id, { size: size as TextBoxSize })}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="canvas-text-color-row" aria-label="文字色">
+                {TEXT_COLORS.map((color) => (
+                  <button
+                    className={`mini-color-button ${selectedTextBox.color === color.value ? "is-selected" : ""}`}
+                    key={color.value}
+                    type="button"
+                    style={{ backgroundColor: color.value }}
+                    onClick={() => updateTextBox(selectedTextBox.id, { color: color.value })}
+                    aria-label={`${color.label}にする`}
+                  />
+                ))}
+                <button className="mini-control-button danger" type="button" onClick={deleteSelectedTextBox}>
+                  削除
+                </button>
+              </div>
+
+              <p className="text-count">あと{MAX_TEXT_LENGTH - selectedTextBox.text.length}文字</p>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="toolbar">
@@ -1075,53 +1210,6 @@ export function MosaicCanvas({
           </button>
         )}
       </div>
-
-      {selectedTextBox && (
-        <div className="text-editor-panel" aria-label="選択中の文字編集">
-          <label className="field-label">
-            <span>文字 あと{MAX_TEXT_LENGTH - selectedTextBox.text.length}文字</span>
-            <input
-              type="text"
-              value={selectedTextBox.text}
-              maxLength={MAX_TEXT_LENGTH}
-              autoComplete="off"
-              placeholder="例: こむぎ 3才 オス"
-              onChange={(event) => updateTextBox(selectedTextBox.id, { text: event.target.value.slice(0, MAX_TEXT_LENGTH) })}
-            />
-          </label>
-
-          <div className="segmented-control" aria-label="文字の大きさ">
-            {Object.entries(TEXT_SIZE_LABELS).map(([size, label]) => (
-              <button
-                className={`staff-button compact-button ${selectedTextBox.size === size ? "is-selected" : ""}`}
-                key={size}
-                type="button"
-                onClick={() => updateTextBox(selectedTextBox.id, { size: size as TextBoxSize })}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          <div className="color-selector" aria-label="文字色">
-            {TEXT_COLORS.map((color) => (
-              <button
-                className={`color-button ${selectedTextBox.color === color.value ? "is-selected" : ""}`}
-                key={color.value}
-                type="button"
-                style={{ backgroundColor: color.value }}
-                onClick={() => updateTextBox(selectedTextBox.id, { color: color.value })}
-              >
-                <span>{color.label}</span>
-              </button>
-            ))}
-          </div>
-
-          <button className="action-button danger" type="button" onClick={deleteSelectedTextBox}>
-            文字を削除
-          </button>
-        </div>
-      )}
 
       <StoreSettingsSummary store={store} staff={staff} />
       <p className="notice">{assetStatus}</p>
