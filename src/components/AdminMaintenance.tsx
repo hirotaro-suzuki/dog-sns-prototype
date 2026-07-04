@@ -2,6 +2,10 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 type AdminTab = "assets" | "stores" | "staff" | "frames";
+type AssetReviewStatus = "new" | "candidate" | "hold" | "rejected";
+type ReviewStatusFilter = "all" | AssetReviewStatus;
+type AssetSortMode = "date" | "store";
+type DateSortOrder = "desc" | "asc";
 
 type StoreSummary = {
   id: string;
@@ -49,6 +53,8 @@ type AdminAsset = {
   captured_date: string;
   final_processed_url: string;
   description: string | null;
+  short_caption: string | null;
+  review_status: AssetReviewStatus;
   status: "ready" | "archived";
   hidden_at: string | null;
   hidden_reason: string | null;
@@ -85,12 +91,19 @@ type StaffResponse = {
 };
 
 type UpdatedAssetResponse = {
-  asset?: Pick<AdminAsset, "id" | "description" | "status" | "hidden_at" | "hidden_reason">;
+  asset?: Pick<AdminAsset, "id" | "description" | "short_caption" | "review_status" | "status" | "hidden_at" | "hidden_reason">;
   message?: string;
   detail?: string;
 };
 
 const PIN_STORAGE_KEY = "dog-sns-admin-pin";
+const REVIEW_STATUS_OPTIONS: { value: AssetReviewStatus; label: string }[] = [
+  { value: "new", label: "未確認" },
+  { value: "candidate", label: "投稿候補" },
+  { value: "hold", label: "保留" },
+  { value: "rejected", label: "使用しない" },
+];
+
 const emptyStoreDraft: StoreMaster = {
   id: "",
   store_code: "",
@@ -151,6 +164,10 @@ function getErrorMessage(data: { message?: string; detail?: string }, fallback: 
   return data.detail ? `${data.message ?? fallback} ${data.detail}` : data.message ?? fallback;
 }
 
+function getReviewStatusLabel(value: AssetReviewStatus) {
+  return REVIEW_STATUS_OPTIONS.find((option) => option.value === value)?.label ?? "未確認";
+}
+
 export function AdminMaintenance() {
   const [pinInput, setPinInput] = useState("");
   const [adminPin, setAdminPin] = useState("");
@@ -163,6 +180,9 @@ export function AdminMaintenance() {
   const [dateFrom, setDateFrom] = useState(getTodayLabel);
   const [dateTo, setDateTo] = useState(getTodayLabel);
   const [includeArchived, setIncludeArchived] = useState(false);
+  const [reviewStatusFilter, setReviewStatusFilter] = useState<ReviewStatusFilter>("all");
+  const [sortMode, setSortMode] = useState<AssetSortMode>("date");
+  const [dateOrder, setDateOrder] = useState<DateSortOrder>("desc");
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
   const [selectedStoreMasterId, setSelectedStoreMasterId] = useState<string | null>(null);
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
@@ -170,6 +190,8 @@ export function AdminMaintenance() {
   const [staffDraft, setStaffDraft] = useState<StaffMaster>(emptyStaffDraft());
   const [newStaffDraft, setNewStaffDraft] = useState<StaffMaster>(emptyStaffDraft());
   const [descriptionDraft, setDescriptionDraft] = useState("");
+  const [shortCaptionDraft, setShortCaptionDraft] = useState("");
+  const [reviewStatusDraft, setReviewStatusDraft] = useState<AssetReviewStatus>("new");
   const [hiddenReasonDraft, setHiddenReasonDraft] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -221,6 +243,9 @@ export function AdminMaintenance() {
     if (dateFrom) params.set("dateFrom", dateFrom);
     if (dateTo) params.set("dateTo", dateTo);
     if (includeArchived) params.set("includeArchived", "true");
+    if (reviewStatusFilter !== "all") params.set("reviewStatus", reviewStatusFilter);
+    params.set("sortMode", sortMode);
+    params.set("dateOrder", dateOrder);
 
     try {
       const response = await fetch(`/api/admin/assets?${params.toString()}`, {
@@ -246,7 +271,7 @@ export function AdminMaintenance() {
     } finally {
       setIsLoading(false);
     }
-  }, [adminPin, dateFrom, dateTo, handleAuthError, includeArchived, selectedStoreIds]);
+  }, [adminPin, dateFrom, dateOrder, dateTo, handleAuthError, includeArchived, reviewStatusFilter, selectedStoreIds, sortMode]);
 
   const loadStoreMasters = useCallback(async (pin = adminPin) => {
     if (!pin) return;
@@ -317,6 +342,8 @@ export function AdminMaintenance() {
 
   useEffect(() => {
     setDescriptionDraft(selectedAsset?.description ?? "");
+    setShortCaptionDraft(selectedAsset?.short_caption ?? "");
+    setReviewStatusDraft(selectedAsset?.review_status ?? "new");
     setHiddenReasonDraft(selectedAsset?.hidden_reason ?? "");
   }, [selectedAsset]);
 
@@ -376,6 +403,8 @@ export function AdminMaintenance() {
             ? {
                 ...asset,
                 description: data.asset.description,
+                short_caption: data.asset.short_caption,
+                review_status: data.asset.review_status,
                 status: data.asset.status,
                 hidden_at: data.asset.hidden_at,
                 hidden_reason: data.asset.hidden_reason,
@@ -647,6 +676,34 @@ export function AdminMaintenance() {
                 終了日
                 <input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
               </label>
+              <label className="field-label">
+                確認状態
+                <select
+                  value={reviewStatusFilter}
+                  onChange={(event) => setReviewStatusFilter(event.target.value as ReviewStatusFilter)}
+                >
+                  <option value="all">すべて</option>
+                  {REVIEW_STATUS_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="field-label">
+                並び順
+                <select value={sortMode} onChange={(event) => setSortMode(event.target.value as AssetSortMode)}>
+                  <option value="date">日付順</option>
+                  <option value="store">店順</option>
+                </select>
+              </label>
+              <label className="field-label">
+                日付方向
+                <select value={dateOrder} onChange={(event) => setDateOrder(event.target.value as DateSortOrder)}>
+                  <option value="desc">新しい順</option>
+                  <option value="asc">古い順</option>
+                </select>
+              </label>
               <label className="admin-toggle">
                 <input
                   type="checkbox"
@@ -690,6 +747,8 @@ export function AdminMaintenance() {
                     <strong>{asset.store_display_name}</strong>
                     <span>{formatDateTime(asset.captured_at)}</span>
                     <span>{asset.staff_display_name ?? "担当者未設定"}</span>
+                    <span>{getReviewStatusLabel(asset.review_status)}</span>
+                    {asset.short_caption ? <span>{asset.short_caption}</span> : null}
                     {asset.status === "archived" ? <em>非表示</em> : null}
                   </span>
                 </button>
@@ -713,7 +772,49 @@ export function AdminMaintenance() {
                       <dt>担当者</dt>
                       <dd>{selectedAsset.staff_display_name ?? "未設定"}</dd>
                     </div>
+                    <div>
+                      <dt>確認状態</dt>
+                      <dd>{getReviewStatusLabel(selectedAsset.review_status)}</dd>
+                    </div>
                   </dl>
+
+                  <div className="admin-form-grid">
+                    <label className="field-label">
+                      確認状態
+                      <select
+                        value={reviewStatusDraft}
+                        onChange={(event) => setReviewStatusDraft(event.target.value as AssetReviewStatus)}
+                      >
+                        {REVIEW_STATUS_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="field-label">
+                      一言メモ
+                      <input
+                        type="text"
+                        maxLength={40}
+                        value={shortCaptionDraft}
+                        onChange={(event) => setShortCaptionDraft(event.target.value)}
+                      />
+                    </label>
+                  </div>
+                  <button
+                    className="action-button"
+                    type="button"
+                    disabled={isSaving}
+                    onClick={() =>
+                      updateSelectedAsset(
+                        { shortCaption: shortCaptionDraft, reviewStatus: reviewStatusDraft, action: "update" },
+                        "確認状態と一言メモを保存しました。"
+                      )
+                    }
+                  >
+                    確認状態を保存
+                  </button>
 
                   <label className="field-label">
                     説明文
@@ -725,7 +826,7 @@ export function AdminMaintenance() {
                     />
                   </label>
                   <button
-                    className="action-button"
+                    className="action-button secondary"
                     type="button"
                     disabled={isSaving}
                     onClick={() => updateSelectedAsset({ description: descriptionDraft, action: "update" }, "説明文を保存しました。")}
