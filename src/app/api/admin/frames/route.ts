@@ -5,6 +5,8 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 export const runtime = "nodejs";
 
 const MAX_ACTIVE_FRAMES_PER_STORE = 3;
+const FRAME_SELECT_COLUMNS =
+  "id, store_id, frame_name, frame_url, is_default, is_active, sort_order, date_enabled, date_x, date_y, date_font_size, date_color, created_at, updated_at";
 
 type CreateFrameRequest = {
   storeId?: unknown;
@@ -13,6 +15,11 @@ type CreateFrameRequest = {
   isDefault?: unknown;
   isActive?: unknown;
   sortOrder?: unknown;
+  dateEnabled?: unknown;
+  dateX?: unknown;
+  dateY?: unknown;
+  dateFontSize?: unknown;
+  dateColor?: unknown;
 };
 
 type SupabaseLikeError = {
@@ -48,6 +55,17 @@ function cleanNumber(value: unknown) {
   return 0;
 }
 
+function cleanRangeNumber(value: unknown, fallback: number, min: number, max: number) {
+  const number = typeof value === "number" ? value : typeof value === "string" ? Number(value) : Number.NaN;
+  if (!Number.isFinite(number)) return fallback;
+  return Math.min(Math.max(Math.trunc(number), min), max);
+}
+
+function cleanDateColor(value: unknown) {
+  const color = cleanText(value, 16);
+  return /^#[0-9A-Fa-f]{6}$/.test(color) ? color : "#ffffff";
+}
+
 function formatSupabaseError(error: SupabaseLikeError) {
   return [error.code, error.message, error.details, error.hint].filter(Boolean).join(" / ");
 }
@@ -75,7 +93,7 @@ export async function GET(request: Request) {
     const supabase = createServerSupabaseClient();
     let query = supabase
       .from("store_frames")
-      .select("id, store_id, frame_name, frame_url, is_default, is_active, sort_order, created_at, updated_at")
+      .select(FRAME_SELECT_COLUMNS)
       .order("sort_order", { ascending: true })
       .order("frame_name", { ascending: true });
 
@@ -116,6 +134,7 @@ export async function POST(request: Request) {
   const frameUrl = cleanText(body.frameUrl, 1000);
   const isActive = body.isActive === undefined ? true : Boolean(body.isActive);
   const isDefault = Boolean(body.isDefault) && isActive;
+  const dateEnabled = body.dateEnabled === undefined ? true : Boolean(body.dateEnabled);
 
   if (!storeId || !frameName || !frameUrl) {
     return NextResponse.json({ message: "店舗、枠名、枠画像URLを入力してください。" }, { status: 400 });
@@ -144,8 +163,13 @@ export async function POST(request: Request) {
         is_default: isDefault,
         is_active: isActive,
         sort_order: cleanNumber(body.sortOrder),
+        date_enabled: dateEnabled,
+        date_x: cleanRangeNumber(body.dateX, 1030, 0, 1270),
+        date_y: cleanRangeNumber(body.dateY, 82, 0, 890),
+        date_font_size: cleanRangeNumber(body.dateFontSize, 38, 12, 96),
+        date_color: cleanDateColor(body.dateColor),
       })
-      .select("id, store_id, frame_name, frame_url, is_default, is_active, sort_order, created_at, updated_at")
+      .select(FRAME_SELECT_COLUMNS)
       .single();
 
     if (error) {
