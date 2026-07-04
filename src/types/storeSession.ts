@@ -3,6 +3,11 @@ export type StoreSessionFrame = {
   frameName: string;
   frameUrl: string;
   isDefault: boolean;
+  dateEnabled: boolean;
+  dateX: number;
+  dateY: number;
+  dateFontSize: number;
+  dateColor: string;
 };
 
 export type StoreSessionStore = {
