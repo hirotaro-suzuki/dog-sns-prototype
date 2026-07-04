@@ -6,6 +6,8 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
+type AssetReviewStatus = "new" | "candidate" | "hold" | "rejected";
+
 type StoreInsert = {
   id?: string;
   store_code: string;
@@ -71,6 +73,8 @@ type AssetInsert = {
   dog_age?: string | null;
   staff_comment?: string | null;
   description?: string | null;
+  short_caption?: string | null;
+  review_status?: AssetReviewStatus;
   sns_consent?: boolean;
   mosaic_required?: boolean;
   final_processed_url: string;
@@ -187,6 +191,8 @@ export type Database = {
           dog_age: string | null;
           staff_comment: string | null;
           description: string | null;
+          short_caption: string | null;
+          review_status: AssetReviewStatus;
           sns_consent: boolean;
           mosaic_required: boolean;
           final_processed_url: string;
