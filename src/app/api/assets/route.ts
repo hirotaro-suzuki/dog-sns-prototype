@@ -10,6 +10,7 @@ type SaveAssetRequest = {
   storeId?: unknown;
   staffId?: unknown;
   finalImageDataUrl?: unknown;
+  frameUrl?: unknown;
   printedAt?: unknown;
 };
 
@@ -28,6 +29,10 @@ type StaffAssetRow = {
   id: string;
   store_id: string;
   display_name: string;
+};
+
+type StoreFrameAssetRow = {
+  frame_url: string;
 };
 
 type LatestAssetSequenceRow = {
@@ -112,6 +117,7 @@ export async function POST(request: Request) {
   const storeId = normalizeString(body.storeId);
   const staffId = normalizeString(body.staffId);
   const finalImageDataUrl = normalizeString(body.finalImageDataUrl);
+  const requestedFrameUrl = normalizeString(body.frameUrl);
   const printedAt = normalizeString(body.printedAt);
 
   if (!storeId || !staffId || !finalImageDataUrl) {
@@ -168,6 +174,31 @@ export async function POST(request: Request) {
 
     if (!staff) {
       return NextResponse.json({ message: "保存対象の担当者を確認できませんでした。" }, { status: 404 });
+    }
+
+    let frameUrlSnapshot = store.frame_url;
+    if (requestedFrameUrl && requestedFrameUrl !== store.frame_url) {
+      const { data: frameData, error: frameError } = await supabase
+        .from("store_frames")
+        .select("frame_url")
+        .eq("store_id", store.id)
+        .eq("frame_url", requestedFrameUrl)
+        .eq("is_active", true)
+        .maybeSingle();
+      const frame = frameData as StoreFrameAssetRow | null;
+
+      if (frameError) {
+        return NextResponse.json(
+          { message: "使用した枠を確認できませんでした。", detail: formatSupabaseError(frameError) },
+          { status: 500 }
+        );
+      }
+
+      if (!frame) {
+        return NextResponse.json({ message: "使用した枠が店舗設定と一致しません。" }, { status: 400 });
+      }
+
+      frameUrlSnapshot = frame.frame_url;
     }
 
     const now = new Date();
@@ -237,7 +268,7 @@ export async function POST(request: Request) {
           final_processed_url: publicUrlData.publicUrl,
           final_storage_bucket: FINAL_IMAGE_BUCKET,
           final_storage_path: storagePath,
-          frame_url_snapshot: store.frame_url,
+          frame_url_snapshot: frameUrlSnapshot,
           logo_url_snapshot: store.logo_url,
           theme_color_snapshot: store.theme_color,
           print_template_type_snapshot: store.print_template_type,

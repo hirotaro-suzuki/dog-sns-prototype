@@ -18,6 +18,12 @@
 supabase/migrations/20260625_assets_storage_handoff.sql
 ```
 
+店舗ごとに2〜3種類の枠を使う既存環境では、追加で以下を実行する。
+
+```text
+supabase/migrations/20260704_frames_and_post_drafts.sql
+```
+
 このmigrationは、現在の方針に合わせて以下を行う。
 
 - `final-images` bucketを作成する

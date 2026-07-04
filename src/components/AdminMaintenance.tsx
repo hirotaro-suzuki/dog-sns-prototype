@@ -1,8 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-
-type AdminTab = "assets" | "stores" | "staff";
+type AdminTab = "assets" | "stores" | "staff" | "frames";
 
 type StoreSummary = {
   id: string;
@@ -580,6 +579,9 @@ export function AdminMaintenance() {
         <button className={activeTab === "staff" ? "is-selected" : ""} type="button" onClick={() => setActiveTab("staff")}>
           担当者
         </button>
+        <button className={activeTab === "frames" ? "is-selected" : ""} type="button" onClick={() => setActiveTab("frames")}>
+          枠
+        </button>
       </div>
 
       {message ? <p className="notice">{message}</p> : null}
@@ -978,6 +980,348 @@ export function AdminMaintenance() {
           </aside>
         </section>
       ) : null}
+
+      {activeTab === "frames" ? <AdminFrameMaintenance adminPin={adminPin} /> : null}
     </div>
+  );
+}
+
+type StoreFrame = {
+  id: string;
+  store_id: string;
+  frame_name: string;
+  frame_url: string;
+  is_default: boolean;
+  is_active: boolean;
+  sort_order: number;
+};
+
+type FramesResponse = {
+  frames?: StoreFrame[];
+  frame?: StoreFrame;
+  message?: string;
+  detail?: string;
+};
+
+type FrameDraft = {
+  id: string;
+  store_id: string;
+  frame_name: string;
+  frame_url: string;
+  is_default: boolean;
+  is_active: boolean;
+  sort_order: number;
+};
+
+const emptyFrameDraft: FrameDraft = {
+  id: "",
+  store_id: "",
+  frame_name: "",
+  frame_url: "",
+  is_default: false,
+  is_active: true,
+  sort_order: 0,
+};
+
+function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
+  const [frameStores, setFrameStores] = useState<StoreMaster[]>([]);
+  const [frames, setFrames] = useState<StoreFrame[]>([]);
+  const [selectedStoreId, setSelectedStoreId] = useState("");
+  const [selectedFrameId, setSelectedFrameId] = useState<string | null>(null);
+  const [frameDraft, setFrameDraft] = useState<FrameDraft>(emptyFrameDraft);
+  const [newFrameDraft, setNewFrameDraft] = useState<FrameDraft>(emptyFrameDraft);
+  const [isFrameLoading, setIsFrameLoading] = useState(false);
+  const [isFrameSaving, setIsFrameSaving] = useState(false);
+  const [frameMessage, setFrameMessage] = useState("");
+
+  const visibleFrames = useMemo(
+    () => frames.filter((frame) => frame.store_id === selectedStoreId),
+    [frames, selectedStoreId]
+  );
+
+  const selectedFrame = useMemo(
+    () => frames.find((frame) => frame.id === selectedFrameId) ?? null,
+    [frames, selectedFrameId]
+  );
+
+  const activeFrameCount = visibleFrames.filter((frame) => frame.is_active).length;
+
+  const loadFrameStores = useCallback(async () => {
+    if (!adminPin) return;
+    setIsFrameLoading(true);
+    setFrameMessage("");
+
+    try {
+      const response = await fetch("/api/admin/stores", {
+        headers: { "x-admin-pin": adminPin },
+      });
+      const data = (await response.json()) as StoresResponse;
+
+      if (!response.ok || !data.stores) {
+        setFrameMessage(getErrorMessage(data, "店舗一覧を取得できませんでした。"));
+        return;
+      }
+
+      setFrameStores(data.stores);
+      setSelectedStoreId((currentId) => {
+        if (currentId && data.stores?.some((store) => store.id === currentId)) return currentId;
+        return data.stores?.[0]?.id ?? "";
+      });
+    } catch (error) {
+      setFrameMessage(error instanceof Error ? error.message : "店舗一覧を取得できませんでした。");
+    } finally {
+      setIsFrameLoading(false);
+    }
+  }, [adminPin]);
+
+  const loadFrames = useCallback(async () => {
+    if (!adminPin) return;
+    setIsFrameLoading(true);
+    setFrameMessage("");
+
+    try {
+      const response = await fetch("/api/admin/frames", {
+        headers: { "x-admin-pin": adminPin },
+      });
+      const data = (await response.json()) as FramesResponse;
+
+      if (!response.ok || !data.frames) {
+        setFrameMessage(getErrorMessage(data, "枠一覧を取得できませんでした。"));
+        return;
+      }
+
+      setFrames(data.frames);
+      setSelectedFrameId((currentId) => {
+        if (currentId && data.frames?.some((frame) => frame.id === currentId)) return currentId;
+        return data.frames?.[0]?.id ?? null;
+      });
+    } catch (error) {
+      setFrameMessage(error instanceof Error ? error.message : "枠一覧を取得できませんでした。");
+    } finally {
+      setIsFrameLoading(false);
+    }
+  }, [adminPin]);
+
+  useEffect(() => {
+    void loadFrameStores();
+    void loadFrames();
+  }, [loadFrameStores, loadFrames]);
+
+  useEffect(() => {
+    setFrameDraft(selectedFrame ?? { ...emptyFrameDraft, store_id: selectedStoreId });
+  }, [selectedFrame, selectedStoreId]);
+
+  useEffect(() => {
+    setNewFrameDraft((current) => ({ ...current, store_id: current.store_id || selectedStoreId }));
+  }, [selectedStoreId]);
+
+  async function createFrame() {
+    if (!adminPin) return;
+    setIsFrameSaving(true);
+    setFrameMessage("");
+
+    try {
+      const response = await fetch("/api/admin/frames", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-admin-pin": adminPin,
+        },
+        body: JSON.stringify({
+          storeId: newFrameDraft.store_id,
+          frameName: newFrameDraft.frame_name,
+          frameUrl: newFrameDraft.frame_url,
+          isDefault: newFrameDraft.is_default,
+          isActive: newFrameDraft.is_active,
+          sortOrder: newFrameDraft.sort_order,
+        }),
+      });
+      const data = (await response.json()) as FramesResponse;
+
+      if (!response.ok || !data.frame) {
+        setFrameMessage(getErrorMessage(data, "枠を追加できませんでした。"));
+        return;
+      }
+
+      setFrames((current) => {
+        const withoutOldDefault = data.frame?.is_default
+          ? current.map((frame) =>
+              frame.store_id === data.frame?.store_id ? { ...frame, is_default: false } : frame
+            )
+          : current;
+        return [...withoutOldDefault, data.frame as StoreFrame];
+      });
+      setSelectedFrameId(data.frame.id);
+      setNewFrameDraft({ ...emptyFrameDraft, store_id: data.frame.store_id });
+      setFrameMessage("枠を追加しました。");
+    } catch (error) {
+      setFrameMessage(error instanceof Error ? error.message : "枠を追加できませんでした。");
+    } finally {
+      setIsFrameSaving(false);
+    }
+  }
+
+  async function saveFrame() {
+    if (!adminPin || !frameDraft.id) return;
+    setIsFrameSaving(true);
+    setFrameMessage("");
+
+    try {
+      const response = await fetch(`/api/admin/frames/${frameDraft.id}`, {
+        method: "PATCH",
+        headers: {
+          "content-type": "application/json",
+          "x-admin-pin": adminPin,
+        },
+        body: JSON.stringify({
+          frameName: frameDraft.frame_name,
+          frameUrl: frameDraft.frame_url,
+          isDefault: frameDraft.is_default,
+          isActive: frameDraft.is_active,
+          sortOrder: frameDraft.sort_order,
+        }),
+      });
+      const data = (await response.json()) as FramesResponse;
+
+      if (!response.ok || !data.frame) {
+        setFrameMessage(getErrorMessage(data, "枠を保存できませんでした。"));
+        return;
+      }
+
+      setFrames((current) =>
+        current.map((frame) => {
+          if (frame.id === data.frame?.id) return data.frame;
+          if (data.frame?.is_default && frame.store_id === data.frame.store_id) {
+            return { ...frame, is_default: false };
+          }
+          return frame;
+        })
+      );
+      setFrameDraft(data.frame);
+      setFrameMessage("枠を保存しました。");
+    } catch (error) {
+      setFrameMessage(error instanceof Error ? error.message : "枠を保存できませんでした。");
+    } finally {
+      setIsFrameSaving(false);
+    }
+  }
+
+  return (
+    <section className="admin-main-grid">
+      <div className="admin-master-list">
+        <label className="field-label">
+          店舗
+          <select
+            value={selectedStoreId}
+            onChange={(event) => {
+              const nextStoreId = event.target.value;
+              setSelectedStoreId(nextStoreId);
+              setNewFrameDraft((current) => ({ ...current, store_id: nextStoreId }));
+              setSelectedFrameId(frames.find((frame) => frame.store_id === nextStoreId)?.id ?? null);
+            }}
+          >
+            {frameStores.map((store) => (
+              <option key={store.id} value={store.id}>
+                {store.display_name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <p className="notice">有効な枠は1店舗につき最大3件までです。現在 {activeFrameCount} 件。</p>
+        {frameMessage ? <p className="notice">{frameMessage}</p> : null}
+
+        {visibleFrames.map((frame) => (
+          <button
+            key={frame.id}
+            className={`admin-master-row${selectedFrameId === frame.id ? " is-selected" : ""}${
+              frame.is_active ? "" : " is-archived"
+            }`}
+            type="button"
+            onClick={() => setSelectedFrameId(frame.id)}
+          >
+            <strong>{frame.frame_name}</strong>
+            <span>{frame.is_default ? "標準" : "通常"}</span>
+            <span>{frame.is_active ? "有効" : "停止中"}</span>
+          </button>
+        ))}
+
+        <div className="admin-create-panel">
+          <h2>枠追加</h2>
+          <label className="field-label">
+            枠名
+            <input
+              value={newFrameDraft.frame_name}
+              onChange={(event) => setNewFrameDraft((current) => ({ ...current, frame_name: event.target.value }))}
+            />
+          </label>
+          <label className="field-label">
+            枠画像URL
+            <input
+              value={newFrameDraft.frame_url}
+              onChange={(event) => setNewFrameDraft((current) => ({ ...current, frame_url: event.target.value }))}
+            />
+          </label>
+          <button className="action-button secondary" type="button" disabled={isFrameSaving || isFrameLoading} onClick={createFrame}>
+            追加
+          </button>
+        </div>
+      </div>
+
+      <aside className="admin-edit-panel">
+        {selectedFrame ? (
+          <>
+            <div className="frame-preview-box">
+              <img src={frameDraft.frame_url} alt={frameDraft.frame_name} />
+            </div>
+            <div className="admin-form-grid">
+              <label className="field-label">
+                枠名
+                <input
+                  value={frameDraft.frame_name}
+                  onChange={(event) => setFrameDraft((current) => ({ ...current, frame_name: event.target.value }))}
+                />
+              </label>
+              <label className="field-label">
+                並び順
+                <input
+                  type="number"
+                  value={frameDraft.sort_order}
+                  onChange={(event) => setFrameDraft((current) => ({ ...current, sort_order: Number(event.target.value) }))}
+                />
+              </label>
+            </div>
+            <label className="field-label">
+              枠画像URL
+              <input
+                value={frameDraft.frame_url}
+                onChange={(event) => setFrameDraft((current) => ({ ...current, frame_url: event.target.value }))}
+              />
+            </label>
+            <label className="admin-toggle">
+              <input
+                type="checkbox"
+                checked={frameDraft.is_default}
+                onChange={(event) => setFrameDraft((current) => ({ ...current, is_default: event.target.checked }))}
+              />
+              標準枠
+            </label>
+            <label className="admin-toggle">
+              <input
+                type="checkbox"
+                checked={frameDraft.is_active}
+                onChange={(event) => setFrameDraft((current) => ({ ...current, is_active: event.target.checked }))}
+              />
+              有効
+            </label>
+            <button className="action-button" type="button" disabled={isFrameSaving} onClick={saveFrame}>
+              枠を保存
+            </button>
+          </>
+        ) : (
+          <p className="notice">枠を選択してください。</p>
+        )}
+      </aside>
+    </section>
   );
 }

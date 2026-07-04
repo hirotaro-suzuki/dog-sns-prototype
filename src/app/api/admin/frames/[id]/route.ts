@@ -21,6 +21,23 @@ type SupabaseLikeError = {
   hint?: string;
 };
 
+type CurrentFrameRow = {
+  id: string;
+  store_id: string;
+};
+
+type FrameUpdateQuery = {
+  eq: (column: string, value: unknown) => FrameUpdateQuery;
+  neq: (column: string, value: unknown) => FrameUpdateQuery;
+  select: (columns: string) => {
+    single: () => Promise<{ data: unknown; error: SupabaseLikeError | null }>;
+  };
+};
+
+type StoreFramesMutationTable = {
+  update: (values: Record<string, unknown>) => FrameUpdateQuery;
+};
+
 function cleanText(value: unknown, maxLength: number) {
   if (typeof value !== "string") return "";
   return value.trim().slice(0, maxLength);
@@ -60,11 +77,13 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
 
   try {
     const supabase = createServerSupabaseClient();
-    const { data: currentFrame, error: currentError } = await supabase
+    const framesTable = supabase.from("store_frames") as unknown as StoreFramesMutationTable;
+    const { data: currentFrameData, error: currentError } = await supabase
       .from("store_frames")
       .select("id, store_id")
       .eq("id", id)
       .maybeSingle();
+    const currentFrame = currentFrameData as CurrentFrameRow | null;
 
     if (currentError) {
       return NextResponse.json(
@@ -99,11 +118,10 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     }
 
     if (isDefault) {
-      await supabase.from("store_frames").update({ is_default: false }).eq("store_id", currentFrame.store_id).neq("id", id);
+      await framesTable.update({ is_default: false }).eq("store_id", currentFrame.store_id).neq("id", id);
     }
 
-    const { data, error } = await supabase
-      .from("store_frames")
+    const { data, error } = await framesTable
       .update({
         frame_name: frameName,
         frame_url: frameUrl,

@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { DogInfoForm } from "@/components/DogInfoForm";
 import { MosaicCanvas } from "@/components/MosaicCanvas";
 import { PhotoPicker } from "@/components/PhotoPicker";
@@ -126,7 +126,10 @@ export function CameraCapture({ store, staffMembers = [], onBack, onLogout }: Ca
   const [canRetryCamera, setCanRetryCamera] = useState(false);
   const [message, setMessage] = useState("カメラを準備しています。");
 
-  const frameChoices = (store?.frames ?? []).slice(0, MAX_FRAME_CHOICES);
+  const frameChoices = useMemo(
+    () => (store?.frames ?? []).slice(0, MAX_FRAME_CHOICES),
+    [store?.frames]
+  );
   const selectedFrame = frameChoices.find((frame) => frame.id === selectedFrameId) ?? frameChoices[0] ?? null;
   const activeStore = store
     ? {
@@ -146,7 +149,7 @@ export function CameraCapture({ store, staffMembers = [], onBack, onLogout }: Ca
       if (currentId && frameChoices.some((frame) => frame.id === currentId)) return currentId;
       return frameChoices.find((frame) => frame.isDefault)?.id ?? frameChoices[0].id;
     });
-  }, [store?.id, store?.frames]);
+  }, [frameChoices]);
 
   useEffect(() => {
     return () => {

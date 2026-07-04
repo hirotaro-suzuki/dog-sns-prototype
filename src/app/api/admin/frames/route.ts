@@ -22,6 +22,21 @@ type SupabaseLikeError = {
   hint?: string;
 };
 
+type FrameMutationSelect = {
+  select: (columns: string) => {
+    single: () => Promise<{ data: unknown; error: SupabaseLikeError | null }>;
+  };
+};
+
+type FrameUpdateQuery = {
+  eq: (column: string, value: unknown) => FrameUpdateQuery;
+};
+
+type StoreFramesMutationTable = {
+  insert: (values: Record<string, unknown>) => FrameMutationSelect;
+  update: (values: Record<string, unknown>) => FrameUpdateQuery;
+};
+
 function cleanText(value: unknown, maxLength: number) {
   if (typeof value !== "string") return "";
   return value.trim().slice(0, maxLength);
@@ -108,6 +123,7 @@ export async function POST(request: Request) {
 
   try {
     const supabase = createServerSupabaseClient();
+    const framesTable = supabase.from("store_frames") as unknown as StoreFramesMutationTable;
 
     if (isActive) {
       const activeFrameCount = await countActiveFrames(supabase, storeId);
@@ -117,11 +133,10 @@ export async function POST(request: Request) {
     }
 
     if (isDefault) {
-      await supabase.from("store_frames").update({ is_default: false }).eq("store_id", storeId);
+      await framesTable.update({ is_default: false }).eq("store_id", storeId);
     }
 
-    const { data, error } = await supabase
-      .from("store_frames")
+    const { data, error } = await framesTable
       .insert({
         store_id: storeId,
         frame_name: frameName,

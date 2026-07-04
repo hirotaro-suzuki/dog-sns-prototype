@@ -1037,6 +1037,7 @@ export function MosaicCanvas({
           storeId: store.id,
           staffId: staff.id,
           finalImageDataUrl: completedImageUrl,
+          frameUrl: store.frameUrl,
           printedAt,
         }),
       });
