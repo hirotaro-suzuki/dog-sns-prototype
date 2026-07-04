@@ -8,3 +8,14 @@
   font-size: clamp(28px, 4vw, 44px);
   line-height: 1.2;
 }
+
+.logoutRow {
+  display: flex;
+  justify-content: flex-end;
+  min-height: 0;
+  margin-bottom: 10px;
+}
+
+.logoutRow:empty {
+  display: none;
+}
