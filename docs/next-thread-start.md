@@ -83,7 +83,11 @@ GitHub反映、Vercel反映、iPad Safari確認、実機印刷確認は分けて
 - API個別更新は一言メモと確認状態の更新、不正値拒否に対応済み
 - 写真タブUIで確認状態、一言メモ、確認状態フィルター、日付順/店順、日付の新しい順/古い順を操作できるようにした
 - 写真カード上に確認状態と一言メモを表示するようにした
+- 写真タブを、サムネイル一覧画面と写真詳細画面に分離済み
+- 写真を選択すると詳細画面へ進み、「一覧へ戻る」で戻れるようにした
 - 写真詳細側で確認状態と一言メモを保存できるようにした
+- 写真詳細側から旧来の `説明文` 欄と `説明文を保存` ボタンを外した
+- 日付表示を、不要な括弧が出ない短い形式にした
 
 Supabaseで今回すでに適用済みのこと:
 
@@ -97,6 +101,11 @@ Supabaseで今回すでに適用済みのこと:
 - Vercelの最新デプロイが成功していることを確認する
 - Vercelの `/admin` 写真タブが開くことを確認する
 - 初期表示が今日の写真になることを確認する
+- 写真タブが、左サムネイル+右詳細の同時表示ではなく、一覧画面と詳細画面に分かれていることを確認する
+- 一覧画面で写真を押すと詳細画面へ進むことを確認する
+- 詳細画面で「一覧へ戻る」から一覧へ戻れることを確認する
+- 詳細画面に `説明文` 欄が出ないことを確認する
+- 日付の後ろに不要な括弧表示が出ないことを確認する
 - 確認状態フィルターが動くことを確認する
 - 日付順の新しい順/古い順が切り替わることを確認する
 - 店順が `stores.sort_order` を優先することを確認する
@@ -115,5 +124,5 @@ Supabaseで今回すでに適用済みのこと:
 ## 短く始めたい場合
 
 ```text
-hirotaro-suzuki/dog-sns-prototype の GitHub main が最新版です。まず docs/project-principles.md、README.md、dog_sns_design.md、docs/next-thread-start.md、docs/ownership-handoff.md、docs/session-2026-07-04-admin-handoff.md を GitHub 上で読んでください。docs/project-principles.md が最上位原則です。ローカルPC、Dropbox、手元フォルダを正本にせず、GitHub/Vercel/Supabase を正として進めます。CodexはDropboxやローカルへclone・探索せず、GitHub mainの確認・更新はまずGitHub連携ツールで行ってください。GitHub連携で更新できない場合はローカルへ逃げず、そこで止まって状況を説明してください。現在は飲食店オーナーへデモとして見せられるように /admin の本部メンテナンス画面を整える段階です。写真タブのDB/API/UI土台はGitHub mainへ反映済みで、Supabase migrationも適用済みです。次のチェックポイントはVercel画面確認です。/admin 写真タブで今日表示、店順、日付新しい順/古い順、確認状態、一言メモ40文字保存を確認してください。SNS投稿、自動投稿、投稿本文生成、Instagram連携はまだ実装しないでください。作業報告の最後は必ず、作業内容、確認済み、未確認、次に進む候補、Codexからの気づき、更新した文書、更新しなかった文書の形式にしてください。
+hirotaro-suzuki/dog-sns-prototype の GitHub main が最新版です。まず docs/project-principles.md、README.md、dog_sns_design.md、docs/next-thread-start.md、docs/ownership-handoff.md、docs/session-2026-07-04-admin-handoff.md を GitHub 上で読んでください。docs/project-principles.md が最上位原則です。ローカルPC、Dropbox、手元フォルダを正本にせず、GitHub/Vercel/Supabase を正として進めます。CodexはDropboxやローカルへclone・探索せず、GitHub mainの確認・更新はまずGitHub連携ツールで行ってください。GitHub連携で更新できない場合はローカルへ逃げず、そこで止まって状況を説明してください。現在は飲食店オーナーへデモとして見せられるように /admin の本部メンテナンス画面を整える段階です。写真タブのDB/API/UI土台はGitHub mainへ反映済みで、Supabase migrationも適用済みです。写真タブは一覧画面と詳細画面に分離済みで、説明文欄は外し、一言メモ40文字に一本化しています。次のチェックポイントはVercel画面確認です。/admin 写真タブで今日表示、一覧/詳細分離、説明文欄が出ないこと、日付括弧なし、店順、日付新しい順/古い順、確認状態、一言メモ40文字保存を確認してください。SNS投稿、自動投稿、投稿本文生成、Instagram連携はまだ実装しないでください。作業報告の最後は必ず、作業内容、確認済み、未確認、次に進む候補、Codexからの気づき、更新した文書、更新しなかった文書の形式にしてください。
 ```
