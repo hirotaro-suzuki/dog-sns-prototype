@@ -1,0 +1,10 @@
+.adminPage :global(.admin-login-panel .page-heading h1) {
+  font-size: 0;
+}
+
+.adminPage :global(.admin-login-panel .page-heading h1)::after {
+  content: "本部管理画面";
+  display: block;
+  font-size: clamp(28px, 4vw, 44px);
+  line-height: 1.2;
+}
