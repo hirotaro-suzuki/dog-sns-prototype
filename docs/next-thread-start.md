@@ -91,7 +91,7 @@ GitHub反映、Vercel反映、iPad Safari確認、実機印刷確認は分けて
 - 詳細画面から「一覧へ戻る」で戻れるようにした
 - 写真詳細側で確認状態と一言メモを保存できるようにした
 - 写真詳細側から旧来の `説明文` 欄と `説明文を保存` ボタンを外した
-- 日付表示を、不要な括弧が出ない短い形式にした
+- 写真カード、詳細、開始日、終了日の不要な括弧表示を出さないようにした
 
 Supabaseで今回すでに適用済みのこと:
 
@@ -99,11 +99,13 @@ Supabaseで今回すでに適用済みのこと:
 - SQL Editor結果は `Success. No rows returned`
 - `assets.short_caption`、`assets.review_status`、40文字制約、確認状態値制約、検索用indexはSupabase本体へ反映済みと扱う
 
-Vercelで確認済みのこと:
+Vercel / 実画面で確認済みのこと:
 
-- 最新の写真タブ複数選択UIを含むコミット `82a4609c3246bf625c0ac1c56c71ee16401d2e96` はVercel status `success`
+- 写真タブ複数選択UIはGitHub mainへ反映済みで、Vercel status も success
+- ユーザー確認で、写真一覧の選択用チェックボックスは画面に出ており、動きも確認済み
+- ユーザー確認で、開始日・終了日の後ろに出ていた括弧表示は消えた
 
-次のチェックポイントは、Vercel実画面確認です。
+次のチェックポイントは、/admin 写真タブの仕上げ確認と、次に改善する管理画面項目の選定です。
 実装前に、以下のOK条件を確認してください。
 
 - Vercelの `/admin` 写真タブが開くことを確認する
@@ -117,7 +119,7 @@ Vercelで確認済みのこと:
 - 詳細画面で「一覧へ戻る」から一覧へ戻れることを確認する
 - 詳細画面に `説明文` 欄が出ないことを確認する
 - 一言メモが40文字以内で入力できることを確認する
-- 日付の後ろに不要な括弧表示が出ないことを確認する
+- 写真カード、詳細、開始日、終了日の後ろに不要な括弧表示が出ないことを確認する
 - 確認状態フィルターが動くことを確認する
 - 日付順の新しい順/古い順が切り替わることを確認する
 - 店順が `stores.sort_order` を優先することを確認する
@@ -136,5 +138,5 @@ Vercelで確認済みのこと:
 ## 短く始めたい場合
 
 ```text
-hirotaro-suzuki/dog-sns-prototype の GitHub main が最新版です。まず docs/project-principles.md、README.md、dog_sns_design.md、docs/next-thread-start.md、docs/ownership-handoff.md、docs/session-2026-07-04-admin-handoff.md を GitHub 上で読んでください。docs/project-principles.md が最上位原則です。ローカルPC、Dropbox、手元フォルダを正本にせず、GitHub/Vercel/Supabase を正として進めます。CodexはDropboxやローカルへclone・探索せず、GitHub mainの確認・更新はまずGitHub連携ツールで行ってください。GitHub連携で更新できない場合はローカルへ逃げず、そこで止まって状況を説明してください。一時的な作業場所を使った場合は、作業後に必ず削除してください。現在は飲食店オーナーへデモとして見せられるように /admin の本部メンテナンス画面を整える段階です。写真タブのDB/API/UI土台はGitHub mainへ反映済みで、Supabase migrationも適用済みです。写真タブは一覧画面と詳細画面に分離済みで、説明文欄は外し、一言メモ40文字に一本化しています。一覧で複数写真をチェック選択し、詳細画面で前へ、次へ、保存して次へにより順番に一言メモと確認状態を処理できるようにしています。最新コミットのVercel statusは success です。次のチェックポイントはVercel実画面確認です。/admin 写真タブで今日表示、一覧/詳細分離、チェックボックス複数選択、選択した写真の順番確認、説明文欄が出ないこと、日付括弧なし、店順、日付新しい順/古い順、確認状態、一言メモ40文字保存を確認してください。SNS投稿、自動投稿、投稿本文生成、Instagram連携はまだ実装しないでください。作業報告の最後は必ず、作業内容、確認済み、未確認、次に進む候補、Codexからの気づき、更新した文書、更新しなかった文書の形式にしてください。
+hirotaro-suzuki/dog-sns-prototype の GitHub main が最新版です。まず docs/project-principles.md、README.md、dog_sns_design.md、docs/next-thread-start.md、docs/ownership-handoff.md、docs/session-2026-07-04-admin-handoff.md を GitHub 上で読んでください。docs/project-principles.md が最上位原則です。ローカルPC、Dropbox、手元フォルダを正本にせず、GitHub/Vercel/Supabase を正として進めます。CodexはDropboxやローカルへclone・探索せず、GitHub mainの確認・更新はまずGitHub連携ツールで行ってください。GitHub連携で更新できない場合はローカルへ逃げず、そこで止まって状況を説明してください。一時的な作業場所を使った場合は、作業後に必ず削除してください。現在は飲食店オーナーへデモとして見せられるように /admin の本部メンテナンス画面を整える段階です。写真タブのDB/API/UI土台はGitHub mainへ反映済みで、Supabase migrationも適用済みです。写真タブは一覧画面と詳細画面に分離済みで、説明文欄は外し、一言メモ40文字に一本化しています。一覧で複数写真をチェック選択し、詳細画面で前へ、次へ、保存して次へにより順番に一言メモと確認状態を処理できるようにしています。ユーザー確認で、写真一覧のチェックボックス動作と、開始日・終了日の不要な括弧表示が消えたことは確認済みです。次のチェックポイントは /admin 写真タブの仕上げ確認と、次に改善する管理画面項目の選定です。SNS投稿、自動投稿、投稿本文生成、Instagram連携はまだ実装しないでください。作業報告の最後は必ず、作業内容、確認済み、未確認、次に進む候補、Codexからの気づき、更新した文書、更新しなかった文書の形式にしてください。
 ```
