@@ -24,7 +24,7 @@
 - 作業区切りでは、Codexからの気づき、リスク、改善案も提示する。ただし即実装せず、ユーザー確認後に候補とする。
 - 本番環境の値はコードに書かず、VercelとSupabase側で差し替えられるようにする。
 - 店舗担当者は日常操作だけ、本部担当者はマスタ管理と保存画像管理を担当する。
-- SNS投稿そのものは後続フェーズとし、撮影、編集、同意後保存までを疎結合に保つ。
+- SNS投稿そのものは後続フェーズとし、撮影、編集、同意後保存、本部確認までを疎結合に保つ。
 
 ## この文書の更新ルール
 
@@ -51,11 +51,11 @@ GitHub、Vercel、Supabase、環境変数、DB構造、Storage、管理画面、
 - Supabaseスキーマ: `supabase/schema.sql`
 - 追加SQL履歴: `supabase/migrations/`
 - 2026-07-04枠デザイン立て直し記録: `docs/session-2026-07-04-frame-reset.md`
+- 2026-07-04管理画面ブラッシュアップ記録: `docs/session-2026-07-04-admin-handoff.md`
 - 2026-07-04所有権引き継ぎ補足: `docs/ownership-handoff-2026-07-04-frame-note.md`
 
 この文書は所有権と運用引き渡しに関する補助文書であり、細かな画面仕様は `dog_sns_design.md` を正とする。
 判断に迷った場合は、まず `docs/project-principles.md` を確認する。
-2026-07-04時点の枠・ロゴ作業には仮実装と反省点が含まれるため、必要に応じて `docs/session-2026-07-04-frame-reset.md` も読む。
 
 ## 2026-07-04時点で実装済み
 
@@ -82,6 +82,10 @@ GitHub、Vercel、Supabase、環境変数、DB構造、Storage、管理画面、
 - 担当者マスタの追加、名前変更、役割、有効/無効、並び順を編集できる。
 - 店舗ごとの写真枠を追加、アップロード、差し替え、有効/無効、標準枠、並び順を管理できる。
 - 既存の店舗ロゴ画像アップロード機能は残っているが、今後削除予定の古い管理機能として扱う。
+- API土台として、保存済み写真に40文字以内の一言メモ `assets.short_caption` と本部確認状態 `assets.review_status` を持てるようにした。
+- `review_status` の内部値は `new`、`candidate`、`hold`、`rejected`。表示候補は `未確認`、`投稿候補`、`保留`、`使用しない`。
+- 写真一覧APIは店順、日付新しい順/古い順、確認状態絞り込みに対応済み。
+- 写真個別更新APIは一言メモと確認状態の更新、不正値拒否に対応済み。
 
 DB・素材管理:
 
@@ -89,11 +93,16 @@ DB・素材管理:
 - `store_frames` には、枠ごとの日付表示設定用カラムを追加済み。
 - 日付表示設定カラムは、`date_enabled`、`date_x`、`date_y`、`date_font_size`、`date_color`。
 - 追加SQLは `supabase/migrations/20260704_frame_date_settings.sql` に記録済み。
-- `supabase/schema.sql` にも、日付表示設定カラムと制約を反映済み。
+- `assets` には本部確認用の `short_caption` と `review_status` を追加する。
+- 追加SQLは `supabase/migrations/20260704_admin_asset_review_fields.sql` に記録済み。
+- `supabase/schema.sql` にも、`short_caption`、`review_status`、制約、検索用indexを反映済み。
 - `stores.logo_url` など既存ロゴ関連項目は、すぐには消さず、枠画像への移行後に整理する。
 
 ## 2026-07-04時点の注意点
 
+- `supabase/migrations/20260704_admin_asset_review_fields.sql` はGitHub mainへ追加済みだが、実際のSupabase SQL Editorへの適用はユーザー操作が必要。
+- Supabase本体へ未適用のままVercelの最新コードが動くと、`/admin` の写真一覧APIが存在しないカラムを読みに行ってエラーになる可能性がある。
+- 写真タブUIには、まだ一言メモ、確認状態、店順/日付順切替、確認状態絞り込みが十分には反映されていない。次チェックポイントで整える。
 - Canon SELPHY / AirPrintの実機印刷確認は未解決。Web標準の印刷画面を開くところまでが実装範囲。
 - 店舗側で保存済み写真を日付別に確認、再印刷、非表示にする機能はまだ未実装。
 - SNS投稿内容を作成、保存、管理する機能はまだ未実装。
@@ -151,6 +160,7 @@ DB・素材管理:
 後続フェーズで検討する管理操作:
 
 - 残っているロゴ管理を削除または非表示にする。
+- 保存済み写真に一言メモと本部確認状態を付けるUIを整える。
 - 投稿候補画像を選ぶ。
 - SNS投稿素材を作成、保存するか、Manusなど別ツールへ渡す運用を整理する。
 - 投稿文を確認、編集する。
@@ -236,10 +246,12 @@ ADMIN_MAINTENANCE_PIN
 - Supabaseプロジェクトの所有Organization、請求、APIキー、RLSを確認する。
 - `.env.example` と実際のVercel環境変数が対応しているか確認する。
 - SupabaseのStorageバケット、公開範囲、バックアップ方針を確認する。
+- `supabase/migrations/` にあるSQLが本番DBへ適用済みか確認する。
 - 本番データのバックアップと削除対応の運用者を決める。
 - 店舗マスタ、担当者マスタ、枠画像の更新担当者を決める。
 - 店舗側の日常操作担当者と、本部側の管理担当者を決める。
 - 保存済み写真の非表示、完全削除、復旧のルールを決める。
+- 本部確認状態 `new`、`candidate`、`hold`、`rejected` の運用ルールを決める。
 - 緊急時にクラウド保存や本部管理画面の利用を止める手順を決める。
 - Canon SELPHY / AirPrintの実機印刷手順を確認する。
 - 次の運用者が、GitHub、Vercel、Supabaseだけを見て再開できるか確認する。
