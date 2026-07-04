@@ -7,22 +7,36 @@ export const runtime = "nodejs";
 
 const MAX_SESSION_FRAMES = 3;
 const MIN_DEMO_FRAMES = 3;
+const FRAME_SELECT_COLUMNS =
+  "id, frame_name, frame_url, is_default, date_enabled, date_x, date_y, date_font_size, date_color";
 
 const DEMO_FRAME_DEFINITIONS = [
   {
     frame_name: "標準グリーン",
     frame_path: "/test-assets/frame-standard-green.svg",
     sort_order: 10,
+    date_x: 1030,
+    date_y: 82,
+    date_font_size: 38,
+    date_color: "#ffffff",
   },
   {
     frame_name: "季節ピンク",
     frame_path: "/test-assets/frame-season-pink.svg",
     sort_order: 20,
+    date_x: 1035,
+    date_y: 82,
+    date_font_size: 38,
+    date_color: "#ffffff",
   },
   {
     frame_name: "イベントゴールド",
     frame_path: "/test-assets/frame-event-gold.svg",
     sort_order: 30,
+    date_x: 635,
+    date_y: 818,
+    date_font_size: 32,
+    date_color: "#fff4d2",
   },
 ];
 
@@ -60,6 +74,11 @@ type StoreFrameLoginRow = {
   frame_name: string;
   frame_url: string;
   is_default: boolean;
+  date_enabled: boolean;
+  date_x: number;
+  date_y: number;
+  date_font_size: number;
+  date_color: string;
 };
 
 type StoreFramesMutationTable = {
@@ -105,6 +124,11 @@ async function ensureDemoFrames(
     is_default: false,
     is_active: true,
     sort_order: frame.sort_order,
+    date_enabled: true,
+    date_x: frame.date_x,
+    date_y: frame.date_y,
+    date_font_size: frame.date_font_size,
+    date_color: frame.date_color,
   })).filter((frame) => !currentFrameUrls.has(frame.frame_url));
 
   if (rows.length === 0) return null;
@@ -177,7 +201,7 @@ export async function POST(request: Request) {
 
     const { data: frameData, error: frameError } = await supabase
       .from("store_frames")
-      .select("id, frame_name, frame_url, is_default")
+      .select(FRAME_SELECT_COLUMNS)
       .eq("store_id", store.id)
       .eq("is_active", true)
       .order("is_default", { ascending: false })
@@ -210,7 +234,7 @@ export async function POST(request: Request) {
     if (isDemoStore(store.store_code) && frames.length < MIN_DEMO_FRAMES) {
       const { data: refreshedFrameData, error: refreshedFrameError } = await supabase
         .from("store_frames")
-        .select("id, frame_name, frame_url, is_default")
+        .select(FRAME_SELECT_COLUMNS)
         .eq("store_id", store.id)
         .eq("is_active", true)
         .order("is_default", { ascending: false })
@@ -244,6 +268,11 @@ export async function POST(request: Request) {
           frameName: frame.frame_name,
           frameUrl: frame.frame_url,
           isDefault: frame.is_default,
+          dateEnabled: frame.date_enabled,
+          dateX: frame.date_x,
+          dateY: frame.date_y,
+          dateFontSize: frame.date_font_size,
+          dateColor: frame.date_color,
         })),
         themeColor: store.theme_color,
         printTemplateType: store.print_template_type,
