@@ -85,15 +85,14 @@ DB・素材管理:
 - `store_frames` には、枠ごとの日付表示設定用カラムを追加済み。
 - 日付表示設定カラムは、`date_enabled`、`date_x`、`date_y`、`date_font_size`、`date_color`。
 - 追加SQLは `supabase/migrations/20260704_frame_date_settings.sql` に記録済み。
-- `assets` には本部確認用の `short_caption` と `review_status` を追加する。
-- 追加SQLは `supabase/migrations/20260704_admin_asset_review_fields.sql` に記録済み。
+- `assets` には本部確認用の `short_caption` と `review_status` を追加済み。
+- 追加SQLは `supabase/migrations/20260704_admin_asset_review_fields.sql` に記録し、Supabase本体にも適用済み。
 - `supabase/schema.sql` にも、`short_caption`、`review_status`、制約、検索用indexを反映済み。
 - `stores.logo_url` など既存ロゴ関連項目は、すぐには消さず、枠画像への移行後に整理する。
 
 ## 2026-07-04時点の注意点
 
-- `supabase/migrations/20260704_admin_asset_review_fields.sql` はGitHub mainへ追加済みだが、実際のSupabase SQL Editorへの適用はユーザー操作が必要。
-- Supabase本体へ未適用のままVercelの最新コードが動くと、`/admin` の写真一覧APIが存在しないカラムを読みに行ってエラーになる可能性がある。
+- `supabase/migrations/20260704_admin_asset_review_fields.sql` はGitHub mainへ追加済みで、2026-07-04にSupabase SQL Editorで適用済み。実行結果は `Success. No rows returned`。
 - Vercel上で `/admin` 写真タブの実操作確認はまだ未確認。
 - iPad Safariでの `/admin` 写真タブ確認はまだ未確認。
 - Canon SELPHY / AirPrintの実機印刷確認は未解決。Web標準の印刷画面を開くところまでが実装範囲。
