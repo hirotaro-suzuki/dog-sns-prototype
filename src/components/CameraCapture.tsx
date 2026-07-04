@@ -18,6 +18,7 @@ import type { CaptureStaff, CaptureStore } from "@/types/captureContext";
 const MAX_PHOTOS = 3;
 const MAX_CAPTURE_EDGE = 2400;
 const CAPTURE_JPEG_QUALITY = 0.9;
+const MAX_FRAME_CHOICES = 3;
 
 type Step = "capture" | "pick" | "info" | "process";
 
@@ -62,7 +63,15 @@ function getCaptureSize(video: HTMLVideoElement) {
   };
 }
 
-function StoreSettingsSummary({ store, staff }: { store?: CaptureStore; staff?: CaptureStaff }) {
+function StoreSettingsSummary({
+  store,
+  staff,
+  frameName,
+}: {
+  store?: CaptureStore;
+  staff?: CaptureStaff;
+  frameName?: string;
+}) {
   if (!store) return null;
 
   return (
@@ -80,6 +89,10 @@ function StoreSettingsSummary({ store, staff }: { store?: CaptureStore; staff?: 
         <div>
           <dt>担当者</dt>
           <dd>{staff?.displayName ?? "写真選択後に選択"}</dd>
+        </div>
+        <div>
+          <dt>選択中の枠</dt>
+          <dd>{frameName ?? (store.frameUrl ? "標準枠" : "未設定")}</dd>
         </div>
         <div>
           <dt>テーマ色</dt>
@@ -108,9 +121,32 @@ export function CameraCapture({ store, staffMembers = [], onBack, onLogout }: Ca
   const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<CapturedPhoto | null>(null);
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
+  const [selectedFrameId, setSelectedFrameId] = useState<string | null>(null);
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [canRetryCamera, setCanRetryCamera] = useState(false);
   const [message, setMessage] = useState("カメラを準備しています。");
+
+  const frameChoices = (store?.frames ?? []).slice(0, MAX_FRAME_CHOICES);
+  const selectedFrame = frameChoices.find((frame) => frame.id === selectedFrameId) ?? frameChoices[0] ?? null;
+  const activeStore = store
+    ? {
+        ...store,
+        frameUrl: selectedFrame?.frameUrl ?? store.frameUrl,
+      }
+    : undefined;
+  const activeFrameName = selectedFrame?.frameName;
+
+  useEffect(() => {
+    if (frameChoices.length === 0) {
+      setSelectedFrameId(null);
+      return;
+    }
+
+    setSelectedFrameId((currentId) => {
+      if (currentId && frameChoices.some((frame) => frame.id === currentId)) return currentId;
+      return frameChoices.find((frame) => frame.isDefault)?.id ?? frameChoices[0].id;
+    });
+  }, [store?.id, store?.frames]);
 
   useEffect(() => {
     return () => {
@@ -327,7 +363,7 @@ export function CameraCapture({ store, staffMembers = [], onBack, onLogout }: Ca
       <div className="camera-panel" style={themeStyle}>
         <MosaicCanvas
           photo={selectedPhoto}
-          store={store}
+          store={activeStore}
           staff={selectedStaff}
           onCancel={cancelSession}
           onBackToPhotos={backToPhotoPicker}
@@ -353,6 +389,21 @@ export function CameraCapture({ store, staffMembers = [], onBack, onLogout }: Ca
         )}
       </div>
 
+      {frameChoices.length > 1 && (
+        <div className="frame-choice-bar" aria-label="写真枠選択">
+          {frameChoices.map((frame) => (
+            <button
+              key={frame.id}
+              className={`frame-choice-button${selectedFrame?.id === frame.id ? " is-selected" : ""}`}
+              type="button"
+              onClick={() => setSelectedFrameId(frame.id)}
+            >
+              {frame.frameName}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="camera-stage" aria-label="カメラプレビュー">
         <video ref={videoRef} playsInline muted />
         {!isCameraReady && (
@@ -360,8 +411,8 @@ export function CameraCapture({ store, staffMembers = [], onBack, onLogout }: Ca
             <p>{message}</p>
           </div>
         )}
-        {store?.frameUrl && (
-          <img className="store-frame-image" src={store.frameUrl} alt="店舗フレーム" />
+        {activeStore?.frameUrl && (
+          <img className="store-frame-image" src={activeStore.frameUrl} alt="店舗フレーム" />
         )}
         {store?.logoUrl && (
           <img className="store-logo-badge" src={store.logoUrl} alt="店舗ロゴ" />
@@ -423,7 +474,7 @@ export function CameraCapture({ store, staffMembers = [], onBack, onLogout }: Ca
         </div>
       )}
 
-      <StoreSettingsSummary store={store} staff={selectedStaff} />
+      <StoreSettingsSummary store={activeStore} staff={selectedStaff} frameName={activeFrameName} />
     </div>
   );
 }
