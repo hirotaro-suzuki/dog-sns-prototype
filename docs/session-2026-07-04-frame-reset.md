@@ -97,7 +97,7 @@
 - ただし、プロジェクトの正本はGitHub/Vercel/Supabaseであり、特定PCのローカルフォルダやDropboxを正本にしない。
 - ロゴ元画像がローカルにしかない場合は、ユーザーに必要最小限の操作で再提示してもらうか、管理画面からアップロードする流れを整理する。
 
-## 次スレッドで最初にやること
+## 当時の次スレッド向けメモ
 
 1. この文書、`dog_sns_design.md`、`docs/next-thread-start.md`、`docs/ownership-handoff.md` を読む。
 2. 先にSNS投稿素材機能へ進まない。
