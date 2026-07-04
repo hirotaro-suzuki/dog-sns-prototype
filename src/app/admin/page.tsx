@@ -1,3 +1,4 @@
+import { AdminDateInputNormalizer } from "@/components/AdminDateInputNormalizer";
 import { AdminMaintenance } from "@/components/AdminMaintenance";
 import { AdminLogoutButton } from "@/components/AdminLogoutButton";
 import { AdminTabReloadButton } from "@/components/AdminTabReloadButton";
@@ -11,6 +12,7 @@ export default function AdminPage() {
           <AdminLogoutButton />
         </div>
         <AdminTabReloadButton />
+        <AdminDateInputNormalizer />
         <AdminMaintenance />
       </section>
     </main>
