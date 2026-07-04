@@ -150,6 +150,8 @@ create table if not exists public.assets (
   captured_date date not null,
   sequence_number integer not null,
   description text,
+  short_caption text,
+  review_status text not null default 'new',
   sns_consent boolean not null default true,
   mosaic_required boolean not null default false,
   final_processed_url text not null,
@@ -170,6 +172,8 @@ create table if not exists public.assets (
   constraint assets_sequence_number_positive check (sequence_number > 0),
   constraint assets_final_processed_url_not_blank check (length(trim(final_processed_url)) > 0),
   constraint assets_final_storage_path_not_blank check (length(trim(final_storage_path)) > 0),
+  constraint assets_short_caption_length check (short_caption is null or char_length(short_caption) <= 40),
+  constraint assets_review_status_allowed check (review_status in ('new', 'candidate', 'hold', 'rejected')),
   constraint assets_status_allowed check (status in ('ready', 'archived')),
   constraint assets_store_date_sequence_unique unique (store_id, captured_date, sequence_number),
   constraint assets_theme_color_snapshot_format check (
@@ -182,6 +186,9 @@ on public.assets (store_id, captured_date desc, sequence_number desc);
 
 create index if not exists assets_status_created_at_idx
 on public.assets (status, created_at desc);
+
+create index if not exists assets_review_status_captured_date_idx
+on public.assets (review_status, captured_date desc, store_id);
 
 create trigger assets_set_updated_at
 before update on public.assets
