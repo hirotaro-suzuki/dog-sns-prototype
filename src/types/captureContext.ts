@@ -8,6 +8,7 @@ export type CaptureStore = Pick<
   | "displayName"
   | "logoUrl"
   | "frameUrl"
+  | "frames"
   | "themeColor"
   | "printTemplateType"
   | "timezone"
