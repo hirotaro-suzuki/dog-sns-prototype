@@ -4,8 +4,12 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
+type AssetReviewStatus = "new" | "candidate" | "hold" | "rejected";
+
 type UpdateAssetRequest = {
   description?: unknown;
+  shortCaption?: unknown;
+  reviewStatus?: unknown;
   action?: unknown;
   hiddenReason?: unknown;
 };
@@ -32,14 +36,30 @@ type AssetsTable = {
 type UpdatedAssetRow = {
   id: string;
   description: string | null;
+  short_caption: string | null;
+  review_status: AssetReviewStatus;
   status: "ready" | "archived";
   hidden_at: string | null;
   hidden_reason: string | null;
 };
 
+const REVIEW_STATUS_VALUES: AssetReviewStatus[] = ["new", "candidate", "hold", "rejected"];
+
 function normalizeText(value: unknown, maxLength: number) {
   if (typeof value !== "string") return "";
   return value.trim().slice(0, maxLength);
+}
+
+function normalizeRequiredLengthText(value: unknown, maxLength: number) {
+  if (typeof value !== "string") return { ok: true, value: "" };
+  const text = value.trim();
+  if (text.length > maxLength) return { ok: false, value: text };
+  return { ok: true, value: text };
+}
+
+function getReviewStatus(value: unknown): AssetReviewStatus | null {
+  if (typeof value !== "string") return null;
+  return REVIEW_STATUS_VALUES.includes(value as AssetReviewStatus) ? (value as AssetReviewStatus) : null;
 }
 
 function formatSupabaseError(error: SupabaseLikeError) {
@@ -69,6 +89,22 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     updateValues.description = description || null;
   }
 
+  if ("shortCaption" in body) {
+    const shortCaption = normalizeRequiredLengthText(body.shortCaption, 40);
+    if (!shortCaption.ok) {
+      return NextResponse.json({ message: "一言メモは40文字以内で入力してください。" }, { status: 400 });
+    }
+    updateValues.short_caption = shortCaption.value || null;
+  }
+
+  if ("reviewStatus" in body) {
+    const reviewStatus = getReviewStatus(body.reviewStatus);
+    if (!reviewStatus) {
+      return NextResponse.json({ message: "確認状態を確認してください。" }, { status: 400 });
+    }
+    updateValues.review_status = reviewStatus;
+  }
+
   if (action === "archive") {
     updateValues.status = "archived";
     updateValues.hidden_at = new Date().toISOString();
@@ -91,7 +127,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     const { data, error } = await assetsTable
       .update(updateValues)
       .eq("id", id)
-      .select("id, description, status, hidden_at, hidden_reason")
+      .select("id, description, short_caption, review_status, status, hidden_at, hidden_reason")
       .single();
 
     if (error) {
