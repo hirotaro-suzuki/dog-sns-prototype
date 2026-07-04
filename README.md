@@ -41,12 +41,12 @@
 短く伝える場合は以下でもよい。
 
 ```text
-hirotaro-suzuki/dog-sns-prototype の GitHub main が最新版です。まず docs/project-principles.md、README.md、dog_sns_design.md、docs/next-thread-start.md、docs/ownership-handoff.md、直近の作業ログを GitHub 上で読んでください。ローカルPCを正本にせず、GitHub/Vercel/Supabase を正として進めます。Codexは先走らず、実装前に目的、OK条件、確認方法、更新すべき文書を整理して止まってください。現在はSNS投稿機能へ進む前に、2026-07-04にぶれた枠・ロゴ方針を立て直し、軽井沢店の正式ロゴ入りL版フレームをまず1色だけ完成品質にする段階です。
+hirotaro-suzuki/dog-sns-prototype の GitHub main が最新版です。まず docs/project-principles.md、README.md、dog_sns_design.md、docs/next-thread-start.md、docs/ownership-handoff.md、docs/session-2026-07-04-admin-handoff.md を GitHub 上で読んでください。GitHub/Vercel/Supabase を正として進めます。Codexは先走らず、実装前に目的、OK条件、確認方法、更新すべき文書を整理して止まってください。現在は飲食店オーナーへデモとして見せられるように /admin の本部メンテナンス画面を整える段階です。写真タブのDB/API/UI土台はGitHub mainへ反映済みで、Supabase migrationも適用済みです。写真タブは一覧画面と詳細画面に分離済みで、説明文欄は外し、一言メモ40文字に一本化しています。ユーザー確認で、写真一覧のチェックボックス動作と、開始日・終了日の不要な括弧表示が消えたことは確認済みです。SNS投稿、自動投稿、投稿本文生成、Instagram連携はまだ実装しないでください。
 ```
 
 ## 現在できていること
 
-詳しい最新仕様は `dog_sns_design.md` を正とする。
+詳しい最新仕様は `dog_sns_design.md` と直近ログ `docs/session-2026-07-04-admin-handoff.md` を確認する。
 
 現時点では、以下の流れが動作している。
 
@@ -65,8 +65,9 @@ hirotaro-suzuki/dog-sns-prototype の GitHub main が最新版です。まず do
 13. 完成画像確認から編集へ戻れる
 14. 印刷ボタンでブラウザ標準の印刷画面を開ける
 15. SNS掲載OKをもらった完成画像をSupabase StorageとDBへ保存できる
-16. 本部用 `/admin` で保存済み写真を一覧、説明文更新、非表示/復帰できる
-17. 本部用 `/admin` で店舗マスタと担当者マスタを編集できる
+16. 本部用 `/admin` で保存済み写真を一覧確認、複数選択、順番確認できる
+17. 本部用 `/admin` で保存済み写真の一言メモと確認状態を更新し、非表示/復帰できる
+18. 本部用 `/admin` で店舗マスタ、担当者マスタ、枠を編集できる
 
 ## 2026-06-18 作業メモ
 
@@ -88,13 +89,12 @@ hirotaro-suzuki/dog-sns-prototype の GitHub main が最新版です。まず do
 
 当面の優先順:
 
-1. `docs/project-principles.md` を最上位原則として、README、設計書、次スレッド指示を整理する
-2. 2026-07-04にぶれた枠・ロゴ方針を立て直す
-3. 軽井沢店の正式ロゴ入りL版フレームを、まず1色だけ完成品質で作る
-4. 撮影画面、編集画面、完成画像、印刷時の見え方が一致するか確認する
-5. 店舗側の撮影、編集、印刷、同意後保存の流れを安定確認する
-6. 本部側の保存済み写真、店舗、担当者、枠管理を安定確認する
-7. その後、SNS投稿素材や外部連携の扱いを改めて検討する
+1. `/admin` 写真タブの仕上げ確認を行う
+2. 店舗側の撮影、編集、印刷、同意後保存の流れを安定確認する
+3. 本部側の保存済み写真、店舗、担当者、枠管理を安定確認する
+4. 残っているロゴ管理を削除または非表示にするか判断する
+5. 枠・ロゴ方針に沿って、正式ロゴ入りL版フレームを作り直す
+6. その後、SNS投稿素材や外部連携の扱いを改めて検討する
 
 ## SNS投稿機能について
 
@@ -119,6 +119,7 @@ VercelでこのGitHubリポジトリをImportしてください。
 - 次スレッド開始時の指示文: `docs/next-thread-start.md`
 - 現在の設計・開発方針の正本: `dog_sns_design.md`
 - 所有権・運用引き渡しメモ: `docs/ownership-handoff.md`
+- 2026-07-04管理画面ブラッシュアップ記録: `docs/session-2026-07-04-admin-handoff.md`
 - 2026-07-04枠デザイン立て直し記録: `docs/session-2026-07-04-frame-reset.md`
 - Supabase引き継ぎメモ: `docs/supabase-handoff.md`
 - 2026-06-25作業ログ: `docs/session-2026-06-25.md`
