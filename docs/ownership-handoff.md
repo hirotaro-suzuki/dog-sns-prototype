@@ -40,8 +40,11 @@ GitHub、Vercel、Supabase、環境変数、DB構造、Storage、管理画面、
 - Supabase引き継ぎ: `docs/supabase-handoff.md`
 - Supabaseスキーマ: `supabase/schema.sql`
 - 追加SQL履歴: `supabase/migrations/`
+- 2026-07-04枠デザイン立て直し記録: `docs/session-2026-07-04-frame-reset.md`
+- 2026-07-04所有権引き継ぎ補足: `docs/ownership-handoff-2026-07-04-frame-note.md`
 
 この文書は所有権と運用引き渡しに関する補助文書であり、細かな画面仕様は `dog_sns_design.md` を正とする。
+2026-07-04時点の枠・ロゴ作業には仮実装と反省点が含まれるため、次スレッドでは必ず `docs/session-2026-07-04-frame-reset.md` も読む。
 
 ## 2026-07-04時点で実装済み
 
@@ -86,6 +89,8 @@ DB・素材管理:
 - Manusや別AIへ渡すための投稿加工、カルーセル作成、実投稿連携は、このシステムの現フェーズには含めない。
 - 枠ごとの日付表示設定はDB、API、完成画像への描画に反映済み。`/admin` の枠編集画面で日付位置などを直接編集するUIは引き続き整備対象。
 - ロゴは枠画像内に含める方針へ変更済み。`/admin` に残っているロゴ管理は、後続作業で削除または非表示にする。
+- 2026-07-04に追加した `public/store-frames/karuizawa-premium-*.svg` と `public/store-frames/karuizawa-simple-*.svg` は仮素材。正式ロゴを使った社長確認用の完成フレームではない。
+- 2026-07-04に追加した `/admin/frame-cleanup` は一時補助画面。恒久機能として残すか、後で削除するかを決める。
 - `seed.example.sql` は本番運用では使わず、新規環境の動作確認用サンプルとして残す。
 
 ## 仮の運用分担
