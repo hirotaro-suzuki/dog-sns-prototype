@@ -1,5 +1,6 @@
 import { AdminMaintenance } from "@/components/AdminMaintenance";
 import { AdminLogoutButton } from "@/components/AdminLogoutButton";
+import { AdminTabReloadButton } from "@/components/AdminTabReloadButton";
 import styles from "./admin-page.module.css";
 
 export default function AdminPage() {
@@ -9,6 +10,7 @@ export default function AdminPage() {
         <div className={styles.logoutRow}>
           <AdminLogoutButton />
         </div>
+        <AdminTabReloadButton />
         <AdminMaintenance />
       </section>
     </main>
