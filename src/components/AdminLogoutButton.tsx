@@ -4,11 +4,20 @@ import { useEffect, useState } from "react";
 
 const PIN_STORAGE_KEY = "dog-sns-admin-pin";
 
+function hasStoredPin() {
+  return Boolean(window.sessionStorage.getItem(PIN_STORAGE_KEY));
+}
+
 export function AdminLogoutButton({ className = "" }: { className?: string }) {
   const [hasPin, setHasPin] = useState(false);
 
   useEffect(() => {
-    setHasPin(Boolean(window.sessionStorage.getItem(PIN_STORAGE_KEY)));
+    setHasPin(hasStoredPin());
+    const intervalId = window.setInterval(() => {
+      setHasPin(hasStoredPin());
+    }, 500);
+
+    return () => window.clearInterval(intervalId);
   }, []);
 
   if (!hasPin) return null;
