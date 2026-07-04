@@ -12,13 +12,10 @@ GitHub `main` を正本とする。ローカルPC、Dropbox、手元フォルダ
 
 当面はSNS投稿機能そのものへ進まず、保存済み写真を本部で確認、整理、候補化できる状態を作る。
 
-## 今回合意した管理画面方針
+## 合意した管理画面方針
 
 - `/admin` は本部メンテナンス画面として扱う。
-- 入口の主表示に「写真管理」という表現を強く出しすぎない。
 - 中に入った後のタブは、写真、店舗、担当者、枠を基本にする。
-- 管理画面へログインした後、ログアウトできる導線を用意する。
-- 「再読み込み」ボタンは画面上部ではなく、タブ内に置く。名前は「再読み込み」のままにする。
 - 写真一覧と詳細は分ける方向にする。
 - 現状4店舗、各店舗が毎日10枚程度アップする想定なので、一覧では店舗順、日付順、状態順などで探せるようにする。
 - 初期表示は「今日」の写真を標準にする。
@@ -29,15 +26,13 @@ GitHub `main` を正本とする。ローカルPC、Dropbox、手元フォルダ
 - 本部側では、複数写真を選択し、一言メモや非表示などを順に処理できる方向にする。
 - 将来的に、選択した写真を投稿候補にして投稿へ進む流れはあり得るが、今は実装しない。
 
-## すでにGitHub mainへ反映済みのこと
+## GitHub mainへ反映済みのこと
 
 - `/admin` に残っていた「かんたん枠登録」パネルを削除した。
 - `/admin` の入口表示を、本部管理画面として見えるように調整した。
 - 管理画面にログアウト導線を追加した。
 - ログアウト後に再ログインしてもログアウトボタンが出るように修正した。
 - 「再読み込み」ボタンをタブ内に見える位置へ移す補助コンポーネントを追加した。
-- 作業報告の形式に「Codexからの気づき」を必ず含めることを文書化した。
-- GitHub main を正とし、Dropboxやローカルへ逃げない運用を文書化した。
 - `assets.short_caption` と `assets.review_status` の追加migrationをGitHubへ追加した。
 - `supabase/schema.sql` に `short_caption`、`review_status`、制約、検索用indexを反映した。
 - Supabase型定義へ `short_caption` と `review_status` を反映した。
@@ -49,27 +44,35 @@ GitHub `main` を正本とする。ローカルPC、Dropbox、手元フォルダ
 - 写真カード上に確認状態と一言メモを表示するようにした。
 - 写真詳細側で確認状態と一言メモを保存できるようにした。
 
+## Supabaseへ適用済みのこと
+
+ユーザー操作により、Supabase SQL Editorで `supabase/migrations/20260704_admin_asset_review_fields.sql` を適用済み。
+
+SQL Editorの結果は以下。
+
+```text
+Success. No rows returned
+```
+
+これにより、`assets.short_caption`、`assets.review_status`、40文字制約、確認状態値制約、検索用indexはSupabase本体へ反映済みと扱う。
+
 ## 注意が必要な既存実装
 
 `/admin` の「再読み込み」ボタン移動は、現時点では `AdminMaintenance` 本体の大改修ではなく、補助コンポーネントで既存ボタンをタブ下へ移す形になっている。
 
 次に大きく写真タブを作り直すときは、この補助実装を恒久実装へ整理するのが望ましい。
 
-今回のDB/API/UI土台はGitHub mainへ反映済みだが、実際のSupabase SQL Editorへのmigration適用はまだユーザー操作が必要である。Supabaseへ未適用の状態でVercel画面を触ると、APIが存在しないカラムを読みに行ってエラーになる可能性がある。
-
 ## 次に進むチェックポイント
 
-次は「Supabase migration適用とVercel画面確認」へ進む。
+次は「Vercel画面確認」へ進む。
 
 目的:
 
-- GitHub mainへ反映済みの写真タブDB/API/UIが、実際のSupabaseとVercel上で動くことを確認する。
+- GitHub mainへ反映済みの写真タブDB/API/UIが、Vercel上で実際に動くことを確認する。
 
 確認すること:
 
-- Supabase SQL Editorで `supabase/migrations/20260704_admin_asset_review_fields.sql` を適用する。
-- `assets.short_caption` と `assets.review_status` が追加されていることを確認する。
-- 既存写真の `review_status` が `new` として扱われることを確認する。
+- Vercelの最新デプロイが成功していることを確認する。
 - Vercelの `/admin` 写真タブが開くことを確認する。
 - 初期表示が今日の写真になることを確認する。
 - 確認状態フィルターが動くことを確認する。
@@ -78,6 +81,7 @@ GitHub `main` を正本とする。ローカルPC、Dropbox、手元フォルダ
 - 写真カード上に確認状態と一言メモが出ることを確認する。
 - 詳細側で40文字以内の一言メモと確認状態を保存できることを確認する。
 - 40文字超過の一言メモがAPIで拒否されることを確認する。
+- その後、必要ならiPad Safariで見た目と操作感を確認する。
 
 この時点でも、Instagram投稿、自動投稿、投稿本文生成は実装しない。
 
@@ -88,7 +92,6 @@ GitHub `main` を正本とする。ローカルPC、Dropbox、手元フォルダ
 - `assets.review_status` の内部値は `new`、`candidate`、`hold`、`rejected` とする。
 - 表示名は `未確認`、`投稿候補`、`保留`、`使用しない` とする。
 - 既存写真は初期状態 `new` でよい。
-- SQLはGitHubにmigrationとして残し、実際のSupabase SQL Editorへの適用はユーザーが行う。
 - APIは一覧取得で一言メモと確認状態を返し、個別更新で一言メモと確認状態を更新できるようにする。
 - 不正な状態値はAPIで拒否する。
 - 初期表示は今日の写真でよい。
@@ -107,10 +110,7 @@ GitHub `main` を正本とする。ローカルPC、Dropbox、手元フォルダ
 
 ## 次スレッドで触る候補ファイル
 
-- 必要に応じて `src/components/AdminMaintenance.tsx`
-- 必要に応じて `src/app/globals.css`
-- 必要に応じて `src/app/api/admin/assets/route.ts`
-- 必要に応じて `src/app/api/admin/assets/[id]/route.ts`
+- Vercel確認で問題が出た場合のみ、該当するAPIまたはUIファイル
 - 確認結果に応じて `dog_sns_design.md`、`docs/supabase-handoff.md`
 
 ## まだ決めないこと
@@ -121,17 +121,3 @@ GitHub `main` を正本とする。ローカルPC、Dropbox、手元フォルダ
 - 完全削除やStorageファイル削除の画面導線。
 - 店舗側で保存済み写真を再表示、再印刷する機能。
 - 複数写真の一括選択と一括更新。まず単体更新の実動作を確認してから進める。
-
-## Codex運用上の反省と改善
-
-今回、コンテキスト圧縮が起きる前に十分な引き継ぎメモを作る運用ができていなかった。
-
-今後は「圧縮直前に知らせる」ではなく、以下の区切りで先に文書を更新する。
-
-- 重要な実装に入る前。
-- DBや運用に関わる判断をした時。
-- チェックポイントを越えた時。
-- 作業が長くなり始めた時。
-- 次の話題へ大きく移る時。
-
-コンテキスト圧縮は予告なく起きる可能性があるため、Codexは早めに「ここで引き継ぎメモを作って次スレッドに移るのが安全です」と提案する。
