@@ -69,6 +69,14 @@ type StoresResponse = {
   detail?: string;
 };
 
+type StoreAssetUploadResponse = {
+  publicUrl?: string;
+  store?: Partial<StoreMaster> & { id: string };
+  frame?: StoreFrame;
+  message?: string;
+  detail?: string;
+};
+
 type StaffResponse = {
   staff?: StaffMaster[];
   staffMember?: StaffMaster;
@@ -165,6 +173,7 @@ export function AdminMaintenance() {
   const [hiddenReasonDraft, setHiddenReasonDraft] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingAsset, setIsUploadingAsset] = useState(false);
   const [message, setMessage] = useState("");
 
   const selectedAsset = useMemo(
@@ -439,6 +448,46 @@ export function AdminMaintenance() {
       setMessage(error instanceof Error ? error.message : "店舗マスタを保存できませんでした。");
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function uploadStoreLogo(file: File | null) {
+    if (!adminPin || !storeDraft.id || !file) return;
+    setIsUploadingAsset(true);
+    setMessage("");
+
+    try {
+      const formData = new FormData();
+      formData.append("storeId", storeDraft.id);
+      formData.append("assetType", "logo");
+      formData.append("file", file);
+
+      const response = await fetch("/api/admin/stores", {
+        method: "POST",
+        headers: {
+          "x-admin-pin": adminPin,
+        },
+        body: formData,
+      });
+      const data = (await response.json()) as StoreAssetUploadResponse;
+
+      if (!response.ok || !data.publicUrl) {
+        setMessage(getErrorMessage(data, "ロゴをアップロードできませんでした。"));
+        return;
+      }
+
+      const updatedStore = { ...storeDraft, logo_url: data.publicUrl };
+      setStoreDraft(updatedStore);
+      setStoreMasters((current) =>
+        current.map((store) =>
+          store.id === updatedStore.id ? { ...store, logo_url: data.publicUrl ?? store.logo_url } : store
+        )
+      );
+      setMessage("ロゴをアップロードして店舗マスタへ保存しました。");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "ロゴをアップロードできませんでした。");
+    } finally {
+      setIsUploadingAsset(false);
     }
   }
 
@@ -794,6 +843,18 @@ export function AdminMaintenance() {
                     <input
                       value={nullableText(storeDraft.logo_url)}
                       onChange={(event) => setStoreDraft((current) => ({ ...current, logo_url: event.target.value }))}
+                    />
+                  </label>
+                  <label className="field-label">
+                    ロゴ画像アップロード
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                      disabled={isUploadingAsset}
+                      onChange={(event) => {
+                        void uploadStoreLogo(event.target.files?.[0] ?? null);
+                        event.currentTarget.value = "";
+                      }}
                     />
                   </label>
                   <label className="field-label">
@@ -1206,6 +1267,56 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
     }
   }
 
+  async function uploadFrameImage(file: File | null, target: "new" | "selected") {
+    if (!adminPin || !selectedStoreId || !file) return;
+    setIsFrameSaving(true);
+    setFrameMessage("");
+
+    try {
+      const formData = new FormData();
+      formData.append("storeId", selectedStoreId);
+      formData.append("assetType", "frame");
+      formData.append("file", file);
+      if (target === "selected" && frameDraft.id) {
+        formData.append("frameId", frameDraft.id);
+      }
+
+      const response = await fetch("/api/admin/stores", {
+        method: "POST",
+        headers: {
+          "x-admin-pin": adminPin,
+        },
+        body: formData,
+      });
+      const data = (await response.json()) as StoreAssetUploadResponse;
+
+      if (!response.ok || !data.publicUrl) {
+        setFrameMessage(getErrorMessage(data, "枠画像をアップロードできませんでした。"));
+        return;
+      }
+
+      if (target === "selected" && data.frame) {
+        setFrames((current) => current.map((frame) => (frame.id === data.frame?.id ? data.frame : frame)));
+        setFrameDraft(data.frame);
+        setFrameMessage("枠画像をアップロードして保存しました。");
+        return;
+      }
+
+      if (target === "selected") {
+        setFrameDraft((current) => ({ ...current, frame_url: data.publicUrl ?? current.frame_url }));
+        setFrameMessage("枠画像をアップロードしました。保存ボタンで反映してください。");
+        return;
+      }
+
+      setNewFrameDraft((current) => ({ ...current, frame_url: data.publicUrl ?? current.frame_url }));
+      setFrameMessage("枠画像をアップロードしました。枠名を確認して追加してください。");
+    } catch (error) {
+      setFrameMessage(error instanceof Error ? error.message : "枠画像をアップロードできませんでした。");
+    } finally {
+      setIsFrameSaving(false);
+    }
+  }
+
   return (
     <section className="admin-main-grid">
       <div className="admin-master-list">
@@ -1262,6 +1373,18 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
               onChange={(event) => setNewFrameDraft((current) => ({ ...current, frame_url: event.target.value }))}
             />
           </label>
+          <label className="field-label">
+            枠画像アップロード
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/svg+xml"
+              disabled={isFrameSaving || isFrameLoading}
+              onChange={(event) => {
+                void uploadFrameImage(event.target.files?.[0] ?? null, "new");
+                event.currentTarget.value = "";
+              }}
+            />
+          </label>
           <button className="action-button secondary" type="button" disabled={isFrameSaving || isFrameLoading} onClick={createFrame}>
             追加
           </button>
@@ -1296,6 +1419,18 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
               <input
                 value={frameDraft.frame_url}
                 onChange={(event) => setFrameDraft((current) => ({ ...current, frame_url: event.target.value }))}
+              />
+            </label>
+            <label className="field-label">
+              枠画像アップロード
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                disabled={isFrameSaving}
+                onChange={(event) => {
+                  void uploadFrameImage(event.target.files?.[0] ?? null, "selected");
+                  event.currentTarget.value = "";
+                }}
               />
             </label>
             <label className="admin-toggle">
