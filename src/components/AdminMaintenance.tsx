@@ -6,6 +6,7 @@ type AssetReviewStatus = "new" | "candidate" | "hold" | "rejected";
 type ReviewStatusFilter = "all" | AssetReviewStatus;
 type AssetSortMode = "date" | "store";
 type DateSortOrder = "desc" | "asc";
+type AssetScreen = "list" | "detail";
 
 type StoreSummary = {
   id: string;
@@ -148,12 +149,16 @@ function getTodayLabel() {
 }
 
 function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("ja-JP", {
+  const parts = new Intl.DateTimeFormat("ja-JP", {
+    timeZone: "Asia/Tokyo",
     month: "numeric",
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(new Date(value));
+    hour12: false,
+  }).formatToParts(new Date(value));
+  const part = (type: string) => parts.find((item) => item.type === type)?.value ?? "";
+  return `${part("month")}/${part("day")} ${part("hour")}:${part("minute")}`;
 }
 
 function nullableText(value: string | null) {
@@ -172,6 +177,7 @@ export function AdminMaintenance() {
   const [pinInput, setPinInput] = useState("");
   const [adminPin, setAdminPin] = useState("");
   const [activeTab, setActiveTab] = useState<AdminTab>("assets");
+  const [assetScreen, setAssetScreen] = useState<AssetScreen>("list");
   const [stores, setStores] = useState<StoreSummary[]>([]);
   const [storeMasters, setStoreMasters] = useState<StoreMaster[]>([]);
   const [staffMasters, setStaffMasters] = useState<StaffMaster[]>([]);
@@ -189,7 +195,6 @@ export function AdminMaintenance() {
   const [storeDraft, setStoreDraft] = useState<StoreMaster>(emptyStoreDraft);
   const [staffDraft, setStaffDraft] = useState<StaffMaster>(emptyStaffDraft());
   const [newStaffDraft, setNewStaffDraft] = useState<StaffMaster>(emptyStaffDraft());
-  const [descriptionDraft, setDescriptionDraft] = useState("");
   const [shortCaptionDraft, setShortCaptionDraft] = useState("");
   const [reviewStatusDraft, setReviewStatusDraft] = useState<AssetReviewStatus>("new");
   const [hiddenReasonDraft, setHiddenReasonDraft] = useState("");
@@ -265,7 +270,10 @@ export function AdminMaintenance() {
         if (currentId && data.assets.some((asset) => asset.id === currentId)) return currentId;
         return data.assets[0]?.id ?? null;
       });
-      if (data.assets.length === 0) setMessage("条件に合う写真はありません。");
+      if (data.assets.length === 0) {
+        setAssetScreen("list");
+        setMessage("条件に合う写真はありません。");
+      }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "写真一覧を取得できませんでした。");
     } finally {
@@ -341,7 +349,6 @@ export function AdminMaintenance() {
   }, [adminPin, loadAssets, loadStaffMasters, loadStoreMasters]);
 
   useEffect(() => {
-    setDescriptionDraft(selectedAsset?.description ?? "");
     setShortCaptionDraft(selectedAsset?.short_caption ?? "");
     setReviewStatusDraft(selectedAsset?.review_status ?? "new");
     setHiddenReasonDraft(selectedAsset?.hidden_reason ?? "");
@@ -638,6 +645,7 @@ export function AdminMaintenance() {
           className="action-button secondary"
           type="button"
           onClick={() => {
+            setAssetScreen("list");
             void loadAssets();
             void loadStoreMasters();
             void loadStaffMasters();
@@ -664,7 +672,7 @@ export function AdminMaintenance() {
 
       {message ? <p className="notice">{message}</p> : null}
 
-      {activeTab === "assets" ? (
+      {activeTab === "assets" && assetScreen === "list" ? (
         <>
           <section className="admin-filter-panel">
             <div className="admin-date-row">
@@ -712,7 +720,15 @@ export function AdminMaintenance() {
                 />
                 非表示も表示
               </label>
-              <button className="action-button" type="button" onClick={() => loadAssets()} disabled={isLoading}>
+              <button
+                className="action-button"
+                type="button"
+                onClick={() => {
+                  setAssetScreen("list");
+                  void loadAssets();
+                }}
+                disabled={isLoading}
+              >
                 {isLoading ? "取得中" : "条件で表示"}
               </button>
             </div>
@@ -731,151 +747,150 @@ export function AdminMaintenance() {
             </div>
           </section>
 
-          <section className="admin-main-grid">
-            <div className="admin-photo-list">
-              {assets.map((asset) => (
-                <button
-                  key={asset.id}
-                  className={`admin-photo-card${selectedAssetId === asset.id ? " is-selected" : ""}${
-                    asset.status === "archived" ? " is-archived" : ""
-                  }`}
-                  type="button"
-                  onClick={() => setSelectedAssetId(asset.id)}
-                >
-                  <img src={asset.final_processed_url} alt={asset.manage_code} loading="lazy" />
-                  <span className="admin-card-meta">
-                    <strong>{asset.store_display_name}</strong>
-                    <span>{formatDateTime(asset.captured_at)}</span>
-                    <span>{asset.staff_display_name ?? "担当者未設定"}</span>
-                    <span>{getReviewStatusLabel(asset.review_status)}</span>
-                    {asset.short_caption ? <span>{asset.short_caption}</span> : null}
-                    {asset.status === "archived" ? <em>非表示</em> : null}
-                  </span>
-                </button>
-              ))}
+          <section className="admin-photo-list">
+            {assets.map((asset) => (
+              <button
+                key={asset.id}
+                className={`admin-photo-card${selectedAssetId === asset.id ? " is-selected" : ""}${
+                  asset.status === "archived" ? " is-archived" : ""
+                }`}
+                type="button"
+                onClick={() => {
+                  setSelectedAssetId(asset.id);
+                  setAssetScreen("detail");
+                }}
+              >
+                <img src={asset.final_processed_url} alt={asset.manage_code} loading="lazy" />
+                <span className="admin-card-meta">
+                  <strong>{asset.store_display_name}</strong>
+                  <span>{formatDateTime(asset.captured_at)}</span>
+                  <span>{asset.staff_display_name ?? "担当者未設定"}</span>
+                  <span>{getReviewStatusLabel(asset.review_status)}</span>
+                  {asset.short_caption ? <span>{asset.short_caption}</span> : null}
+                  {asset.status === "archived" ? <em>非表示</em> : null}
+                </span>
+              </button>
+            ))}
+          </section>
+        </>
+      ) : null}
+
+      {activeTab === "assets" && assetScreen === "detail" ? (
+        <section className="admin-edit-panel">
+          <div className="top-action-bar compact-action-bar">
+            <div>
+              <p className="eyebrow">写真詳細</p>
+              <h2>{selectedAsset ? selectedAsset.store_display_name : "写真を選択してください"}</h2>
             </div>
+            <button className="action-button secondary" type="button" onClick={() => setAssetScreen("list")}>
+              一覧へ戻る
+            </button>
+          </div>
 
-            <aside className="admin-edit-panel">
-              {selectedAsset ? (
-                <>
-                  <img src={selectedAsset.final_processed_url} alt={selectedAsset.manage_code} />
-                  <dl className="settings-list">
-                    <div>
-                      <dt>管理番号</dt>
-                      <dd>{selectedAsset.manage_code}</dd>
-                    </div>
-                    <div>
-                      <dt>店舗</dt>
-                      <dd>{selectedAsset.store_display_name}</dd>
-                    </div>
-                    <div>
-                      <dt>担当者</dt>
-                      <dd>{selectedAsset.staff_display_name ?? "未設定"}</dd>
-                    </div>
-                    <div>
-                      <dt>確認状態</dt>
-                      <dd>{getReviewStatusLabel(selectedAsset.review_status)}</dd>
-                    </div>
-                  </dl>
+          {selectedAsset ? (
+            <>
+              <img src={selectedAsset.final_processed_url} alt={selectedAsset.manage_code} />
+              <dl className="settings-list">
+                <div>
+                  <dt>管理番号</dt>
+                  <dd>{selectedAsset.manage_code}</dd>
+                </div>
+                <div>
+                  <dt>撮影日時</dt>
+                  <dd>{formatDateTime(selectedAsset.captured_at)}</dd>
+                </div>
+                <div>
+                  <dt>店舗</dt>
+                  <dd>{selectedAsset.store_display_name}</dd>
+                </div>
+                <div>
+                  <dt>担当者</dt>
+                  <dd>{selectedAsset.staff_display_name ?? "未設定"}</dd>
+                </div>
+                <div>
+                  <dt>確認状態</dt>
+                  <dd>{getReviewStatusLabel(selectedAsset.review_status)}</dd>
+                </div>
+              </dl>
 
-                  <div className="admin-form-grid">
-                    <label className="field-label">
-                      確認状態
-                      <select
-                        value={reviewStatusDraft}
-                        onChange={(event) => setReviewStatusDraft(event.target.value as AssetReviewStatus)}
-                      >
-                        {REVIEW_STATUS_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="field-label">
-                      一言メモ
-                      <input
-                        type="text"
-                        maxLength={40}
-                        value={shortCaptionDraft}
-                        onChange={(event) => setShortCaptionDraft(event.target.value)}
-                      />
-                    </label>
-                  </div>
+              <div className="admin-form-grid">
+                <label className="field-label">
+                  確認状態
+                  <select
+                    value={reviewStatusDraft}
+                    onChange={(event) => setReviewStatusDraft(event.target.value as AssetReviewStatus)}
+                  >
+                    {REVIEW_STATUS_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="field-label">
+                  一言メモ
+                  <input
+                    type="text"
+                    maxLength={40}
+                    value={shortCaptionDraft}
+                    onChange={(event) => setShortCaptionDraft(event.target.value)}
+                  />
+                </label>
+              </div>
+              <button
+                className="action-button"
+                type="button"
+                disabled={isSaving}
+                onClick={() =>
+                  updateSelectedAsset(
+                    { shortCaption: shortCaptionDraft, reviewStatus: reviewStatusDraft, action: "update" },
+                    "確認状態と一言メモを保存しました。"
+                  )
+                }
+              >
+                保存
+              </button>
+
+              {selectedAsset.status === "archived" ? (
+                <button
+                  className="action-button secondary"
+                  type="button"
+                  disabled={isSaving}
+                  onClick={() => updateSelectedAsset({ action: "restore" }, "写真を表示に戻しました。")}
+                >
+                  表示に戻す
+                </button>
+              ) : (
+                <div className="admin-hide-box">
+                  <label className="field-label">
+                    非表示理由
+                    <input
+                      type="text"
+                      maxLength={200}
+                      value={hiddenReasonDraft}
+                      onChange={(event) => setHiddenReasonDraft(event.target.value)}
+                    />
+                  </label>
                   <button
-                    className="action-button"
+                    className="action-button danger"
                     type="button"
                     disabled={isSaving}
                     onClick={() =>
                       updateSelectedAsset(
-                        { shortCaption: shortCaptionDraft, reviewStatus: reviewStatusDraft, action: "update" },
-                        "確認状態と一言メモを保存しました。"
+                        { action: "archive", hiddenReason: hiddenReasonDraft },
+                        "写真を非表示にしました。"
                       )
                     }
                   >
-                    確認状態を保存
+                    非表示にする
                   </button>
-
-                  <label className="field-label">
-                    説明文
-                    <textarea
-                      rows={5}
-                      maxLength={500}
-                      value={descriptionDraft}
-                      onChange={(event) => setDescriptionDraft(event.target.value)}
-                    />
-                  </label>
-                  <button
-                    className="action-button secondary"
-                    type="button"
-                    disabled={isSaving}
-                    onClick={() => updateSelectedAsset({ description: descriptionDraft, action: "update" }, "説明文を保存しました。")}
-                  >
-                    説明文を保存
-                  </button>
-
-                  {selectedAsset.status === "archived" ? (
-                    <button
-                      className="action-button secondary"
-                      type="button"
-                      disabled={isSaving}
-                      onClick={() => updateSelectedAsset({ action: "restore" }, "写真を表示に戻しました。")}
-                    >
-                      表示に戻す
-                    </button>
-                  ) : (
-                    <div className="admin-hide-box">
-                      <label className="field-label">
-                        非表示理由
-                        <input
-                          type="text"
-                          maxLength={200}
-                          value={hiddenReasonDraft}
-                          onChange={(event) => setHiddenReasonDraft(event.target.value)}
-                        />
-                      </label>
-                      <button
-                        className="action-button danger"
-                        type="button"
-                        disabled={isSaving}
-                        onClick={() =>
-                          updateSelectedAsset(
-                            { action: "archive", hiddenReason: hiddenReasonDraft },
-                            "写真を非表示にしました。"
-                          )
-                        }
-                      >
-                        非表示にする
-                      </button>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <p className="notice">写真を選択してください。</p>
+                </div>
               )}
-            </aside>
-          </section>
-        </>
+            </>
+          ) : (
+            <p className="notice">一覧へ戻って写真を選択してください。</p>
+          )}
+        </section>
       ) : null}
 
       {activeTab === "stores" ? (
