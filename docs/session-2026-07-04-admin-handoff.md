@@ -21,6 +21,10 @@ GitHub `main` を正本とする。ローカルPC、Dropbox、手元フォルダ
 - 「再読み込み」ボタンは画面上部ではなく、タブ内に置く。名前は「再読み込み」のままにする。
 - 写真一覧と詳細は分ける方向にする。
 - 現状4店舗、各店舗が毎日10枚程度アップする想定なので、一覧では店舗順、日付順、状態順などで探せるようにする。
+- 初期表示は「今日」の写真を標準にする。
+- 複数日を表示する場合は、店順と日付順で見られるようにする。
+- 店順は `stores.sort_order`、同順の場合は店舗表示名を優先する。
+- 日付順は新しい順を標準にし、古い順にも切り替えられるようにする。
 - 店舗側で画像に焼き込んだ文字の再編集はしない。
 - 本部側では、複数写真を選択し、一言メモや非表示などを順に処理できる方向にする。
 - 将来的に、選択した写真を投稿候補にして投稿へ進む流れはあり得るが、今は実装しない。
@@ -34,6 +38,13 @@ GitHub `main` を正本とする。ローカルPC、Dropbox、手元フォルダ
 - 「再読み込み」ボタンをタブ内に見える位置へ移す補助コンポーネントを追加した。
 - 作業報告の形式に「Codexからの気づき」を必ず含めることを文書化した。
 - GitHub main を正とし、Dropboxやローカルへ逃げない運用を文書化した。
+- `assets.short_caption` と `assets.review_status` の追加migrationをGitHubへ追加した。
+- `supabase/schema.sql` に `short_caption`、`review_status`、制約、検索用indexを反映した。
+- Supabase型定義へ `short_caption` と `review_status` を反映した。
+- `/api/admin/assets` の一覧取得で一言メモと確認状態を返すようにした。
+- `/api/admin/assets` の一覧取得で `sortMode=store|date`、`dateOrder=desc|asc`、`reviewStatus` を受けられるようにした。
+- `/api/admin/assets/[id]` の個別更新で一言メモと確認状態を更新できるようにした。
+- 一言メモは40文字以内、不正な確認状態はAPIで拒否するようにした。
 
 ## 注意が必要な既存実装
 
@@ -41,37 +52,41 @@ GitHub `main` を正本とする。ローカルPC、Dropbox、手元フォルダ
 
 次に大きく写真タブを作り直すときは、この補助実装を恒久実装へ整理するのが望ましい。
 
+今回のDB/API土台はGitHub mainへ反映済みだが、実際のSupabase SQL Editorへのmigration適用はまだユーザー操作が必要である。Supabaseへ未適用の状態でVercel画面を触ると、APIが存在しないカラムを読みに行ってエラーになる可能性がある。
+
 ## 次に進むチェックポイント
 
-次スレッドでは、まず「写真タブのDB/API土台」から進める。
+次は「写真タブの一覧UIブラッシュアップ」へ進む。
 
 目的:
 
-- 本部側で保存済み写真を整理するため、写真ごとに一言メモと本部確認状態を持てるようにする。
+- 1日40〜50枚の保存済み写真が上がっても、本部担当者が今日の写真を素早く見て、状態を付け、一言メモを残せるようにする。
 
-DB/APIで追加する候補:
+UIで追加・整理する候補:
 
-- `assets.short_caption`
-  - 本部が追加する一言メモ。
-  - SNS投稿本文そのものではなく、写真整理用の短いメモとして扱う。
-- `assets.review_status`
-  - 本部確認状態。
-  - 内部値候補は `new`、`candidate`、`hold`、`rejected`。
-  - 画面表示候補は `未確認`、`投稿候補`、`保留`、`使用しない`。
+- 初期表示は今日の写真。
+- 店舗、日付範囲、非表示表示、確認状態で絞り込む。
+- 並び順は日付順を標準にし、新しい順・古い順を切り替えられるようにする。
+- 複数日表示では店順でも見られるようにする。
+- 写真カード上に確認状態と40文字一言メモを表示する。
+- 詳細側で確認状態と40文字一言メモを更新できるようにする。
+- 写真一覧と詳細を分けたまま、40〜50枚/日でも見通せる密度にする。
 
-この時点では、Instagram投稿、自動投稿、投稿本文生成は実装しない。
+この時点でも、Instagram投稿、自動投稿、投稿本文生成は実装しない。
 
-## 実装前に確認すべきOK条件
-
-次スレッドで実装に入る前に、以下をユーザーへ短く確認する。
+## 実装前に確認済みのOK条件
 
 - `assets.short_caption` は一言メモとして使う。
-- 一言メモは短文前提で、まず120文字程度を上限にする。
-- `assets.review_status` の内部値は `new`、`candidate`、`hold`、`rejected` でよい。
+- 一言メモは短文前提で、40文字以内にする。
+- `assets.review_status` の内部値は `new`、`candidate`、`hold`、`rejected` とする。
+- 表示名は `未確認`、`投稿候補`、`保留`、`使用しない` とする。
 - 既存写真は初期状態 `new` でよい。
 - SQLはGitHubにmigrationとして残し、実際のSupabase SQL Editorへの適用はユーザーが行う。
 - APIは一覧取得で一言メモと確認状態を返し、個別更新で一言メモと確認状態を更新できるようにする。
 - 不正な状態値はAPIで拒否する。
+- 初期表示は今日の写真でよい。
+- 店順は `stores.sort_order` 優先でよい。
+- 日付順は新しい順を標準とし、古い順にも切り替えられるようにする。
 
 ## 次スレッドで最初に読む文書
 
@@ -85,12 +100,10 @@ DB/APIで追加する候補:
 
 ## 次スレッドで触る候補ファイル
 
-- `supabase/schema.sql`
-- `supabase/migrations/`
-- `src/lib/supabase/types.ts`
-- `src/app/api/admin/assets/route.ts`
-- `src/app/api/admin/assets/[id]/route.ts`
-- 後続UIで `src/components/AdminMaintenance.tsx`
+- `src/components/AdminMaintenance.tsx`
+- `src/app/globals.css`
+- 必要に応じて `src/app/api/admin/assets/route.ts`
+- 必要に応じて `src/app/api/admin/assets/[id]/route.ts`
 - 必要に応じて `dog_sns_design.md`、`docs/supabase-handoff.md`
 
 ## まだ決めないこと
