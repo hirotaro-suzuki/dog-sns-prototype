@@ -106,7 +106,7 @@ function getTodayLabel() {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  return `${year}.${month}.${day}`;
 }
 
 function getTouchPoint(canvas: HTMLCanvasElement, touch: React.Touch) {
@@ -161,6 +161,34 @@ function getLogoLabel(store?: CaptureStore) {
 
 function getStoreThemeColor(store?: CaptureStore) {
   return store?.themeColor ?? FALLBACK_THEME_COLOR;
+}
+
+function getSelectedFrame(store?: CaptureStore) {
+  return store?.frames.find((frame) => frame.frameUrl === store.frameUrl) ?? store?.frames[0] ?? null;
+}
+
+function getFrameDateColor(color?: string) {
+  return color && /^#[0-9A-Fa-f]{6}$/.test(color) ? color : "#ffffff";
+}
+
+function drawFrameDate(context: CanvasRenderingContext2D, store?: CaptureStore) {
+  const frame = getSelectedFrame(store);
+  if (frame?.dateEnabled === false) return;
+
+  const fontSize = frame?.dateFontSize ?? 38;
+  const x = frame?.dateX ?? CANVAS_WIDTH - 160;
+  const y = frame?.dateY ?? 70;
+
+  context.save();
+  context.textBaseline = "middle";
+  context.textAlign = "center";
+  context.font = `700 ${fontSize}px Arial, sans-serif`;
+  context.lineWidth = Math.max(3, Math.round(fontSize * 0.12));
+  context.strokeStyle = "rgba(0, 0, 0, 0.45)";
+  context.fillStyle = getFrameDateColor(frame?.dateColor);
+  context.strokeText(getTodayLabel(), x, y);
+  context.fillText(getTodayLabel(), x, y);
+  context.restore();
 }
 
 function hexToRgba(hex: string, alpha: number) {
@@ -299,9 +327,7 @@ function drawFixedFrame(
   context.textAlign = "left";
   context.fillText(getStoreDisplayName(store), 56, 70);
 
-  context.font = "700 38px Arial, sans-serif";
-  context.textAlign = "right";
-  context.fillText(getTodayLabel(), CANVAS_WIDTH - 56, 70);
+  drawFrameDate(context, store);
 
   if (logoImage) {
     drawContainedImage(context, logoImage, CANVAS_WIDTH - 516, CANVAS_HEIGHT - 138, 460, 96);
