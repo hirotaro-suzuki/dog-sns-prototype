@@ -1,0 +1,25 @@
+.camera-stage {
+  aspect-ratio: 127 / 89;
+}
+
+.camera-stage:has(.store-frame-image) .frame-overlay {
+  inset: 0;
+  border: 0;
+}
+
+.camera-stage:has(.store-frame-image) .frame-overlay::before {
+  content: "";
+}
+
+.camera-stage:has(.store-frame-image) .frame-overlay::after {
+  content: attr(data-date);
+  left: auto;
+  right: 7.5%;
+  top: 7%;
+  bottom: auto;
+  color: #ffffff;
+  font-size: clamp(16px, 2.4vw, 28px);
+  line-height: 1;
+  text-align: center;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8), 0 0 2px rgba(0, 0, 0, 0.95);
+}
