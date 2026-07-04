@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+
 type AdminTab = "assets" | "stores" | "staff" | "frames";
 type AssetReviewStatus = "new" | "candidate" | "hold" | "rejected";
 type ReviewStatusFilter = "all" | AssetReviewStatus;
@@ -43,6 +44,16 @@ type StaffMaster = {
   notes: string | null;
 };
 
+type StoreFrame = {
+  id: string;
+  store_id: string;
+  frame_name: string;
+  frame_url: string;
+  is_default: boolean;
+  is_active: boolean;
+  sort_order: number;
+};
+
 type AdminAsset = {
   id: string;
   manage_code: string;
@@ -76,6 +87,13 @@ type StoresResponse = {
   detail?: string;
 };
 
+type StaffResponse = {
+  staff?: StaffMaster[];
+  staffMember?: StaffMaster;
+  message?: string;
+  detail?: string;
+};
+
 type StoreAssetUploadResponse = {
   publicUrl?: string;
   store?: Partial<StoreMaster> & { id: string };
@@ -84,17 +102,27 @@ type StoreAssetUploadResponse = {
   detail?: string;
 };
 
-type StaffResponse = {
-  staff?: StaffMaster[];
-  staffMember?: StaffMaster;
-  message?: string;
-  detail?: string;
-};
-
 type UpdatedAssetResponse = {
   asset?: Pick<AdminAsset, "id" | "description" | "short_caption" | "review_status" | "status" | "hidden_at" | "hidden_reason">;
   message?: string;
   detail?: string;
+};
+
+type FramesResponse = {
+  frames?: StoreFrame[];
+  frame?: StoreFrame;
+  message?: string;
+  detail?: string;
+};
+
+type FrameDraft = {
+  id: string;
+  store_id: string;
+  frame_name: string;
+  frame_url: string;
+  is_default: boolean;
+  is_active: boolean;
+  sort_order: number;
 };
 
 const PIN_STORAGE_KEY = "dog-sns-admin-pin";
@@ -123,6 +151,16 @@ const emptyStoreDraft: StoreMaster = {
   is_active: true,
   sort_order: 0,
   notes: null,
+};
+
+const emptyFrameDraft: FrameDraft = {
+  id: "",
+  store_id: "",
+  frame_name: "",
+  frame_url: "",
+  is_default: false,
+  is_active: true,
+  sort_order: 0,
 };
 
 function emptyStaffDraft(storeId = ""): StaffMaster {
@@ -183,6 +221,7 @@ export function AdminMaintenance() {
   const [staffMasters, setStaffMasters] = useState<StaffMaster[]>([]);
   const [assets, setAssets] = useState<AdminAsset[]>([]);
   const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([]);
+  const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
   const [dateFrom, setDateFrom] = useState(getTodayLabel);
   const [dateTo, setDateTo] = useState(getTodayLabel);
   const [includeArchived, setIncludeArchived] = useState(false);
@@ -217,6 +256,17 @@ export function AdminMaintenance() {
     () => staffMasters.find((staff) => staff.id === selectedStaffId) ?? null,
     [staffMasters, selectedStaffId]
   );
+
+  const selectedAssetQueue = useMemo(() => {
+    const visibleIds = new Set(assets.map((asset) => asset.id));
+    const checkedIds = selectedAssetIds.filter((id) => visibleIds.has(id));
+    if (checkedIds.length > 0) return checkedIds;
+    return selectedAssetId && visibleIds.has(selectedAssetId) ? [selectedAssetId] : [];
+  }, [assets, selectedAssetId, selectedAssetIds]);
+
+  const selectedAssetIndex = selectedAsset ? selectedAssetQueue.indexOf(selectedAsset.id) : -1;
+  const canGoPreviousAsset = selectedAssetIndex > 0;
+  const canGoNextAsset = selectedAssetIndex >= 0 && selectedAssetIndex < selectedAssetQueue.length - 1;
 
   const staffStoreId = staffDraft.store_id || selectedStoreMasterId || stores[0]?.id || "";
   const visibleStaff = useMemo(
@@ -264,10 +314,12 @@ export function AdminMaintenance() {
         return;
       }
 
+      const visibleIds = new Set(data.assets.map((asset) => asset.id));
       setStores(data.stores);
       setAssets(data.assets);
+      setSelectedAssetIds((current) => current.filter((id) => visibleIds.has(id)));
       setSelectedAssetId((currentId) => {
-        if (currentId && data.assets.some((asset) => asset.id === currentId)) return currentId;
+        if (currentId && visibleIds.has(currentId)) return currentId;
         return data.assets[0]?.id ?? null;
       });
       if (data.assets.length === 0) {
@@ -383,8 +435,33 @@ export function AdminMaintenance() {
     );
   }
 
+  function toggleAssetSelection(assetId: string) {
+    setSelectedAssetIds((current) =>
+      current.includes(assetId) ? current.filter((id) => id !== assetId) : [...current, assetId]
+    );
+  }
+
+  function startAssetReview(assetId?: string) {
+    const targetIds = assetId ? [assetId] : selectedAssetIds.filter((id) => assets.some((asset) => asset.id === id));
+    if (targetIds.length === 0) {
+      setMessage("確認する写真を選択してください。");
+      return;
+    }
+    if (assetId) setSelectedAssetIds(targetIds);
+    setSelectedAssetId(targetIds[0]);
+    setAssetScreen("detail");
+    setMessage("");
+  }
+
+  function moveSelectedAsset(offset: number) {
+    if (selectedAssetIndex < 0) return;
+    const nextId = selectedAssetQueue[selectedAssetIndex + offset];
+    if (!nextId) return;
+    setSelectedAssetId(nextId);
+  }
+
   async function updateSelectedAsset(payload: Record<string, unknown>, successMessage: string) {
-    if (!selectedAsset || !adminPin) return;
+    if (!selectedAsset || !adminPin) return false;
     setIsSaving(true);
     setMessage("");
 
@@ -401,7 +478,7 @@ export function AdminMaintenance() {
 
       if (!response.ok || !data.asset) {
         setMessage(getErrorMessage(data, "更新できませんでした。"));
-        return;
+        return false;
       }
 
       setAssets((current) =>
@@ -420,11 +497,21 @@ export function AdminMaintenance() {
         )
       );
       setMessage(successMessage);
+      return true;
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "更新できませんでした。");
+      return false;
     } finally {
       setIsSaving(false);
     }
+  }
+
+  async function saveCurrentAsset(advance: boolean) {
+    const saved = await updateSelectedAsset(
+      { shortCaption: shortCaptionDraft, reviewStatus: reviewStatusDraft, action: "update" },
+      advance && canGoNextAsset ? "保存しました。次の写真へ進みます。" : "確認状態と一言メモを保存しました。"
+    );
+    if (saved && advance && canGoNextAsset) moveSelectedAsset(1);
   }
 
   async function saveStoreMaster() {
@@ -500,9 +587,7 @@ export function AdminMaintenance() {
 
       const response = await fetch("/api/admin/stores", {
         method: "POST",
-        headers: {
-          "x-admin-pin": adminPin,
-        },
+        headers: { "x-admin-pin": adminPin },
         body: formData,
       });
       const data = (await response.json()) as StoreAssetUploadResponse;
@@ -747,30 +832,58 @@ export function AdminMaintenance() {
             </div>
           </section>
 
+          <section className="admin-filter-panel">
+            <div className="top-action-bar compact-action-bar">
+              <div>
+                <p className="eyebrow">選択確認</p>
+                <h2>{selectedAssetIds.length}枚選択中</h2>
+              </div>
+              <div className="admin-store-list">
+                <button className="action-button secondary" type="button" onClick={() => setSelectedAssetIds(assets.map((asset) => asset.id))}>
+                  表示中をすべて選択
+                </button>
+                <button className="action-button secondary" type="button" onClick={() => setSelectedAssetIds([])}>
+                  選択解除
+                </button>
+                <button className="action-button" type="button" disabled={selectedAssetIds.length === 0} onClick={() => startAssetReview()}>
+                  選択した写真を確認
+                </button>
+              </div>
+            </div>
+          </section>
+
           <section className="admin-photo-list">
-            {assets.map((asset) => (
-              <button
-                key={asset.id}
-                className={`admin-photo-card${selectedAssetId === asset.id ? " is-selected" : ""}${
-                  asset.status === "archived" ? " is-archived" : ""
-                }`}
-                type="button"
-                onClick={() => {
-                  setSelectedAssetId(asset.id);
-                  setAssetScreen("detail");
-                }}
-              >
-                <img src={asset.final_processed_url} alt={asset.manage_code} loading="lazy" />
-                <span className="admin-card-meta">
-                  <strong>{asset.store_display_name}</strong>
-                  <span>{formatDateTime(asset.captured_at)}</span>
-                  <span>{asset.staff_display_name ?? "担当者未設定"}</span>
-                  <span>{getReviewStatusLabel(asset.review_status)}</span>
-                  {asset.short_caption ? <span>{asset.short_caption}</span> : null}
-                  {asset.status === "archived" ? <em>非表示</em> : null}
-                </span>
-              </button>
-            ))}
+            {assets.map((asset) => {
+              const isChecked = selectedAssetIds.includes(asset.id);
+              return (
+                <article
+                  key={asset.id}
+                  className={`admin-photo-card${isChecked || selectedAssetId === asset.id ? " is-selected" : ""}${
+                    asset.status === "archived" ? " is-archived" : ""
+                  }`}
+                >
+                  <label className="admin-toggle" style={{ margin: "10px 10px 0" }}>
+                    <input type="checkbox" checked={isChecked} onChange={() => toggleAssetSelection(asset.id)} />
+                    選択
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => startAssetReview(asset.id)}
+                    style={{ border: 0, background: "transparent", color: "inherit", padding: 0, textAlign: "left" }}
+                  >
+                    <img src={asset.final_processed_url} alt={asset.manage_code} loading="lazy" />
+                    <span className="admin-card-meta">
+                      <strong>{asset.store_display_name}</strong>
+                      <span>{formatDateTime(asset.captured_at)}</span>
+                      <span>{asset.staff_display_name ?? "担当者未設定"}</span>
+                      <span>{getReviewStatusLabel(asset.review_status)}</span>
+                      {asset.short_caption ? <span>{asset.short_caption}</span> : null}
+                      {asset.status === "archived" ? <em>非表示</em> : null}
+                    </span>
+                  </button>
+                </article>
+              );
+            })}
           </section>
         </>
       ) : null}
@@ -781,10 +894,21 @@ export function AdminMaintenance() {
             <div>
               <p className="eyebrow">写真詳細</p>
               <h2>{selectedAsset ? selectedAsset.store_display_name : "写真を選択してください"}</h2>
+              {selectedAssetQueue.length > 0 && selectedAssetIndex >= 0 ? (
+                <p>{selectedAssetIndex + 1} / {selectedAssetQueue.length} 枚目</p>
+              ) : null}
             </div>
-            <button className="action-button secondary" type="button" onClick={() => setAssetScreen("list")}>
-              一覧へ戻る
-            </button>
+            <div className="admin-store-list">
+              <button className="action-button secondary" type="button" disabled={!canGoPreviousAsset} onClick={() => moveSelectedAsset(-1)}>
+                前へ
+              </button>
+              <button className="action-button secondary" type="button" disabled={!canGoNextAsset} onClick={() => moveSelectedAsset(1)}>
+                次へ
+              </button>
+              <button className="action-button secondary" type="button" onClick={() => setAssetScreen("list")}>
+                一覧へ戻る
+              </button>
+            </div>
           </div>
 
           {selectedAsset ? (
@@ -837,26 +961,21 @@ export function AdminMaintenance() {
                   />
                 </label>
               </div>
-              <button
-                className="action-button"
-                type="button"
-                disabled={isSaving}
-                onClick={() =>
-                  updateSelectedAsset(
-                    { shortCaption: shortCaptionDraft, reviewStatus: reviewStatusDraft, action: "update" },
-                    "確認状態と一言メモを保存しました。"
-                  )
-                }
-              >
-                保存
-              </button>
+              <div className="admin-store-list">
+                <button className="action-button secondary" type="button" disabled={isSaving} onClick={() => void saveCurrentAsset(false)}>
+                  保存
+                </button>
+                <button className="action-button" type="button" disabled={isSaving || !canGoNextAsset} onClick={() => void saveCurrentAsset(true)}>
+                  保存して次へ
+                </button>
+              </div>
 
               {selectedAsset.status === "archived" ? (
                 <button
                   className="action-button secondary"
                   type="button"
                   disabled={isSaving}
-                  onClick={() => updateSelectedAsset({ action: "restore" }, "写真を表示に戻しました。")}
+                  onClick={() => void updateSelectedAsset({ action: "restore" }, "写真を表示に戻しました。")}
                 >
                   表示に戻す
                 </button>
@@ -876,7 +995,7 @@ export function AdminMaintenance() {
                     type="button"
                     disabled={isSaving}
                     onClick={() =>
-                      updateSelectedAsset(
+                      void updateSelectedAsset(
                         { action: "archive", hiddenReason: hiddenReasonDraft },
                         "写真を非表示にしました。"
                       )
@@ -928,38 +1047,23 @@ export function AdminMaintenance() {
                 <div className="admin-form-grid">
                   <label className="field-label">
                     店舗名
-                    <input
-                      value={storeDraft.store_name}
-                      onChange={(event) => setStoreDraft((current) => ({ ...current, store_name: event.target.value }))}
-                    />
+                    <input value={storeDraft.store_name} onChange={(event) => setStoreDraft((current) => ({ ...current, store_name: event.target.value }))} />
                   </label>
                   <label className="field-label">
                     表示名
-                    <input
-                      value={storeDraft.display_name}
-                      onChange={(event) => setStoreDraft((current) => ({ ...current, display_name: event.target.value }))}
-                    />
+                    <input value={storeDraft.display_name} onChange={(event) => setStoreDraft((current) => ({ ...current, display_name: event.target.value }))} />
                   </label>
                   <label className="field-label">
                     SNS表示名
-                    <input
-                      value={nullableText(storeDraft.sns_display_name)}
-                      onChange={(event) => setStoreDraft((current) => ({ ...current, sns_display_name: event.target.value }))}
-                    />
+                    <input value={nullableText(storeDraft.sns_display_name)} onChange={(event) => setStoreDraft((current) => ({ ...current, sns_display_name: event.target.value }))} />
                   </label>
                   <label className="field-label">
                     Instagram
-                    <input
-                      value={nullableText(storeDraft.instagram_account)}
-                      onChange={(event) => setStoreDraft((current) => ({ ...current, instagram_account: event.target.value }))}
-                    />
+                    <input value={nullableText(storeDraft.instagram_account)} onChange={(event) => setStoreDraft((current) => ({ ...current, instagram_account: event.target.value }))} />
                   </label>
                   <label className="field-label">
                     ロゴURL
-                    <input
-                      value={nullableText(storeDraft.logo_url)}
-                      onChange={(event) => setStoreDraft((current) => ({ ...current, logo_url: event.target.value }))}
-                    />
+                    <input value={nullableText(storeDraft.logo_url)} onChange={(event) => setStoreDraft((current) => ({ ...current, logo_url: event.target.value }))} />
                   </label>
                   <label className="field-label">
                     ロゴ画像アップロード
@@ -975,49 +1079,27 @@ export function AdminMaintenance() {
                   </label>
                   <label className="field-label">
                     フレームURL
-                    <input
-                      value={nullableText(storeDraft.frame_url)}
-                      onChange={(event) => setStoreDraft((current) => ({ ...current, frame_url: event.target.value }))}
-                    />
+                    <input value={nullableText(storeDraft.frame_url)} onChange={(event) => setStoreDraft((current) => ({ ...current, frame_url: event.target.value }))} />
                   </label>
                   <label className="field-label">
                     色
-                    <input
-                      value={nullableText(storeDraft.theme_color)}
-                      onChange={(event) => setStoreDraft((current) => ({ ...current, theme_color: event.target.value }))}
-                    />
+                    <input value={nullableText(storeDraft.theme_color)} onChange={(event) => setStoreDraft((current) => ({ ...current, theme_color: event.target.value }))} />
                   </label>
                   <label className="field-label">
                     並び順
-                    <input
-                      type="number"
-                      value={storeDraft.sort_order}
-                      onChange={(event) => setStoreDraft((current) => ({ ...current, sort_order: Number(event.target.value) }))}
-                    />
+                    <input type="number" value={storeDraft.sort_order} onChange={(event) => setStoreDraft((current) => ({ ...current, sort_order: Number(event.target.value) }))} />
                   </label>
                 </div>
                 <label className="field-label">
                   標準ハッシュタグ
-                  <textarea
-                    rows={3}
-                    value={nullableText(storeDraft.default_hashtags)}
-                    onChange={(event) => setStoreDraft((current) => ({ ...current, default_hashtags: event.target.value }))}
-                  />
+                  <textarea rows={3} value={nullableText(storeDraft.default_hashtags)} onChange={(event) => setStoreDraft((current) => ({ ...current, default_hashtags: event.target.value }))} />
                 </label>
                 <label className="field-label">
                   メモ
-                  <textarea
-                    rows={3}
-                    value={nullableText(storeDraft.notes)}
-                    onChange={(event) => setStoreDraft((current) => ({ ...current, notes: event.target.value }))}
-                  />
+                  <textarea rows={3} value={nullableText(storeDraft.notes)} onChange={(event) => setStoreDraft((current) => ({ ...current, notes: event.target.value }))} />
                 </label>
                 <label className="admin-toggle">
-                  <input
-                    type="checkbox"
-                    checked={storeDraft.is_active}
-                    onChange={(event) => setStoreDraft((current) => ({ ...current, is_active: event.target.checked }))}
-                  />
+                  <input type="checkbox" checked={storeDraft.is_active} onChange={(event) => setStoreDraft((current) => ({ ...current, is_active: event.target.checked }))} />
                   有効
                 </label>
                 <button className="action-button" type="button" disabled={isSaving} onClick={saveStoreMaster}>
@@ -1056,9 +1138,7 @@ export function AdminMaintenance() {
             {visibleStaff.map((staff) => (
               <button
                 key={staff.id}
-                className={`admin-master-row${selectedStaffId === staff.id ? " is-selected" : ""}${
-                  staff.is_active ? "" : " is-archived"
-                }`}
+                className={`admin-master-row${selectedStaffId === staff.id ? " is-selected" : ""}${staff.is_active ? "" : " is-archived"}`}
                 type="button"
                 onClick={() => setSelectedStaffId(staff.id)}
               >
@@ -1072,17 +1152,11 @@ export function AdminMaintenance() {
               <h2>担当者追加</h2>
               <label className="field-label">
                 担当者コード
-                <input
-                  value={newStaffDraft.staff_code}
-                  onChange={(event) => setNewStaffDraft((current) => ({ ...current, staff_code: event.target.value }))}
-                />
+                <input value={newStaffDraft.staff_code} onChange={(event) => setNewStaffDraft((current) => ({ ...current, staff_code: event.target.value }))} />
               </label>
               <label className="field-label">
                 表示名
-                <input
-                  value={newStaffDraft.display_name}
-                  onChange={(event) => setNewStaffDraft((current) => ({ ...current, display_name: event.target.value }))}
-                />
+                <input value={newStaffDraft.display_name} onChange={(event) => setNewStaffDraft((current) => ({ ...current, display_name: event.target.value }))} />
               </label>
               <button className="action-button secondary" type="button" disabled={isSaving} onClick={createStaffMember}>
                 追加
@@ -1102,50 +1176,28 @@ export function AdminMaintenance() {
                 <div className="admin-form-grid">
                   <label className="field-label">
                     表示名
-                    <input
-                      value={staffDraft.display_name}
-                      onChange={(event) => setStaffDraft((current) => ({ ...current, display_name: event.target.value }))}
-                    />
+                    <input value={staffDraft.display_name} onChange={(event) => setStaffDraft((current) => ({ ...current, display_name: event.target.value }))} />
                   </label>
                   <label className="field-label">
                     役割
-                    <input
-                      value={nullableText(staffDraft.role_label)}
-                      onChange={(event) => setStaffDraft((current) => ({ ...current, role_label: event.target.value }))}
-                    />
+                    <input value={nullableText(staffDraft.role_label)} onChange={(event) => setStaffDraft((current) => ({ ...current, role_label: event.target.value }))} />
                   </label>
                   <label className="field-label">
                     並び順
-                    <input
-                      type="number"
-                      value={staffDraft.sort_order}
-                      onChange={(event) => setStaffDraft((current) => ({ ...current, sort_order: Number(event.target.value) }))}
-                    />
+                    <input type="number" value={staffDraft.sort_order} onChange={(event) => setStaffDraft((current) => ({ ...current, sort_order: Number(event.target.value) }))} />
                   </label>
                 </div>
                 <label className="admin-toggle">
-                  <input
-                    type="checkbox"
-                    checked={staffDraft.can_approve_sns}
-                    onChange={(event) => setStaffDraft((current) => ({ ...current, can_approve_sns: event.target.checked }))}
-                  />
+                  <input type="checkbox" checked={staffDraft.can_approve_sns} onChange={(event) => setStaffDraft((current) => ({ ...current, can_approve_sns: event.target.checked }))} />
                   SNS承認可
                 </label>
                 <label className="admin-toggle">
-                  <input
-                    type="checkbox"
-                    checked={staffDraft.is_active}
-                    onChange={(event) => setStaffDraft((current) => ({ ...current, is_active: event.target.checked }))}
-                  />
+                  <input type="checkbox" checked={staffDraft.is_active} onChange={(event) => setStaffDraft((current) => ({ ...current, is_active: event.target.checked }))} />
                   有効
                 </label>
                 <label className="field-label">
                   メモ
-                  <textarea
-                    rows={3}
-                    value={nullableText(staffDraft.notes)}
-                    onChange={(event) => setStaffDraft((current) => ({ ...current, notes: event.target.value }))}
-                  />
+                  <textarea rows={3} value={nullableText(staffDraft.notes)} onChange={(event) => setStaffDraft((current) => ({ ...current, notes: event.target.value }))} />
                 </label>
                 <button className="action-button" type="button" disabled={isSaving} onClick={saveStaffMaster}>
                   担当者を保存
@@ -1163,43 +1215,6 @@ export function AdminMaintenance() {
   );
 }
 
-type StoreFrame = {
-  id: string;
-  store_id: string;
-  frame_name: string;
-  frame_url: string;
-  is_default: boolean;
-  is_active: boolean;
-  sort_order: number;
-};
-
-type FramesResponse = {
-  frames?: StoreFrame[];
-  frame?: StoreFrame;
-  message?: string;
-  detail?: string;
-};
-
-type FrameDraft = {
-  id: string;
-  store_id: string;
-  frame_name: string;
-  frame_url: string;
-  is_default: boolean;
-  is_active: boolean;
-  sort_order: number;
-};
-
-const emptyFrameDraft: FrameDraft = {
-  id: "",
-  store_id: "",
-  frame_name: "",
-  frame_url: "",
-  is_default: false,
-  is_active: true,
-  sort_order: 0,
-};
-
 function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
   const [frameStores, setFrameStores] = useState<StoreMaster[]>([]);
   const [frames, setFrames] = useState<StoreFrame[]>([]);
@@ -1211,16 +1226,8 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
   const [isFrameSaving, setIsFrameSaving] = useState(false);
   const [frameMessage, setFrameMessage] = useState("");
 
-  const visibleFrames = useMemo(
-    () => frames.filter((frame) => frame.store_id === selectedStoreId),
-    [frames, selectedStoreId]
-  );
-
-  const selectedFrame = useMemo(
-    () => frames.find((frame) => frame.id === selectedFrameId) ?? null,
-    [frames, selectedFrameId]
-  );
-
+  const visibleFrames = useMemo(() => frames.filter((frame) => frame.store_id === selectedStoreId), [frames, selectedStoreId]);
+  const selectedFrame = useMemo(() => frames.find((frame) => frame.id === selectedFrameId) ?? null, [frames, selectedFrameId]);
   const activeFrameCount = visibleFrames.filter((frame) => frame.is_active).length;
 
   const loadFrameStores = useCallback(async () => {
@@ -1229,9 +1236,7 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
     setFrameMessage("");
 
     try {
-      const response = await fetch("/api/admin/stores", {
-        headers: { "x-admin-pin": adminPin },
-      });
+      const response = await fetch("/api/admin/stores", { headers: { "x-admin-pin": adminPin } });
       const data = (await response.json()) as StoresResponse;
 
       if (!response.ok || !data.stores) {
@@ -1257,9 +1262,7 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
     setFrameMessage("");
 
     try {
-      const response = await fetch("/api/admin/frames", {
-        headers: { "x-admin-pin": adminPin },
-      });
+      const response = await fetch("/api/admin/frames", { headers: { "x-admin-pin": adminPin } });
       const data = (await response.json()) as FramesResponse;
 
       if (!response.ok || !data.frames) {
@@ -1300,10 +1303,7 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
     try {
       const response = await fetch("/api/admin/frames", {
         method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-admin-pin": adminPin,
-        },
+        headers: { "content-type": "application/json", "x-admin-pin": adminPin },
         body: JSON.stringify({
           storeId: newFrameDraft.store_id,
           frameName: newFrameDraft.frame_name,
@@ -1322,9 +1322,7 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
 
       setFrames((current) => {
         const withoutOldDefault = data.frame?.is_default
-          ? current.map((frame) =>
-              frame.store_id === data.frame?.store_id ? { ...frame, is_default: false } : frame
-            )
+          ? current.map((frame) => (frame.store_id === data.frame?.store_id ? { ...frame, is_default: false } : frame))
           : current;
         return [...withoutOldDefault, data.frame as StoreFrame];
       });
@@ -1346,10 +1344,7 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
     try {
       const response = await fetch(`/api/admin/frames/${frameDraft.id}`, {
         method: "PATCH",
-        headers: {
-          "content-type": "application/json",
-          "x-admin-pin": adminPin,
-        },
+        headers: { "content-type": "application/json", "x-admin-pin": adminPin },
         body: JSON.stringify({
           frameName: frameDraft.frame_name,
           frameUrl: frameDraft.frame_url,
@@ -1368,9 +1363,7 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
       setFrames((current) =>
         current.map((frame) => {
           if (frame.id === data.frame?.id) return data.frame;
-          if (data.frame?.is_default && frame.store_id === data.frame.store_id) {
-            return { ...frame, is_default: false };
-          }
+          if (data.frame?.is_default && frame.store_id === data.frame.store_id) return { ...frame, is_default: false };
           return frame;
         })
       );
@@ -1393,15 +1386,11 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
       formData.append("storeId", selectedStoreId);
       formData.append("assetType", "frame");
       formData.append("file", file);
-      if (target === "selected" && frameDraft.id) {
-        formData.append("frameId", frameDraft.id);
-      }
+      if (target === "selected" && frameDraft.id) formData.append("frameId", frameDraft.id);
 
       const response = await fetch("/api/admin/stores", {
         method: "POST",
-        headers: {
-          "x-admin-pin": adminPin,
-        },
+        headers: { "x-admin-pin": adminPin },
         body: formData,
       });
       const data = (await response.json()) as StoreAssetUploadResponse;
@@ -1461,9 +1450,7 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
         {visibleFrames.map((frame) => (
           <button
             key={frame.id}
-            className={`admin-master-row${selectedFrameId === frame.id ? " is-selected" : ""}${
-              frame.is_active ? "" : " is-archived"
-            }`}
+            className={`admin-master-row${selectedFrameId === frame.id ? " is-selected" : ""}${frame.is_active ? "" : " is-archived"}`}
             type="button"
             onClick={() => setSelectedFrameId(frame.id)}
           >
@@ -1477,17 +1464,11 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
           <h2>枠追加</h2>
           <label className="field-label">
             枠名
-            <input
-              value={newFrameDraft.frame_name}
-              onChange={(event) => setNewFrameDraft((current) => ({ ...current, frame_name: event.target.value }))}
-            />
+            <input value={newFrameDraft.frame_name} onChange={(event) => setNewFrameDraft((current) => ({ ...current, frame_name: event.target.value }))} />
           </label>
           <label className="field-label">
             枠画像URL
-            <input
-              value={newFrameDraft.frame_url}
-              onChange={(event) => setNewFrameDraft((current) => ({ ...current, frame_url: event.target.value }))}
-            />
+            <input value={newFrameDraft.frame_url} onChange={(event) => setNewFrameDraft((current) => ({ ...current, frame_url: event.target.value }))} />
           </label>
           <label className="field-label">
             枠画像アップロード
@@ -1516,26 +1497,16 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
             <div className="admin-form-grid">
               <label className="field-label">
                 枠名
-                <input
-                  value={frameDraft.frame_name}
-                  onChange={(event) => setFrameDraft((current) => ({ ...current, frame_name: event.target.value }))}
-                />
+                <input value={frameDraft.frame_name} onChange={(event) => setFrameDraft((current) => ({ ...current, frame_name: event.target.value }))} />
               </label>
               <label className="field-label">
                 並び順
-                <input
-                  type="number"
-                  value={frameDraft.sort_order}
-                  onChange={(event) => setFrameDraft((current) => ({ ...current, sort_order: Number(event.target.value) }))}
-                />
+                <input type="number" value={frameDraft.sort_order} onChange={(event) => setFrameDraft((current) => ({ ...current, sort_order: Number(event.target.value) }))} />
               </label>
             </div>
             <label className="field-label">
               枠画像URL
-              <input
-                value={frameDraft.frame_url}
-                onChange={(event) => setFrameDraft((current) => ({ ...current, frame_url: event.target.value }))}
-              />
+              <input value={frameDraft.frame_url} onChange={(event) => setFrameDraft((current) => ({ ...current, frame_url: event.target.value }))} />
             </label>
             <label className="field-label">
               枠画像アップロード
@@ -1550,19 +1521,11 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
               />
             </label>
             <label className="admin-toggle">
-              <input
-                type="checkbox"
-                checked={frameDraft.is_default}
-                onChange={(event) => setFrameDraft((current) => ({ ...current, is_default: event.target.checked }))}
-              />
+              <input type="checkbox" checked={frameDraft.is_default} onChange={(event) => setFrameDraft((current) => ({ ...current, is_default: event.target.checked }))} />
               標準枠
             </label>
             <label className="admin-toggle">
-              <input
-                type="checkbox"
-                checked={frameDraft.is_active}
-                onChange={(event) => setFrameDraft((current) => ({ ...current, is_active: event.target.checked }))}
-              />
+              <input type="checkbox" checked={frameDraft.is_active} onChange={(event) => setFrameDraft((current) => ({ ...current, is_active: event.target.checked }))} />
               有効
             </label>
             <button className="action-button" type="button" disabled={isFrameSaving} onClick={saveFrame}>
