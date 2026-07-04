@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="220" viewBox="0 0 900 220" role="img" aria-label="Demo Dog Cafe logo">
+  <rect width="900" height="220" rx="34" fill="#fffdf8"/>
+  <circle cx="118" cy="110" r="66" fill="#176f62"/>
+  <circle cx="93" cy="90" r="17" fill="#fffdf8"/>
+  <circle cx="143" cy="90" r="17" fill="#fffdf8"/>
+  <circle cx="93" cy="90" r="7" fill="#24211d"/>
+  <circle cx="143" cy="90" r="7" fill="#24211d"/>
+  <path d="M104 123c13 14 27 14 40 0" fill="none" stroke="#fffdf8" stroke-width="9" stroke-linecap="round"/>
+  <path d="M77 43c-33 15-47 43-32 66 31-12 48-35 32-66z" fill="#176f62"/>
+  <path d="M159 43c33 15 47 43 32 66-31-12-48-35-32-66z" fill="#176f62"/>
+  <text x="218" y="96" font-family="Arial, sans-serif" font-size="58" font-weight="700" fill="#176f62">DEMO DOG</text>
+  <text x="221" y="153" font-family="Arial, sans-serif" font-size="38" font-weight="700" fill="#6f6a62">CAFE PHOTO TEST</text>
+  <rect x="22" y="22" width="856" height="176" rx="26" fill="none" stroke="#176f62" stroke-width="6"/>
+</svg>
