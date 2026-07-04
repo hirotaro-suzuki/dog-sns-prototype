@@ -126,28 +126,35 @@ Codexは、コンテキスト圧縮の直前通知を前提にしないでくだ
 - ログアウト導線を追加済み
 - ログアウト後に再ログインしてもログアウトボタンが出るよう修正済み
 - 「再読み込み」ボタンをタブ内に見える位置へ移動済み
+- `assets.short_caption` と `assets.review_status` のDB/API土台を追加済み
+- 一言メモは40文字以内、確認状態は `new`、`candidate`、`hold`、`rejected`
+- API一覧取得は一言メモ、確認状態、店順、日付新しい順/古い順、確認状態絞り込みに対応済み
+- API個別更新は一言メモと確認状態の更新、不正値拒否に対応済み
 
 /admin で次に進む候補:
 
-- 写真一覧と詳細を分ける
-- 一覧で店舗順、日付順、状態順などに対応する
+- 写真タブの一覧UIに確認状態と40文字一言メモを表示する
+- 写真詳細で確認状態と40文字一言メモを更新できるようにする
+- 初期表示は今日の写真にする
+- 複数日表示では店順と日付順を切り替えられるようにする
+- 日付順は新しい順を標準にし、古い順にも切り替えられるようにする
+- 店舗、日付範囲、確認状態、非表示表示で絞り込めるようにする
+- 1日40〜50枚でも見通せる一覧密度にする
 - 複数写真を選択できるようにする
 - 選択した写真に一言メモを順に追加できるようにする
 - 選択した写真を非表示、投稿候補、保留、使用しないなどに整理できるようにする
 
-次のチェックポイントは、写真タブのDB/API土台です。
+次のチェックポイントは、写真タブの一覧UIブラッシュアップです。
 実装前に、以下のOK条件を確認してください。
 
-- `assets.short_caption` は本部が追加する一言メモとして使う
-- 一言メモは短文前提で、まず120文字程度を上限にする
-- `assets.review_status` は本部確認状態として使う
-- 内部値は `new`、`candidate`、`hold`、`rejected` を候補にする
-- 画面表示は `未確認`、`投稿候補`、`保留`、`使用しない` を候補にする
-- 既存写真は初期状態 `new` でよい
-- SQLはmigrationとしてGitHubへ残し、実際のSupabase SQL Editorへの適用はユーザーが行う
-- API一覧取得で一言メモと確認状態を返す
-- API個別更新で一言メモと確認状態を更新できる
-- 不正な状態値はAPIで拒否する
+- 初期表示は今日の写真
+- 店順は `stores.sort_order` 優先
+- 日付順は新しい順を標準、古い順も選択可能
+- 一言メモは40文字以内
+- 確認状態の表示は `未確認`、`投稿候補`、`保留`、`使用しない`
+- 1日40〜50枚でも本部担当者が写真を探し、状態を付け、短いメモを残せること
+- SNS投稿、自動投稿、投稿本文生成、Instagram連携はまだ実装しない
+- Supabase SQL Editorへ `supabase/migrations/20260704_admin_asset_review_fields.sql` が適用済みか確認する
 
 私は74歳で、2026年3月ごろからバイブコーディングを始めたばかりです。
 40年ほど前にSE経験はありますが、今のWeb開発やクラウド環境とは大きく違います。
@@ -158,5 +165,5 @@ Codexは、コンテキスト圧縮の直前通知を前提にしないでくだ
 ## 短く始めたい場合
 
 ```text
-hirotaro-suzuki/dog-sns-prototype の GitHub main が最新版です。まず docs/project-principles.md、README.md、dog_sns_design.md、docs/next-thread-start.md、docs/ownership-handoff.md、docs/session-2026-07-04-admin-handoff.md を GitHub 上で読んでください。docs/project-principles.md が最上位原則です。ローカルPC、Dropbox、手元フォルダを正本にせず、GitHub/Vercel/Supabase を正として進めます。CodexはDropboxやローカルへclone・探索せず、GitHub mainの確認・更新はまずGitHub連携ツールで行ってください。GitHub連携で更新できない場合はローカルへ逃げず、そこで止まって状況を説明してください。Codexは先走らず、実装前に目的、OK条件、画面状態ごとの確認項目、確認方法、更新すべき文書を整理して止まってください。作業報告の最後は必ず、作業内容、確認済み、未確認、次に進む候補、Codexからの気づき、更新した文書、更新しなかった文書の形式にしてください。現在は飲食店オーナーへデモとして見せられるように /admin の本部メンテナンス画面を整える段階です。次のチェックポイントは写真タブのDB/API土台で、assets.short_caption と assets.review_status の追加方針を確認してから実装してください。
+hirotaro-suzuki/dog-sns-prototype の GitHub main が最新版です。まず docs/project-principles.md、README.md、dog_sns_design.md、docs/next-thread-start.md、docs/ownership-handoff.md、docs/session-2026-07-04-admin-handoff.md を GitHub 上で読んでください。docs/project-principles.md が最上位原則です。ローカルPC、Dropbox、手元フォルダを正本にせず、GitHub/Vercel/Supabase を正として進めます。CodexはDropboxやローカルへclone・探索せず、GitHub mainの確認・更新はまずGitHub連携ツールで行ってください。GitHub連携で更新できない場合はローカルへ逃げず、そこで止まって状況を説明してください。Codexは先走らず、実装前に目的、OK条件、画面状態ごとの確認項目、確認方法、更新すべき文書を整理して止まってください。作業報告の最後は必ず、作業内容、確認済み、未確認、次に進む候補、Codexからの気づき、更新した文書、更新しなかった文書の形式にしてください。現在は飲食店オーナーへデモとして見せられるように /admin の本部メンテナンス画面を整える段階です。写真タブのDB/API土台はGitHub mainへ反映済みです。次のチェックポイントは写真タブの一覧UIブラッシュアップで、初期表示は今日、店順は stores.sort_order、日付順は新しい順標準かつ古い順も選択可能、一言メモは40文字以内、確認状態は 未確認/投稿候補/保留/使用しない です。SNS投稿、自動投稿、投稿本文生成、Instagram連携はまだ実装しないでください。
 ```
