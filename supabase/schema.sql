@@ -100,6 +100,35 @@ before update on public.admin_users
 for each row
 execute function public.set_updated_at();
 
+create table if not exists public.store_frames (
+  id uuid primary key default gen_random_uuid(),
+  store_id uuid not null references public.stores(id) on delete restrict,
+  frame_name text not null,
+  frame_url text not null,
+  is_default boolean not null default false,
+  is_active boolean not null default true,
+  starts_at timestamptz,
+  ends_at timestamptz,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint store_frames_frame_name_not_blank check (length(trim(frame_name)) > 0),
+  constraint store_frames_frame_url_not_blank check (length(trim(frame_url)) > 0),
+  constraint store_frames_date_range_valid check (ends_at is null or starts_at is null or ends_at > starts_at)
+);
+
+create index if not exists store_frames_store_id_active_idx
+on public.store_frames (store_id, is_active, is_default desc, sort_order, frame_name);
+
+create unique index if not exists store_frames_one_default_per_store_idx
+on public.store_frames (store_id)
+where is_default = true and is_active = true;
+
+create trigger store_frames_set_updated_at
+before update on public.store_frames
+for each row
+execute function public.set_updated_at();
+
 create table if not exists public.assets (
   id uuid primary key default gen_random_uuid(),
   manage_code text not null unique,
@@ -150,32 +179,32 @@ before update on public.assets
 for each row
 execute function public.set_updated_at();
 
-create table if not exists public.store_frames (
+create table if not exists public.sns_post_drafts (
   id uuid primary key default gen_random_uuid(),
+  asset_id uuid not null references public.assets(id) on delete restrict,
   store_id uuid not null references public.stores(id) on delete restrict,
-  frame_name text not null,
-  frame_url text not null,
-  is_default boolean not null default false,
-  is_active boolean not null default true,
-  starts_at timestamptz,
-  ends_at timestamptz,
-  sort_order integer not null default 0,
+  status text not null default 'draft',
+  post_caption text,
+  hashtags text,
+  planned_post_date date,
+  manus_note text,
+  posted_url text,
+  posted_at timestamptz,
+  is_final_checked boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  constraint store_frames_frame_name_not_blank check (length(trim(frame_name)) > 0),
-  constraint store_frames_frame_url_not_blank check (length(trim(frame_url)) > 0),
-  constraint store_frames_date_range_valid check (ends_at is null or starts_at is null or ends_at > starts_at)
+  constraint sns_post_drafts_status_allowed check (status in ('draft', 'ready', 'posted', 'hold', 'archived')),
+  constraint sns_post_drafts_asset_unique unique (asset_id)
 );
 
-create index if not exists store_frames_store_id_active_idx
-on public.store_frames (store_id, is_active, is_default desc, sort_order, frame_name);
+create index if not exists sns_post_drafts_status_updated_at_idx
+on public.sns_post_drafts (status, updated_at desc);
 
-create unique index if not exists store_frames_one_default_per_store_idx
-on public.store_frames (store_id)
-where is_default = true and is_active = true;
+create index if not exists sns_post_drafts_store_status_idx
+on public.sns_post_drafts (store_id, status, planned_post_date desc nulls last);
 
-create trigger store_frames_set_updated_at
-before update on public.store_frames
+create trigger sns_post_drafts_set_updated_at
+before update on public.sns_post_drafts
 for each row
 execute function public.set_updated_at();
 
@@ -184,6 +213,7 @@ alter table public.staff_members enable row level security;
 alter table public.admin_users enable row level security;
 alter table public.assets enable row level security;
 alter table public.store_frames enable row level security;
+alter table public.sns_post_drafts enable row level security;
 
 -- The application reads and writes through server-side API routes using the service role key.
 -- Browser clients still remain blocked by RLS unless narrow policies are added later.
@@ -193,7 +223,8 @@ grant select, insert, update, delete on table
   public.staff_members,
   public.admin_users,
   public.assets,
-  public.store_frames
+  public.store_frames,
+  public.sns_post_drafts
   to service_role;
 
 alter default privileges in schema public grant select, insert, update, delete on tables to service_role;
