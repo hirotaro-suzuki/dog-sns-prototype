@@ -121,7 +121,7 @@ VercelでこのGitHubリポジトリをImportしてください。
 - 所有権・運用引き渡しメモ: `docs/ownership-handoff.md`
 - 2026-07-04枠デザイン立て直し記録: `docs/session-2026-07-04-frame-reset.md`
 - Supabase引き継ぎメモ: `docs/supabase-handoff.md`
-- 直近の作業ログ: `docs/session-2026-06-25.md`
+- 2026-06-25作業ログ: `docs/session-2026-06-25.md`
 - Supabaseセットアップ手順: `supabase/README.md`
 - Supabaseテーブル設計: `supabase/schema.sql`
 - Supabaseサンプルデータ: `supabase/seed.example.sql`
