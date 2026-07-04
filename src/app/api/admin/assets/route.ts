@@ -4,6 +4,10 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
+type AssetReviewStatus = "new" | "candidate" | "hold" | "rejected";
+type AssetSortMode = "date" | "store";
+type DateSortOrder = "desc" | "asc";
+
 type AdminStoreRow = {
   id: string;
   store_code: string;
@@ -23,6 +27,8 @@ type AdminAssetRow = {
   captured_date: string;
   final_processed_url: string;
   description: string | null;
+  short_caption: string | null;
+  review_status: AssetReviewStatus;
   status: "ready" | "archived";
   hidden_at: string | null;
   hidden_reason: string | null;
@@ -41,6 +47,7 @@ type AssetQuery = {
   gte: (column: string, value: string) => AssetQuery;
   lte: (column: string, value: string) => AssetQuery;
   neq: (column: string, value: string) => AssetQuery;
+  eq: (column: string, value: string) => AssetQuery;
   order: (column: string, options?: { ascending?: boolean }) => AssetQuery;
   limit: (count: number) => Promise<{ data: unknown[] | null; error: SupabaseLikeError | null }>;
 };
@@ -48,6 +55,8 @@ type AssetQuery = {
 type AssetsTable = {
   select: (columns: string) => AssetQuery;
 };
+
+const REVIEW_STATUS_VALUES: AssetReviewStatus[] = ["new", "candidate", "hold", "rejected"];
 
 function isDateString(value: string) {
   return /^\d{4}-\d{2}-\d{2}$/.test(value);
@@ -61,8 +70,51 @@ function splitIds(value: string | null) {
     .filter(Boolean);
 }
 
+function getSortMode(value: string | null): AssetSortMode {
+  return value === "store" ? "store" : "date";
+}
+
+function getDateSortOrder(value: string | null): DateSortOrder {
+  return value === "asc" ? "asc" : "desc";
+}
+
+function getReviewStatus(value: string | null): AssetReviewStatus | null {
+  if (!value) return null;
+  return REVIEW_STATUS_VALUES.includes(value as AssetReviewStatus) ? (value as AssetReviewStatus) : null;
+}
+
 function formatSupabaseError(error: SupabaseLikeError) {
   return [error.code, error.message, error.details, error.hint].filter(Boolean).join(" / ");
+}
+
+function sortAssets(
+  assets: AdminAssetRow[],
+  stores: AdminStoreRow[],
+  sortMode: AssetSortMode,
+  dateOrder: DateSortOrder
+) {
+  const storeOrder = new Map(stores.map((store, index) => [store.id, { ...store, index }]));
+  const dateDirection = dateOrder === "asc" ? 1 : -1;
+
+  return [...assets].sort((a, b) => {
+    if (sortMode === "store") {
+      const storeA = storeOrder.get(a.store_id);
+      const storeB = storeOrder.get(b.store_id);
+      const orderA = storeA?.sort_order ?? 9999;
+      const orderB = storeB?.sort_order ?? 9999;
+      if (orderA !== orderB) return orderA - orderB;
+
+      const nameCompare = (storeA?.display_name ?? a.store_display_name).localeCompare(
+        storeB?.display_name ?? b.store_display_name,
+        "ja"
+      );
+      if (nameCompare !== 0) return nameCompare;
+    }
+
+    const dateCompare = a.captured_at.localeCompare(b.captured_at) * dateDirection;
+    if (dateCompare !== 0) return dateCompare;
+    return a.manage_code.localeCompare(b.manage_code, "ja") * dateDirection;
+  });
 }
 
 export async function GET(request: Request) {
@@ -74,9 +126,17 @@ export async function GET(request: Request) {
   const dateFrom = url.searchParams.get("dateFrom")?.trim() ?? "";
   const dateTo = url.searchParams.get("dateTo")?.trim() ?? "";
   const includeArchived = url.searchParams.get("includeArchived") === "true";
+  const sortMode = getSortMode(url.searchParams.get("sortMode"));
+  const dateOrder = getDateSortOrder(url.searchParams.get("dateOrder"));
+  const reviewStatusParam = url.searchParams.get("reviewStatus");
+  const reviewStatus = getReviewStatus(reviewStatusParam);
 
   if ((dateFrom && !isDateString(dateFrom)) || (dateTo && !isDateString(dateTo))) {
     return NextResponse.json({ message: "日付の形式を確認してください。" }, { status: 400 });
+  }
+
+  if (reviewStatusParam && !reviewStatus) {
+    return NextResponse.json({ message: "確認状態を確認してください。" }, { status: 400 });
   }
 
   try {
@@ -94,19 +154,21 @@ export async function GET(request: Request) {
       );
     }
 
+    const stores = (storeData ?? []) as AdminStoreRow[];
     const assetsTable = supabase.from("assets") as unknown as AssetsTable;
     let query = assetsTable
       .select(
-        "id, manage_code, store_id, store_code, store_display_name, staff_display_name, captured_at, captured_date, final_processed_url, description, status, hidden_at, hidden_reason, saved_at"
+        "id, manage_code, store_id, store_code, store_display_name, staff_display_name, captured_at, captured_date, final_processed_url, description, short_caption, review_status, status, hidden_at, hidden_reason, saved_at"
       )
-      .order("captured_at", { ascending: false });
+      .order("captured_at", { ascending: dateOrder === "asc" });
 
     if (storeIds.length > 0) query = query.in("store_id", storeIds);
     if (dateFrom) query = query.gte("captured_date", dateFrom);
     if (dateTo) query = query.lte("captured_date", dateTo);
+    if (reviewStatus) query = query.eq("review_status", reviewStatus);
     if (!includeArchived) query = query.neq("status", "archived");
 
-    const { data: assetData, error: assetError } = await query.limit(120);
+    const { data: assetData, error: assetError } = await query.limit(160);
 
     if (assetError) {
       return NextResponse.json(
@@ -115,9 +177,15 @@ export async function GET(request: Request) {
       );
     }
 
+    const assets = sortAssets((assetData ?? []) as AdminAssetRow[], stores, sortMode, dateOrder);
+
     return NextResponse.json({
-      stores: (storeData ?? []) as AdminStoreRow[],
-      assets: (assetData ?? []) as AdminAssetRow[],
+      stores,
+      assets,
+      sort: {
+        sortMode,
+        dateOrder,
+      },
     });
   } catch (error) {
     return NextResponse.json(
