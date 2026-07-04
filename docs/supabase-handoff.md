@@ -15,12 +15,9 @@ GitHub mainの `supabase/schema.sql` と `supabase/README.md` を正とし、こ
 
 ## Storage
 
-使うStorage bucketは以下。
-
 ### final-images
 
 完成画像を保存する。
-
 保存対象は、印刷後にお客様からSNS掲載OKをもらった完成画像だけ。
 
 保存パス:
@@ -29,23 +26,9 @@ GitHub mainの `supabase/schema.sql` と `supabase/README.md` を正とし、こ
 [store_code]/[year]/[month]/[day]/[manage_code].jpg
 ```
 
-例:
-
-```text
-DEMO_TOKYO/2026/06/25/DEMO_TOKYO-20260625-001.jpg
-```
-
 ### store-assets
 
-店舗ロゴ、写真フレームなど、店舗設定に使う画像を保存する。
-
-推奨パス:
-
-```text
-stores/[store_code]/logo.png
-stores/[store_code]/frame.png
-```
-
+店舗フレームなど、店舗設定に使う画像を保存する。
 現在の方針では、ロゴは単独素材ではなく写真枠画像内に含める。既存の `stores.logo_url` は互換用として残っているが、後続で削除または非表示にする。
 
 ## 主なテーブル
@@ -53,15 +36,12 @@ stores/[store_code]/frame.png
 ### stores
 
 店舗マスタ。
-
 店舗名、表示名、ログインコード、PINハッシュ、ロゴURL、フレームURL、テーマ色を持つ。
-
 店舗を休止・閉店する場合も物理削除せず、`is_active = false` にする。
 
 ### staff_members
 
 店舗ごとの担当者候補。
-
 担当者が退職・異動した場合も物理削除せず、`is_active = false` にする。
 
 ### assets
@@ -110,16 +90,8 @@ rejected   使用しない
 
 `assets.manage_code` は、人間が見て分かる業務用コードである。
 
-形式:
-
 ```text
 [store_code]-[yyyymmdd]-[3桁連番]
-```
-
-例:
-
-```text
-DEMO_TOKYO-20260625-001
 ```
 
 内部の主キーはUUID、現場や本部が見る管理コードは `manage_code` として分ける。
@@ -146,7 +118,7 @@ DEMO_TOKYO-20260625-001
 
 注意:
 
-- GitHub mainにAPI変更が反映されても、Supabase本体へ `20260704_admin_asset_review_fields.sql` が未適用だと、`/admin` の写真一覧APIが存在しないカラムを読みに行ってエラーになる可能性がある。
+- GitHub mainにAPI/UI変更が反映されても、Supabase本体へ `20260704_admin_asset_review_fields.sql` が未適用だと、`/admin` の写真一覧APIが存在しないカラムを読みに行ってエラーになる可能性がある。
 - 本番DBへ適用したSQLは、必ず `supabase/migrations/` にも記録する。今回の追加SQLはGitHub mainへ記録済み。
 
 ## Vercel環境変数
@@ -157,17 +129,11 @@ DEMO_TOKYO-20260625-001
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY
-```
-
-`SUPABASE_SERVICE_ROLE_KEY` はサーバー側APIだけで使う。ブラウザへ出してはいけない。
-
-本部用 `/admin` を使う場合は、追加で以下を設定する。
-
-```text
 ADMIN_MAINTENANCE_PIN
 ```
 
-これは本部メンテナンス画面を開くための簡易PINである。将来、本格的な管理者ログインを作るまでは、このPINをVercelの環境変数で管理する。
+`SUPABASE_SERVICE_ROLE_KEY` はサーバー側APIだけで使う。ブラウザへ出してはいけない。
+`ADMIN_MAINTENANCE_PIN` は本部メンテナンス画面を開くための簡易PINであり、GitHubへ値を記録しない。
 
 ## 本部メンテナンス
 
@@ -178,13 +144,19 @@ ADMIN_MAINTENANCE_PIN
 - 店舗を複数選択して写真を絞り込む
 - 開始日・終了日で写真を絞り込む
 - 非表示写真を含めて表示する
+- 確認状態で写真を絞り込む
+- 日付順、店順で写真を並べ替える
+- 日付順は新しい順、古い順を切り替える
+- 写真カードで確認状態と一言メモを見る
+- 選択した写真に40文字以内の一言メモを追加・更新する
+- 選択した写真の本部確認状態を更新する
 - 選択した写真に説明文を追加・更新する
 - 写真を物理削除せず、`assets.status = 'archived'` として非表示にする
 - 非表示写真を `assets.status = 'ready'` に戻す
 - 店舗マスタの表示名、SNS表示名、Instagram、標準ハッシュタグ、ロゴURL、フレームURL、テーマカラー、有効/無効を編集する
 - 担当者マスタの追加、表示名、役割、SNS承認可否、有効/無効、並び順を編集する
 
-GitHub mainへ反映済みのDB/API土台:
+GitHub mainへ反映済みのDB/API/UI土台:
 
 - 一覧取得APIで `short_caption` と `review_status` を返す
 - 一覧取得APIで `sortMode=store|date` を受ける
@@ -192,13 +164,7 @@ GitHub mainへ反映済みのDB/API土台:
 - 一覧取得APIで `reviewStatus=new|candidate|hold|rejected` を受ける
 - 個別更新APIで `shortCaption` と `reviewStatus` を更新できる
 - 個別更新APIで40文字超過の一言メモと不正な確認状態を拒否する
-
-まだUIに十分反映していないこと:
-
-- 写真カード上の一言メモ表示
-- 写真カード上の確認状態表示
-- 写真詳細での一言メモ・確認状態更新
-- 店順、日付新しい順/古い順、確認状態の画面操作
+- 写真タブUIで確認状態、一言メモ、確認状態フィルター、日付順/店順、日付の新しい順/古い順を操作できる
 
 SNS投稿文の作成と保存、SNS自動投稿、Instagram連携は次フェーズ以降で検討する。
 店舗ログインコード、PINハッシュ、完全削除、Storageファイル削除はまだ画面編集対象外とする。
