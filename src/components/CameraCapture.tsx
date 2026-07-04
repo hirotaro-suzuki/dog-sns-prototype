@@ -99,10 +99,6 @@ function StoreSettingsSummary({
           <dd>{store.themeColor ?? "未設定"}</dd>
         </div>
         <div>
-          <dt>ロゴURL</dt>
-          <dd>{store.logoUrl ?? "未設定"}</dd>
-        </div>
-        <div>
           <dt>フレームURL</dt>
           <dd>{store.frameUrl ?? "未設定"}</dd>
         </div>
@@ -131,6 +127,7 @@ export function CameraCapture({ store, staffMembers = [], onBack, onLogout }: Ca
     [store?.frames]
   );
   const selectedFrame = frameChoices.find((frame) => frame.id === selectedFrameId) ?? frameChoices[0] ?? null;
+  // TODO(logo-deprecation): logoUrl remains for old data only. New official designs should embed logos in frame images.
   const activeStore = store
     ? {
         ...store,
@@ -416,9 +413,6 @@ export function CameraCapture({ store, staffMembers = [], onBack, onLogout }: Ca
         )}
         {activeStore?.frameUrl && (
           <img className="store-frame-image" src={activeStore.frameUrl} alt="店舗フレーム" />
-        )}
-        {store?.logoUrl && (
-          <img className="store-logo-badge" src={store.logoUrl} alt="店舗ロゴ" />
         )}
         <div
           className="frame-overlay"
