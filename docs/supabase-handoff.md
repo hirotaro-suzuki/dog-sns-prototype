@@ -96,6 +96,18 @@ rejected   使用しない
 
 内部の主キーはUUID、現場や本部が見る管理コードは `manage_code` として分ける。
 
+## 適用状況
+
+ユーザー操作により、Supabase SQL Editorで `supabase/migrations/20260704_admin_asset_review_fields.sql` を適用済み。
+
+SQL Editorの結果:
+
+```text
+Success. No rows returned
+```
+
+これにより、`assets.short_caption`、`assets.review_status`、40文字制約、確認状態値制約、検索用indexはSupabase本体へ反映済みと扱う。
+
 ## 適用手順
 
 新規Supabaseプロジェクトの場合:
@@ -106,7 +118,7 @@ rejected   使用しない
 4. `store-assets` に店舗フレームを入れる。
 5. `store_frames.frame_url` に公開URLを登録する。
 
-既存Supabaseプロジェクトの場合:
+既存Supabaseプロジェクトで別環境へ再適用する場合:
 
 1. Supabase SQL Editorで `supabase/migrations/20260625_assets_storage_handoff.sql` を実行済みか確認する。
 2. Supabase SQL Editorで `supabase/migrations/20260704_frame_date_settings.sql` を実行済みか確認する。
@@ -118,7 +130,8 @@ rejected   使用しない
 
 注意:
 
-- GitHub mainにAPI/UI変更が反映されても、Supabase本体へ `20260704_admin_asset_review_fields.sql` が未適用だと、`/admin` の写真一覧APIが存在しないカラムを読みに行ってエラーになる可能性がある。
+- GitHub mainにAPI/UI変更が反映済みで、現Supabaseにも `20260704_admin_asset_review_fields.sql` は適用済み。
+- 別Supabase環境へ移す場合は、同じmigrationを忘れずに適用する。
 - 本番DBへ適用したSQLは、必ず `supabase/migrations/` にも記録する。今回の追加SQLはGitHub mainへ記録済み。
 
 ## Vercel環境変数
