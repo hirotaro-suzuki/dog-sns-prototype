@@ -11,6 +11,7 @@ GitHub mainの `supabase/schema.sql` と `supabase/README.md` を正とし、こ
 - ワンチャン情報はDB項目として保存しない。
 - ワンチャン情報は、写真上の短い文字として完成画像に焼き込む。
 - 店舗、担当者、ロゴ、フレーム、完成画像の保存先は、GitHub上のSQLと文書から追える状態にする。
+- GitHub mainを正本とし、ローカルPCやDropboxを正本にしない。
 
 ## Storage
 
@@ -45,7 +46,7 @@ stores/[store_code]/logo.png
 stores/[store_code]/frame.png
 ```
 
-店舗マスタ `stores.logo_url` と `stores.frame_url` には、Supabase Storageの公開URLを登録する。
+現在の方針では、ロゴは単独素材ではなく写真枠画像内に含める。既存の `stores.logo_url` は互換用として残っているが、後続で削除または非表示にする。
 
 ## 主なテーブル
 
@@ -79,8 +80,21 @@ stores/[store_code]/frame.png
 - 印刷日時
 - SNS掲載合意日時
 - 本部が追加する説明文
+- 本部が追加する40文字以内の一言メモ `short_caption`
+- 本部確認状態 `review_status`
 - 非表示日時、非表示理由
 - 管理ステータス
+
+`review_status` の内部値:
+
+```text
+new        未確認
+candidate  投稿候補
+hold       保留
+rejected   使用しない
+```
+
+`review_status` はSNS投稿済み状態ではなく、本部が保存済み写真を整理するための確認状態である。
 
 保存しない情報:
 
@@ -117,15 +131,23 @@ DEMO_TOKYO-20260625-001
 1. Supabase SQL Editorで `supabase/schema.sql` を実行する。
 2. 必要に応じて `supabase/seed.example.sql` を実行する。
 3. Vercelに環境変数を設定する。
-4. `store-assets` に店舗ロゴとフレームを入れる。
-5. `stores.logo_url` と `stores.frame_url` を公開URLへ更新する。
+4. `store-assets` に店舗フレームを入れる。
+5. `store_frames.frame_url` に公開URLを登録する。
 
 既存Supabaseプロジェクトの場合:
 
-1. Supabase SQL Editorで `supabase/migrations/20260625_assets_storage_handoff.sql` を実行する。
-2. `assets` の犬情報項目が必須でなくなっていることを確認する。
-3. `final-images` と `store-assets` bucketがあることを確認する。
-4. 既存店舗の `logo_url` と `frame_url` を必要に応じて更新する。
+1. Supabase SQL Editorで `supabase/migrations/20260625_assets_storage_handoff.sql` を実行済みか確認する。
+2. Supabase SQL Editorで `supabase/migrations/20260704_frame_date_settings.sql` を実行済みか確認する。
+3. Supabase SQL Editorで `supabase/migrations/20260704_admin_asset_review_fields.sql` を実行する。
+4. `assets` に `short_caption` と `review_status` が追加されたことを確認する。
+5. `review_status` の既存写真が初期値 `new` になっていることを確認する。
+6. `final-images` と `store-assets` bucketがあることを確認する。
+7. 既存店舗の写真枠設定を必要に応じて確認する。
+
+注意:
+
+- GitHub mainにAPI変更が反映されても、Supabase本体へ `20260704_admin_asset_review_fields.sql` が未適用だと、`/admin` の写真一覧APIが存在しないカラムを読みに行ってエラーになる可能性がある。
+- 本番DBへ適用したSQLは、必ず `supabase/migrations/` にも記録する。今回の追加SQLはGitHub mainへ記録済み。
 
 ## Vercel環境変数
 
@@ -162,8 +184,24 @@ ADMIN_MAINTENANCE_PIN
 - 店舗マスタの表示名、SNS表示名、Instagram、標準ハッシュタグ、ロゴURL、フレームURL、テーマカラー、有効/無効を編集する
 - 担当者マスタの追加、表示名、役割、SNS承認可否、有効/無効、並び順を編集する
 
-SNS投稿文の作成と保存は次フェーズで追加する。
-店舗ログインコード、PINハッシュ、ロゴ・フレーム画像そのもののアップロードはまだ画面編集対象外とする。
+GitHub mainへ反映済みのDB/API土台:
+
+- 一覧取得APIで `short_caption` と `review_status` を返す
+- 一覧取得APIで `sortMode=store|date` を受ける
+- 一覧取得APIで `dateOrder=desc|asc` を受ける
+- 一覧取得APIで `reviewStatus=new|candidate|hold|rejected` を受ける
+- 個別更新APIで `shortCaption` と `reviewStatus` を更新できる
+- 個別更新APIで40文字超過の一言メモと不正な確認状態を拒否する
+
+まだUIに十分反映していないこと:
+
+- 写真カード上の一言メモ表示
+- 写真カード上の確認状態表示
+- 写真詳細での一言メモ・確認状態更新
+- 店順、日付新しい順/古い順、確認状態の画面操作
+
+SNS投稿文の作成と保存、SNS自動投稿、Instagram連携は次フェーズ以降で検討する。
+店舗ログインコード、PINハッシュ、完全削除、Storageファイル削除はまだ画面編集対象外とする。
 
 ## 保存の流れ
 
@@ -174,5 +212,6 @@ SNS投稿文の作成と保存は次フェーズで追加する。
 5. 「保存」ボタンを押す。
 6. Vercelの `/api/assets` が完成画像を `final-images` へ保存する。
 7. `/api/assets` が `assets` テーブルへメタデータを登録する。
+8. 本部側 `/admin` が保存済み写真を確認し、必要に応じて一言メモと確認状態を付ける。
 
 この流れ以外では、完成画像をクラウドへ送らない。
