@@ -1,3 +1,10 @@
+export type StoreSessionFrame = {
+  id: string;
+  frameName: string;
+  frameUrl: string;
+  isDefault: boolean;
+};
+
 export type StoreSessionStore = {
   id: string;
   storeCode: string;
@@ -5,6 +12,7 @@ export type StoreSessionStore = {
   displayName: string;
   logoUrl: string | null;
   frameUrl: string | null;
+  frames: StoreSessionFrame[];
   themeColor: string | null;
   printTemplateType: string;
   timezone: string;
