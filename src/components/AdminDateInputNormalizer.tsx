@@ -19,7 +19,7 @@ function normalizeDateFilterInputs() {
     input.inputMode = "numeric";
     input.placeholder = "YYYY-MM-DD";
     input.autocomplete = "off";
-    input.pattern = "\d{4}-\d{2}-\d{2}";
+    input.pattern = "\\d{4}-\\d{2}-\\d{2}";
   });
 }
 
