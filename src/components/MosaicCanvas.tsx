@@ -155,10 +155,6 @@ function getStoreDisplayName(store?: CaptureStore) {
   return store?.displayName ?? phaseZeroStore.displayName;
 }
 
-function getLogoLabel(store?: CaptureStore) {
-  return store?.storeName ?? "DEMO STORE LOGO";
-}
-
 function getStoreThemeColor(store?: CaptureStore) {
   return store?.themeColor ?? FALLBACK_THEME_COLOR;
 }
@@ -197,20 +193,6 @@ function hexToRgba(hex: string, alpha: number) {
   const green = Number.parseInt(normalized.slice(3, 5), 16);
   const blue = Number.parseInt(normalized.slice(5, 7), 16);
   return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
-}
-
-function drawContainedImage(
-  context: CanvasRenderingContext2D,
-  image: HTMLImageElement,
-  x: number,
-  y: number,
-  maxWidth: number,
-  maxHeight: number
-) {
-  const scale = Math.min(maxWidth / image.naturalWidth, maxHeight / image.naturalHeight);
-  const width = image.naturalWidth * scale;
-  const height = image.naturalHeight * scale;
-  context.drawImage(image, x + maxWidth - width, y + (maxHeight - height) / 2, width, height);
 }
 
 function loadCanvasImage(url: string): Promise<HTMLImageElement | null> {
@@ -300,7 +282,6 @@ function drawFixedFrame(
   context: CanvasRenderingContext2D,
   store?: CaptureStore,
   staff?: CaptureStaff,
-  logoImage?: HTMLImageElement | null,
   frameImage?: HTMLImageElement | null
 ) {
   const themeColor = getStoreThemeColor(store);
@@ -328,14 +309,6 @@ function drawFixedFrame(
   context.fillText(getStoreDisplayName(store), 56, 70);
 
   drawFrameDate(context, store);
-
-  if (logoImage) {
-    drawContainedImage(context, logoImage, CANVAS_WIDTH - 516, CANVAS_HEIGHT - 138, 460, 96);
-  } else {
-    context.textAlign = "right";
-    context.font = "700 42px Arial, sans-serif";
-    context.fillText(getLogoLabel(store), CANVAS_WIDTH - 56, CANVAS_HEIGHT - 64);
-  }
 
   if (staff) {
     context.textAlign = "right";
@@ -568,10 +541,6 @@ function StoreSettingsSummary({ store, staff }: { store?: CaptureStore; staff?: 
           <dd>{store.themeColor ?? "未設定"}</dd>
         </div>
         <div>
-          <dt>ロゴURL</dt>
-          <dd>{store.logoUrl ?? "未設定"}</dd>
-        </div>
-        <div>
           <dt>フレームURL</dt>
           <dd>{store.frameUrl ?? "未設定"}</dd>
         </div>
@@ -590,7 +559,6 @@ export function MosaicCanvas({
 }: MosaicCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
-  const logoImageRef = useRef<HTMLImageElement | null>(null);
   const frameImageRef = useRef<HTMLImageElement | null>(null);
   const transformRef = useRef<PhotoTransform>({
     x: CANVAS_WIDTH / 2,
@@ -613,7 +581,7 @@ export function MosaicCanvas({
   const [printedAt, setPrintedAt] = useState<string | null>(null);
   const [isSavingAsset, setIsSavingAsset] = useState(false);
   const [savedAssetCode, setSavedAssetCode] = useState<string | null>(null);
-  const [assetStatus, setAssetStatus] = useState("店舗ロゴ・フレームのURLを確認しています。");
+  const [assetStatus, setAssetStatus] = useState("店舗フレームのURLを確認しています。");
   const [status, setStatus] = useState("Canvas加工を準備しています。");
 
   function prepareCanvas() {
@@ -643,7 +611,6 @@ export function MosaicCanvas({
       context,
       store,
       staff,
-      logoImageRef.current,
       frameImageRef.current
     );
   }
@@ -707,23 +674,18 @@ export function MosaicCanvas({
 
   useEffect(() => {
     let isCancelled = false;
-    logoImageRef.current = null;
     frameImageRef.current = null;
 
+    // TODO(logo-deprecation): logoUrl remains in DB for old data. Remove standalone logo fields/admin controls after all logos are embedded in frame images.
     async function loadStoreImages() {
-      const [logoImage, frameImage] = await Promise.all([
-        store?.logoUrl ? loadCanvasImage(store.logoUrl) : Promise.resolve(null),
-        store?.frameUrl ? loadCanvasImage(store.frameUrl) : Promise.resolve(null),
-      ]);
+      const frameImage = store?.frameUrl ? await loadCanvasImage(store.frameUrl) : null;
 
       if (isCancelled) return;
 
-      logoImageRef.current = logoImage;
       frameImageRef.current = frameImage;
 
-      const logoState = store?.logoUrl ? (logoImage ? "ロゴ画像を読み込みました" : "ロゴURLはありますが画像は読めませんでした") : "ロゴURL未設定";
       const frameState = store?.frameUrl ? (frameImage ? "フレーム画像を読み込みました" : "フレームURLはありますが画像は読めませんでした") : "フレームURL未設定";
-      setAssetStatus(`${logoState}。${frameState}。`);
+      setAssetStatus(`${frameState}。`);
       renderCanvas();
     }
 
@@ -732,7 +694,7 @@ export function MosaicCanvas({
     return () => {
       isCancelled = true;
     };
-  }, [store?.logoUrl, store?.frameUrl]);
+  }, [store?.frameUrl]);
 
   useEffect(() => {
     if (!completedImageUrl) {
@@ -1035,7 +997,7 @@ export function MosaicCanvas({
       setStatus("完成画像を作成しました。次の段階ではこの画像を印刷・保存に使います。");
     } catch {
       setCompletedImageUrl(null);
-      setStatus("完成画像を作成できませんでした。ロゴまたはフレーム画像の読み込み設定を確認してください。");
+      setStatus("完成画像を作成できませんでした。フレーム画像の読み込み設定を確認してください。");
     }
   }
 
