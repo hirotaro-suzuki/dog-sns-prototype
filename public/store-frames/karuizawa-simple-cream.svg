@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1270" height="890" viewBox="0 0 1270 890">
+  <defs>
+    <mask id="photo-window">
+      <rect width="1270" height="890" fill="white"/>
+      <rect x="95" y="129" width="1080" height="627" rx="10" fill="black"/>
+    </mask>
+  </defs>
+  <rect width="1270" height="890" fill="#f7efe2" mask="url(#photo-window)"/>
+  <rect x="18" y="18" width="1234" height="854" rx="20" fill="none" stroke="#2f6f55" stroke-width="10"/>
+  <rect x="95" y="129" width="1080" height="627" rx="10" fill="none" stroke="#ffffff" stroke-width="12"/>
+  <rect x="105" y="139" width="1060" height="607" rx="6" fill="none" stroke="#d7c4a4" stroke-width="4"/>
+</svg>
