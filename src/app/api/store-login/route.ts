@@ -101,7 +101,7 @@ function formatSupabaseError(error: { code?: string; message?: string; details?:
 }
 
 function isDemoStore(storeCode: string) {
-  return storeCode.startsWith("DEMO_");
+  return storeCode === "DEMO_STORE";
 }
 
 function getPublicUrl(request: Request, path: string) {
