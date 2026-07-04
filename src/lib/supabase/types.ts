@@ -100,6 +100,11 @@ type StoreFrameInsert = {
   starts_at?: string | null;
   ends_at?: string | null;
   sort_order?: number;
+  date_enabled?: boolean;
+  date_x?: number;
+  date_y?: number;
+  date_font_size?: number;
+  date_color?: string;
   created_at?: string;
   updated_at?: string;
 };
@@ -214,6 +219,11 @@ export type Database = {
           starts_at: string | null;
           ends_at: string | null;
           sort_order: number;
+          date_enabled: boolean;
+          date_x: number;
+          date_y: number;
+          date_font_size: number;
+          date_color: string;
           created_at: string;
           updated_at: string;
         };
