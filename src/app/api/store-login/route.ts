@@ -5,6 +5,8 @@ import type { StoreSession } from "@/types/storeSession";
 
 export const runtime = "nodejs";
 
+const MAX_SESSION_FRAMES = 3;
+
 type StoreLoginRequest = {
   loginCode?: unknown;
   pin?: unknown;
@@ -32,6 +34,13 @@ type StaffLoginRow = {
   display_name: string;
   role_label: string | null;
   can_approve_sns: boolean;
+};
+
+type StoreFrameLoginRow = {
+  id: string;
+  frame_name: string;
+  frame_url: string;
+  is_default: boolean;
 };
 
 function normalizeLoginCode(value: unknown) {
@@ -108,6 +117,27 @@ export async function POST(request: Request) {
       );
     }
 
+    const { data: frameData, error: frameError } = await supabase
+      .from("store_frames")
+      .select("id, frame_name, frame_url, is_default")
+      .eq("store_id", store.id)
+      .eq("is_active", true)
+      .order("is_default", { ascending: false })
+      .order("sort_order", { ascending: true })
+      .order("frame_name", { ascending: true })
+      .limit(MAX_SESSION_FRAMES);
+    const frames = (frameData ?? []) as StoreFrameLoginRow[];
+
+    if (frameError) {
+      return NextResponse.json(
+        {
+          message: "店舗フレームを確認できませんでした。",
+          detail: formatSupabaseError(frameError),
+        },
+        { status: 500 }
+      );
+    }
+
     const session: StoreSession = {
       store: {
         id: store.id,
@@ -115,7 +145,13 @@ export async function POST(request: Request) {
         storeName: store.store_name,
         displayName: store.display_name,
         logoUrl: store.logo_url,
-        frameUrl: store.frame_url,
+        frameUrl: frames[0]?.frame_url ?? store.frame_url,
+        frames: frames.map((frame) => ({
+          id: frame.id,
+          frameName: frame.frame_name,
+          frameUrl: frame.frame_url,
+          isDefault: frame.is_default,
+        })),
         themeColor: store.theme_color,
         printTemplateType: store.print_template_type,
         timezone: store.timezone,
