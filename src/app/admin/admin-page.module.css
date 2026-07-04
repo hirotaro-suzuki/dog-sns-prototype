@@ -19,3 +19,14 @@
 .logoutRow:empty {
   display: none;
 }
+
+.adminPage :global(.admin-tab-reload-row) {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -8px;
+}
+
+.adminPage :global(.admin-tab-reload-row .action-button) {
+  min-height: 42px;
+  padding: 9px 14px;
+}
