@@ -2,16 +2,39 @@
   aspect-ratio: 127 / 89;
 }
 
-.camera-stage:has(.store-frame-image) .frame-overlay {
-  inset: 0;
-  border: 0;
+.camera-stage video {
+  position: absolute;
+  left: 7.5%;
+  top: 14.5%;
+  width: 85%;
+  height: 70.5%;
+  object-fit: cover;
 }
 
-.camera-stage:has(.store-frame-image) .frame-overlay::before {
+.camera-stage .empty-camera {
+  position: absolute;
+  left: 7.5%;
+  top: 14.5%;
+  width: 85%;
+  height: 70.5%;
+  z-index: 1;
+}
+
+.store-frame-image {
+  z-index: 2;
+}
+
+.camera-stage .frame-overlay {
+  inset: 0;
+  border: 0;
+  z-index: 3;
+}
+
+.camera-stage .frame-overlay::before {
   content: "";
 }
 
-.camera-stage:has(.store-frame-image) .frame-overlay::after {
+.camera-stage .frame-overlay::after {
   content: attr(data-date);
   left: auto;
   right: 7.5%;
