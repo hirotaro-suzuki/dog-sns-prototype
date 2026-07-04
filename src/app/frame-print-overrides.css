@@ -1,5 +1,6 @@
 .camera-stage {
   aspect-ratio: 127 / 89;
+  background: #f7efe2;
 }
 
 .camera-stage video {
@@ -44,5 +45,8 @@
   font-size: clamp(16px, 2.4vw, 28px);
   line-height: 1;
   text-align: center;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8), 0 0 2px rgba(0, 0, 0, 0.95);
 }
