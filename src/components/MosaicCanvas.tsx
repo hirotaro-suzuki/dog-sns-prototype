@@ -12,6 +12,8 @@ type MosaicCanvasProps = {
   staff?: CaptureStaff;
   onCancel: () => void;
   onBackToPhotos?: () => void;
+  onStartNext?: () => void;
+  onFinishSession?: () => void;
   onLogout?: () => void;
 };
 
@@ -517,44 +519,14 @@ function findTextBoxAtPoint(
   return null;
 }
 
-function StoreSettingsSummary({ store, staff }: { store?: CaptureStore; staff?: CaptureStaff }) {
-  if (!store) return null;
-
-  return (
-    <div className="store-settings-panel compact" aria-label="DBから読み込んだ店舗設定">
-      <p className="eyebrow">DBから読み込んだ店舗設定</p>
-      <dl className="settings-list">
-        <div>
-          <dt>店舗コード</dt>
-          <dd>{store.storeCode}</dd>
-        </div>
-        <div>
-          <dt>表示名</dt>
-          <dd>{store.displayName}</dd>
-        </div>
-        <div>
-          <dt>担当者</dt>
-          <dd>{staff?.displayName ?? "未選択"}</dd>
-        </div>
-        <div>
-          <dt>テーマ色</dt>
-          <dd>{store.themeColor ?? "未設定"}</dd>
-        </div>
-        <div>
-          <dt>フレームURL</dt>
-          <dd>{store.frameUrl ?? "未設定"}</dd>
-        </div>
-      </dl>
-    </div>
-  );
-}
-
 export function MosaicCanvas({
   photo,
   store,
   staff,
   onCancel,
   onBackToPhotos,
+  onStartNext,
+  onFinishSession,
   onLogout,
 }: MosaicCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -579,6 +551,7 @@ export function MosaicCanvas({
   const [selectedTextBoxId, setSelectedTextBoxId] = useState<string | null>(null);
   const [completedImageUrl, setCompletedImageUrl] = useState<string | null>(null);
   const [printedAt, setPrintedAt] = useState<string | null>(null);
+  const [hasConsent, setHasConsent] = useState(false);
   const [isSavingAsset, setIsSavingAsset] = useState(false);
   const [savedAssetCode, setSavedAssetCode] = useState<string | null>(null);
   const [assetStatus, setAssetStatus] = useState("店舗フレームのURLを確認しています。");
@@ -993,8 +966,9 @@ export function MosaicCanvas({
       const nextUrl = canvas.toDataURL("image/jpeg", 0.92);
       setCompletedImageUrl(nextUrl);
       setPrintedAt(null);
+      setHasConsent(false);
       setSavedAssetCode(null);
-      setStatus("完成画像を作成しました。次の段階ではこの画像を印刷・保存に使います。");
+      setStatus("完成画像を作成しました。印刷してお客様に確認してから保存してください。");
     } catch {
       setCompletedImageUrl(null);
       setStatus("完成画像を作成できませんでした。フレーム画像の読み込み設定を確認してください。");
@@ -1003,12 +977,23 @@ export function MosaicCanvas({
 
   function handlePrintFinalImage() {
     setPrintedAt(new Date().toISOString());
+    setStatus("印刷画面を開きました。印刷後にお客様からSNS掲載OKをもらった場合だけ保存してください。");
     window.print();
   }
 
   async function saveFinalImage() {
     if (!completedImageUrl || !store || !staff) {
       setStatus("店舗または担当者を確認できないため保存できません。");
+      return;
+    }
+
+    if (!printedAt) {
+      setStatus("先に印刷して、お客様に完成画像を確認してもらってください。");
+      return;
+    }
+
+    if (!hasConsent) {
+      setStatus("お客様からSNS掲載OKをもらったことを確認してから保存してください。");
       return;
     }
 
@@ -1085,7 +1070,7 @@ export function MosaicCanvas({
         <div className="section-heading compact-section-heading">
           <p className="eyebrow">Final Image</p>
           <h2>完成画像確認</h2>
-          <p>この画像を確認してから、印刷や保存の流れへ進みます。</p>
+          <p>印刷してお客様に確認し、SNS掲載OKをもらった場合だけ保存します。</p>
         </div>
 
         <div className="final-image-panel final-image-screen-panel">
@@ -1096,33 +1081,54 @@ export function MosaicCanvas({
           <button
             className="action-button primary-wide"
             type="button"
+            onClick={handlePrintFinalImage}
+          >
+            印刷
+          </button>
+          <label className="field-label compact-summary">
+            <input
+              type="checkbox"
+              checked={hasConsent}
+              disabled={!printedAt || Boolean(savedAssetCode)}
+              onChange={(event) => setHasConsent(event.target.checked)}
+            />
+            お客様からSNS掲載OKをもらいました
+          </label>
+          <button
+            className="action-button primary-wide"
+            type="button"
             onClick={saveFinalImage}
-            disabled={isSavingAsset || Boolean(savedAssetCode) || !store || !staff}
+            disabled={isSavingAsset || Boolean(savedAssetCode) || !store || !staff || !printedAt || !hasConsent}
           >
             {isSavingAsset
               ? "保存中"
               : savedAssetCode
                 ? "保存済み"
-                : "保存"}
+                : "SNS掲載OKをもらったので保存"}
           </button>
-          <button
-            className="action-button primary-wide"
-            type="button"
-            onClick={handlePrintFinalImage}
-          >
-            印刷
-          </button>
-          <button className="action-button secondary" type="button" onClick={() => setCompletedImageUrl(null)}>
+          {savedAssetCode && onStartNext && (
+            <button className="action-button primary-wide" type="button" onClick={onStartNext}>
+              次のわんちゃんを撮る
+            </button>
+          )}
+          {savedAssetCode && onFinishSession && (
+            <button className="action-button secondary" type="button" onClick={onFinishSession}>
+              撮影を終了する
+            </button>
+          )}
+          <button className="action-button secondary" type="button" onClick={() => setCompletedImageUrl(null)} disabled={Boolean(savedAssetCode)}>
             編集へ戻る
           </button>
           {onBackToPhotos && (
-            <button className="action-button secondary" type="button" onClick={onBackToPhotos}>
+            <button className="action-button secondary" type="button" onClick={onBackToPhotos} disabled={Boolean(savedAssetCode)}>
               写真選択へ戻る
             </button>
           )}
-          <button className="action-button secondary" type="button" onClick={onCancel}>
-            キャンセル
-          </button>
+          {!savedAssetCode && (
+            <button className="action-button secondary" type="button" onClick={onCancel}>
+              キャンセル
+            </button>
+          )}
           {onLogout && (
             <button className="action-button secondary" type="button" onClick={onLogout}>
               ログアウト
@@ -1133,7 +1139,9 @@ export function MosaicCanvas({
         <p className="notice">
           {savedAssetCode
             ? `クラウドへ保存済みです。管理コード: ${savedAssetCode}`
-            : "お客様からSNS掲載OKをもらった完成画像だけクラウドへ保存してください。"}
+            : printedAt
+              ? "SNS掲載OKをもらった場合だけチェックして保存してください。"
+              : "先に印刷して、お客様に完成画像を確認してもらってください。"}
         </p>
         <p className="notice">{status}</p>
       </section>
@@ -1265,7 +1273,6 @@ export function MosaicCanvas({
         )}
       </div>
 
-      <StoreSettingsSummary store={store} staff={staff} />
       <p className="notice">{assetStatus}</p>
       <p className="notice">{status}</p>
     </section>
