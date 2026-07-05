@@ -818,6 +818,27 @@ export function MosaicCanvas({
     return true;
   }
 
+  function startSelectedTextDrag(canvasPoint: CanvasPoint) {
+    const image = imageRef.current;
+    const selectedId = selectedTextBoxIdRef.current;
+    const selected = textBoxesRef.current.find((textBox) => textBox.id === selectedId);
+    if (!image || !selectedId || !selected) return false;
+
+    const photoPoint = transformCanvasPointToPhoto(image, transformRef.current, canvasPoint);
+    if (!photoPoint) return false;
+
+    textDragRef.current = {
+      id: selectedId,
+      offset: {
+        x: photoPoint.x - selected.point.x,
+        y: photoPoint.y - selected.point.y,
+      },
+    };
+    switchMode("text");
+    renderCanvas();
+    return true;
+  }
+
   function moveTextBox(canvasPoint: CanvasPoint) {
     const drag = textDragRef.current;
     const image = imageRef.current;
@@ -934,6 +955,35 @@ export function MosaicCanvas({
       ...geometry,
       transform: { ...transformRef.current },
     };
+  }
+
+  function handleSelectedTextTouchStart(event: TouchEvent<HTMLDivElement>) {
+    const target = event.target as HTMLElement;
+    if (target.closest(".canvas-text-control-panel")) return;
+
+    const canvas = canvasRef.current;
+    if (!canvas || event.touches.length === 0) return;
+
+    event.stopPropagation();
+    startSelectedTextDrag(getTouchPoint(canvas, event.touches[0]));
+  }
+
+  function handleSelectedTextTouchMove(event: TouchEvent<HTMLDivElement>) {
+    const canvas = canvasRef.current;
+    if (!canvas || event.touches.length === 0 || !textDragRef.current) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    moveTextBox(getTouchPoint(canvas, event.touches[0]));
+  }
+
+  function handleSelectedTextTouchEnd(event: TouchEvent<HTMLDivElement>) {
+    if (!textDragRef.current) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    textDragRef.current = null;
+    setStatus("文字の位置を調整しました。選択中の文字は、もう一度触って動かせます。");
   }
 
   function resetTransform() {
@@ -1169,9 +1219,10 @@ export function MosaicCanvas({
           <div
             className="canvas-text-editor"
             style={selectedTextEditor.layerStyle}
-            onTouchStart={(event) => event.stopPropagation()}
-            onTouchMove={(event) => event.stopPropagation()}
-            onTouchEnd={(event) => event.stopPropagation()}
+            onTouchStart={handleSelectedTextTouchStart}
+            onTouchMove={handleSelectedTextTouchMove}
+            onTouchEnd={handleSelectedTextTouchEnd}
+            onTouchCancel={handleSelectedTextTouchEnd}
           >
             <input
               className="canvas-text-input"
