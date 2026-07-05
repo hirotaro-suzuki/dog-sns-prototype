@@ -31,6 +31,7 @@ type SupabaseLikeError = {
 type CurrentFrameRow = {
   id: string;
   store_id: string;
+  is_active?: boolean;
 };
 
 type FrameUpdateQuery = {
@@ -41,8 +42,13 @@ type FrameUpdateQuery = {
   };
 };
 
+type FrameDeleteQuery = {
+  eq: (column: string, value: unknown) => Promise<{ error: SupabaseLikeError | null }>;
+};
+
 type StoreFramesMutationTable = {
   update: (values: Record<string, unknown>) => FrameUpdateQuery;
+  delete: () => FrameDeleteQuery;
 };
 
 function cleanText(value: unknown, maxLength: number) {
@@ -169,6 +175,55 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   } catch (error) {
     return NextResponse.json(
       { message: error instanceof Error ? error.message : "枠を更新できませんでした。" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
+  const authError = verifyAdminPin(request);
+  if (authError) return authError;
+
+  const { id } = await context.params;
+
+  try {
+    const supabase = createServerSupabaseClient();
+    const framesTable = supabase.from("store_frames") as unknown as StoreFramesMutationTable;
+    const { data: currentFrameData, error: currentError } = await supabase
+      .from("store_frames")
+      .select("id, store_id, is_active")
+      .eq("id", id)
+      .maybeSingle();
+    const currentFrame = currentFrameData as CurrentFrameRow | null;
+
+    if (currentError) {
+      return NextResponse.json(
+        { message: "枠を確認できませんでした。", detail: formatSupabaseError(currentError) },
+        { status: 500 }
+      );
+    }
+
+    if (!currentFrame) {
+      return NextResponse.json({ message: "枠が見つかりませんでした。" }, { status: 404 });
+    }
+
+    if (currentFrame.is_active) {
+      return NextResponse.json({ message: "有効な枠は削除できません。先に停止して保存してください。" }, { status: 400 });
+    }
+
+    const { error } = await framesTable.delete().eq("id", id);
+
+    if (error) {
+      return NextResponse.json(
+        { message: "枠を削除できませんでした。", detail: formatSupabaseError(error) },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ deletedFrameId: id });
+  } catch (error) {
+    return NextResponse.json(
+      { message: error instanceof Error ? error.message : "枠を削除できませんでした。" },
       { status: 500 }
     );
   }
