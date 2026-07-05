@@ -281,7 +281,6 @@ export function AdminMaintenance() {
   const [hiddenReasonDraft, setHiddenReasonDraft] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isUploadingAsset, setIsUploadingAsset] = useState(false);
   const [message, setMessage] = useState("");
 
   const selectedAsset = useMemo(
@@ -616,44 +615,6 @@ export function AdminMaintenance() {
       setMessage(error instanceof Error ? error.message : "店舗マスタを保存できませんでした。");
     } finally {
       setIsSaving(false);
-    }
-  }
-
-  async function uploadStoreLogo(file: File | null) {
-    if (!adminPin || !storeDraft.id || !file) return;
-    setIsUploadingAsset(true);
-    setMessage("");
-
-    try {
-      const formData = new FormData();
-      formData.append("storeId", storeDraft.id);
-      formData.append("assetType", "logo");
-      formData.append("file", file);
-
-      const response = await fetch("/api/admin/stores", {
-        method: "POST",
-        headers: { "x-admin-pin": adminPin },
-        body: formData,
-      });
-      const data = (await response.json()) as StoreAssetUploadResponse;
-
-      if (!response.ok || !data.publicUrl) {
-        setMessage(getErrorMessage(data, "ロゴをアップロードできませんでした。"));
-        return;
-      }
-
-      const updatedStore = { ...storeDraft, logo_url: data.publicUrl };
-      setStoreDraft(updatedStore);
-      setStoreMasters((current) =>
-        current.map((store) =>
-          store.id === updatedStore.id ? { ...store, logo_url: data.publicUrl ?? store.logo_url } : store
-        )
-      );
-      setMessage("ロゴをアップロードして店舗マスタへ保存しました。");
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "ロゴをアップロードできませんでした。");
-    } finally {
-      setIsUploadingAsset(false);
     }
   }
 
@@ -1093,46 +1054,10 @@ export function AdminMaintenance() {
                     <input value={storeDraft.display_name} onChange={(event) => setStoreDraft((current) => ({ ...current, display_name: event.target.value }))} />
                   </label>
                   <label className="field-label">
-                    SNS表示名
-                    <input value={nullableText(storeDraft.sns_display_name)} onChange={(event) => setStoreDraft((current) => ({ ...current, sns_display_name: event.target.value }))} />
-                  </label>
-                  <label className="field-label">
-                    Instagram
-                    <input value={nullableText(storeDraft.instagram_account)} onChange={(event) => setStoreDraft((current) => ({ ...current, instagram_account: event.target.value }))} />
-                  </label>
-                  <label className="field-label">
-                    ロゴURL
-                    <input value={nullableText(storeDraft.logo_url)} onChange={(event) => setStoreDraft((current) => ({ ...current, logo_url: event.target.value }))} />
-                  </label>
-                  <label className="field-label">
-                    ロゴ画像アップロード
-                    <input
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                      disabled={isUploadingAsset}
-                      onChange={(event) => {
-                        void uploadStoreLogo(event.target.files?.[0] ?? null);
-                        event.currentTarget.value = "";
-                      }}
-                    />
-                  </label>
-                  <label className="field-label">
-                    フレームURL
-                    <input value={nullableText(storeDraft.frame_url)} onChange={(event) => setStoreDraft((current) => ({ ...current, frame_url: event.target.value }))} />
-                  </label>
-                  <label className="field-label">
-                    色
-                    <input value={nullableText(storeDraft.theme_color)} onChange={(event) => setStoreDraft((current) => ({ ...current, theme_color: event.target.value }))} />
-                  </label>
-                  <label className="field-label">
                     並び順
                     <input type="number" value={storeDraft.sort_order} onChange={(event) => setStoreDraft((current) => ({ ...current, sort_order: Number(event.target.value) }))} />
                   </label>
                 </div>
-                <label className="field-label">
-                  標準ハッシュタグ
-                  <textarea rows={3} value={nullableText(storeDraft.default_hashtags)} onChange={(event) => setStoreDraft((current) => ({ ...current, default_hashtags: event.target.value }))} />
-                </label>
                 <label className="field-label">
                   メモ
                   <textarea rows={3} value={nullableText(storeDraft.notes)} onChange={(event) => setStoreDraft((current) => ({ ...current, notes: event.target.value }))} />
