@@ -111,6 +111,7 @@ type UpdatedAssetResponse = {
 type FramesResponse = {
   frames?: StoreFrame[];
   frame?: StoreFrame;
+  deletedFrameId?: string;
   message?: string;
   detail?: string;
 };
@@ -1341,6 +1342,45 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
     }
   }
 
+  async function deleteFrame() {
+    if (!adminPin || !selectedFrame) return;
+
+    if (selectedFrame.is_active) {
+      setFrameMessage("有効な枠は削除できません。先に有効を外して保存してください。");
+      return;
+    }
+
+    const confirmed = window.confirm("停止中の枠「" + selectedFrame.frame_name + "」を削除します。よろしいですか？");
+    if (!confirmed) return;
+
+    setIsFrameSaving(true);
+    setFrameMessage("");
+
+    try {
+      const response = await fetch("/api/admin/frames/" + selectedFrame.id, {
+        method: "DELETE",
+        headers: { "x-admin-pin": adminPin },
+      });
+      const data = (await response.json()) as FramesResponse;
+
+      if (!response.ok || !data.deletedFrameId) {
+        setFrameMessage(getErrorMessage(data, "枠を削除できませんでした。"));
+        return;
+      }
+
+      const remainingFrames = frames.filter((frame) => frame.id !== data.deletedFrameId);
+      const nextFrame = remainingFrames.find((frame) => frame.store_id === selectedFrame.store_id) ?? null;
+      setFrames(remainingFrames);
+      setSelectedFrameId(nextFrame?.id ?? null);
+      setFrameDraft(nextFrame ?? { ...emptyFrameDraft, store_id: selectedStoreId });
+      setFrameMessage("枠を削除しました。");
+    } catch (error) {
+      setFrameMessage(error instanceof Error ? error.message : "枠を削除できませんでした。");
+    } finally {
+      setIsFrameSaving(false);
+    }
+  }
+
   async function uploadFrameImage(file: File | null, target: "new" | "selected") {
     if (!adminPin || !selectedStoreId || !file) return;
     setIsFrameSaving(true);
@@ -1495,6 +1535,10 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
             </label>
             <button className="action-button" type="button" disabled={isFrameSaving} onClick={saveFrame}>
               枠を保存
+            </button>
+            <p className="notice">削除は停止中の枠だけ可能です。有効な枠は先に有効を外して保存してください。</p>
+            <button className="action-button danger" type="button" disabled={isFrameSaving || frameDraft.is_active} onClick={deleteFrame}>
+              停止中の枠を削除
             </button>
           </>
         ) : (
