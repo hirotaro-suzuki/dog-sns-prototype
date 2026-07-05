@@ -63,50 +63,6 @@ function getCaptureSize(video: HTMLVideoElement) {
   };
 }
 
-function StoreSettingsSummary({
-  store,
-  staff,
-  frameName,
-}: {
-  store?: CaptureStore;
-  staff?: CaptureStaff;
-  frameName?: string;
-}) {
-  if (!store) return null;
-
-  return (
-    <div className="store-settings-panel compact" aria-label="DBから読み込んだ店舗設定">
-      <p className="eyebrow">DBから読み込んだ店舗設定</p>
-      <dl className="settings-list">
-        <div>
-          <dt>店舗コード</dt>
-          <dd>{store.storeCode}</dd>
-        </div>
-        <div>
-          <dt>表示名</dt>
-          <dd>{store.displayName}</dd>
-        </div>
-        <div>
-          <dt>担当者</dt>
-          <dd>{staff?.displayName ?? "写真選択後に選択"}</dd>
-        </div>
-        <div>
-          <dt>選択中の枠</dt>
-          <dd>{frameName ?? (store.frameUrl ? "標準枠" : "未設定")}</dd>
-        </div>
-        <div>
-          <dt>テーマ色</dt>
-          <dd>{store.themeColor ?? "未設定"}</dd>
-        </div>
-        <div>
-          <dt>フレームURL</dt>
-          <dd>{store.frameUrl ?? "未設定"}</dd>
-        </div>
-      </dl>
-    </div>
-  );
-}
-
 export function CameraCapture({ store, staffMembers = [], onBack, onLogout }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -134,7 +90,6 @@ export function CameraCapture({ store, staffMembers = [], onBack, onLogout }: Ca
         frameUrl: selectedFrame?.frameUrl ?? store.frameUrl,
       }
     : undefined;
-  const activeFrameName = selectedFrame?.frameName;
 
   useEffect(() => {
     if (frameChoices.length === 0) {
@@ -227,6 +182,16 @@ export function CameraCapture({ store, staffMembers = [], onBack, onLogout }: Ca
     }
   }
 
+  function proceedToPhotoPicker() {
+    if (photosRef.current.length === 0) return;
+    stopCameraStream(streamRef.current);
+    streamRef.current = null;
+    setIsCameraReady(false);
+    setCanRetryCamera(false);
+    setStep("pick");
+    setMessage("撮影した写真からベストショットを1枚選んでください。");
+  }
+
   async function capturePhoto() {
     const video = videoRef.current;
     if (!video || photosRef.current.length >= MAX_PHOTOS) return;
@@ -258,16 +223,11 @@ export function CameraCapture({ store, staffMembers = [], onBack, onLogout }: Ca
         replacePhotos(next);
 
         if (next.length === MAX_PHOTOS) {
-          stopCameraStream(streamRef.current);
-          streamRef.current = null;
-          setIsCameraReady(false);
-          setCanRetryCamera(false);
-          setStep("pick");
-          setMessage("3枚の撮影が完了しました。ベストショットを1枚選んでください。");
+          proceedToPhotoPicker();
           return;
         }
 
-        setMessage(`${next.length}枚を一時保持中です。クラウドには送信していません。`);
+        setMessage(`${next.length}枚を一時保持中です。よければ「この写真で選ぶ」へ進めます。`);
       },
       "image/jpeg",
       CAPTURE_JPEG_QUALITY
@@ -283,13 +243,13 @@ export function CameraCapture({ store, staffMembers = [], onBack, onLogout }: Ca
   function backToPhotoPicker() {
     replaceSelectedPhoto(null);
     setStep("pick");
-    setMessage("3枚の候補写真を保持しています。別の写真を選び直せます。");
+    setMessage("候補写真を保持しています。別の写真を選び直せます。");
   }
 
   function confirmStaff() {
     if (!selectedStaff) return;
     setStep("process");
-    setMessage("担当者を保持しました。Canvasで画像加工プレビューを作成します。");
+    setMessage("担当者を保持しました。必要なら枠を選び直してから画像を整えてください。");
   }
 
   function retakePhotos() {
@@ -306,6 +266,14 @@ export function CameraCapture({ store, staffMembers = [], onBack, onLogout }: Ca
     setStep("capture");
     setMessage("キャンセルしました。写真データは残していません。");
     void startCamera();
+  }
+
+  function finishSession() {
+    clearCaptureData();
+    hasAutoStartedCameraRef.current = true;
+    setStep("capture");
+    setMessage("撮影を終了しました。写真データは端末内にも残していません。");
+    onBack?.();
   }
 
   const canCapture = isCameraReady && photos.length < MAX_PHOTOS;
@@ -361,12 +329,28 @@ export function CameraCapture({ store, staffMembers = [], onBack, onLogout }: Ca
   if (step === "process" && selectedPhoto) {
     return (
       <div className="camera-panel" style={themeStyle}>
+        {frameChoices.length > 1 && (
+          <div className="frame-choice-bar" aria-label="写真枠選択">
+            {frameChoices.map((frame) => (
+              <button
+                key={frame.id}
+                className={`frame-choice-button${selectedFrame?.id === frame.id ? " is-selected" : ""}`}
+                type="button"
+                onClick={() => setSelectedFrameId(frame.id)}
+              >
+                {frame.frameName}
+              </button>
+            ))}
+          </div>
+        )}
         <MosaicCanvas
           photo={selectedPhoto}
           store={activeStore}
           staff={selectedStaff}
           onCancel={cancelSession}
           onBackToPhotos={backToPhotoPicker}
+          onStartNext={retakePhotos}
+          onFinishSession={finishSession}
           onLogout={onLogout ? handleLogout : undefined}
         />
         <p className="notice">{message}</p>
@@ -436,6 +420,14 @@ export function CameraCapture({ store, staffMembers = [], onBack, onLogout }: Ca
           撮影
         </button>
         <button
+          className="action-button primary-wide"
+          type="button"
+          onClick={proceedToPhotoPicker}
+          disabled={photos.length === 0}
+        >
+          この写真で選ぶ
+        </button>
+        <button
           className="action-button secondary"
           type="button"
           onClick={retakePhotos}
@@ -470,8 +462,6 @@ export function CameraCapture({ store, staffMembers = [], onBack, onLogout }: Ca
           ))}
         </div>
       )}
-
-      <StoreSettingsSummary store={activeStore} staff={selectedStaff} frameName={activeFrameName} />
     </div>
   );
 }
