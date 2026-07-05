@@ -290,6 +290,22 @@ function drawFixedFrame(
 
   if (frameImage) {
     context.drawImage(frameImage, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    drawFrameDate(context, store);
+
+    if (staff) {
+      context.save();
+      context.textAlign = "right";
+      context.textBaseline = "middle";
+      context.font = "500 24px Arial, sans-serif";
+      context.lineWidth = 4;
+      context.strokeStyle = "rgba(0, 0, 0, 0.42)";
+      context.fillStyle = "#ffffff";
+      context.strokeText(`担当: ${staff.displayName}`, CANVAS_WIDTH - 56, CANVAS_HEIGHT - 24);
+      context.fillText(`担当: ${staff.displayName}`, CANVAS_WIDTH - 56, CANVAS_HEIGHT - 24);
+      context.restore();
+    }
+
+    return;
   }
 
   context.fillStyle = hexToRgba(themeColor, 0.78);
