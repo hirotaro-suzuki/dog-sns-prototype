@@ -383,11 +383,12 @@ export function AdminMaintenance() {
         return;
       }
 
-      setStoreMasters(data.stores);
-      setStores(data.stores);
+      const loadedStores = data.stores;
+      setStoreMasters(loadedStores);
+      setStores(loadedStores);
       setSelectedStoreMasterId((currentId) => {
-        if (currentId && data.stores.some((store) => store.id === currentId)) return currentId;
-        return data.stores[0]?.id ?? null;
+        if (currentId && loadedStores.some((store) => store.id === currentId)) return currentId;
+        return loadedStores[0]?.id ?? null;
       });
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "店舗マスタを取得できませんでした。");
