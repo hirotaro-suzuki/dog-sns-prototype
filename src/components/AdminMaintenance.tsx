@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type AdminTab = "assets" | "stores" | "staff" | "frames";
 type AssetReviewStatus = "new" | "candidate" | "hold" | "rejected";
@@ -209,6 +209,48 @@ function getErrorMessage(data: { message?: string; detail?: string }, fallback: 
 
 function getReviewStatusLabel(value: AssetReviewStatus) {
   return REVIEW_STATUS_OPTIONS.find((option) => option.value === value)?.label ?? "未確認";
+}
+
+function AdminDatePicker({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function openPicker() {
+    const input = inputRef.current;
+    if (!input) return;
+    const picker = input as HTMLInputElement & { showPicker?: () => void };
+    if (picker.showPicker) {
+      picker.showPicker();
+      return;
+    }
+    input.focus();
+    input.click();
+  }
+
+  return (
+    <label className="field-label admin-date-picker">
+      {label}
+      <span className="admin-date-picker-control">
+        <input
+          ref={inputRef}
+          type="date"
+          value={value}
+          aria-label={label}
+          onChange={(event) => onChange(event.target.value)}
+        />
+        <button className="admin-date-picker-button" type="button" onClick={openPicker}>
+          カレンダー
+        </button>
+      </span>
+    </label>
+  );
 }
 
 export function AdminMaintenance() {
@@ -761,14 +803,8 @@ export function AdminMaintenance() {
         <>
           <section className="admin-filter-panel">
             <div className="admin-date-row">
-              <label className="field-label">
-                開始日
-                <input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} />
-              </label>
-              <label className="field-label">
-                終了日
-                <input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
-              </label>
+              <AdminDatePicker label="開始日" value={dateFrom} onChange={setDateFrom} />
+              <AdminDatePicker label="終了日" value={dateTo} onChange={setDateTo} />
               <label className="field-label">
                 確認状態
                 <select
