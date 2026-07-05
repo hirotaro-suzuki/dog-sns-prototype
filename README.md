@@ -119,6 +119,7 @@ VercelでこのGitHubリポジトリをImportしてください。
 - 次スレッド開始時の指示文: `docs/next-thread-start.md`
 - 現在の設計・開発方針の正本: `dog_sns_design.md`
 - 所有権・運用引き渡しメモ: `docs/ownership-handoff.md`
+- 本番前作業項目: `docs/production-readiness-checklist.md`
 - 2026-07-04管理画面ブラッシュアップ記録: `docs/session-2026-07-04-admin-handoff.md`
 - 2026-07-04枠デザイン立て直し記録: `docs/session-2026-07-04-frame-reset.md`
 - Supabase引き継ぎメモ: `docs/supabase-handoff.md`
