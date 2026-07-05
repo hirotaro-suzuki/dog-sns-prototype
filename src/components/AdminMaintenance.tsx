@@ -94,6 +94,14 @@ type StaffResponse = {
   detail?: string;
 };
 
+type StoreAssetUploadResponse = {
+  publicUrl?: string;
+  store?: Partial<StoreMaster> & { id: string };
+  frame?: StoreFrame;
+  message?: string;
+  detail?: string;
+};
+
 type UpdatedAssetResponse = {
   asset?: Pick<AdminAsset, "id" | "description" | "short_caption" | "review_status" | "status" | "hidden_at" | "hidden_reason">;
   message?: string;
