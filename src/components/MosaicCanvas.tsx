@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties, TouchEvent } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import type { CapturedPhoto } from "@/lib/imageStore";
 import { phaseZeroStore } from "@/config/stores";
 import type { CaptureStaff, CaptureStore } from "@/types/captureContext";
@@ -572,6 +572,7 @@ export function MosaicCanvas({
   const [savedAssetCode, setSavedAssetCode] = useState<string | null>(null);
   const [assetStatus, setAssetStatus] = useState("店舗フレームのURLを確認しています。");
   const [status, setStatus] = useState("Canvas加工を準備しています。");
+  const [, refreshTextEditor] = useReducer((value: number) => value + 1, 0);
 
   function prepareCanvas() {
     const canvas = canvasRef.current;
@@ -942,6 +943,7 @@ export function MosaicCanvas({
 
     transformRef.current = nextTransform;
     setCompletedImageUrl(null);
+    refreshTextEditor();
     renderCanvas();
   }
 
@@ -1010,6 +1012,7 @@ export function MosaicCanvas({
       rotation: 0,
     };
     setCompletedImageUrl(null);
+    refreshTextEditor();
     renderCanvas();
     setStatus("写真位置を初期状態に戻しました。");
   }
