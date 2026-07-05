@@ -1037,7 +1037,7 @@ export function MosaicCanvas({
       setPrintedAt(null);
       setHasConsent(false);
       setSavedAssetCode(null);
-      setStatus("完成画像を作成しました。印刷してお客様に確認してから保存してください。");
+      setStatus("完成画像を作成しました。お客様に画面または印刷で確認し、SNS掲載OKをもらった場合だけ保存してください。");
     } catch {
       setCompletedImageUrl(null);
       setStatus("完成画像を作成できませんでした。フレーム画像の読み込み設定を確認してください。");
@@ -1056,10 +1056,6 @@ export function MosaicCanvas({
       return;
     }
 
-    if (!printedAt) {
-      setStatus("先に印刷して、お客様に完成画像を確認してもらってください。");
-      return;
-    }
 
     if (!hasConsent) {
       setStatus("お客様からSNS掲載OKをもらったことを確認してから保存してください。");
@@ -1139,7 +1135,7 @@ export function MosaicCanvas({
         <div className="section-heading compact-section-heading">
           <p className="eyebrow">Final Image</p>
           <h2>完成画像確認</h2>
-          <p>印刷してお客様に確認し、SNS掲載OKをもらった場合だけ保存します。</p>
+          <p>お客様に画面または印刷で確認し、SNS掲載OKをもらった場合だけ保存します。</p>
         </div>
 
         <div className="final-image-panel final-image-screen-panel">
@@ -1158,7 +1154,7 @@ export function MosaicCanvas({
             <input
               type="checkbox"
               checked={hasConsent}
-              disabled={!printedAt || Boolean(savedAssetCode)}
+              disabled={Boolean(savedAssetCode)}
               onChange={(event) => setHasConsent(event.target.checked)}
             />
             お客様からSNS掲載OKをもらいました
@@ -1167,13 +1163,13 @@ export function MosaicCanvas({
             className="action-button primary-wide"
             type="button"
             onClick={saveFinalImage}
-            disabled={isSavingAsset || Boolean(savedAssetCode) || !store || !staff || !printedAt || !hasConsent}
+            disabled={isSavingAsset || Boolean(savedAssetCode) || !store || !staff || !hasConsent}
           >
             {isSavingAsset
               ? "保存中"
               : savedAssetCode
                 ? "保存済み"
-                : "SNS掲載OKをもらったので保存"}
+                : "SNS掲載OKを確認したので保存"}
           </button>
           {savedAssetCode && onStartNext && (
             <button className="action-button primary-wide" type="button" onClick={onStartNext}>
@@ -1209,8 +1205,8 @@ export function MosaicCanvas({
           {savedAssetCode
             ? `クラウドへ保存済みです。管理コード: ${savedAssetCode}`
             : printedAt
-              ? "SNS掲載OKをもらった場合だけチェックして保存してください。"
-              : "先に印刷して、お客様に完成画像を確認してもらってください。"}
+              ? "印刷済みです。SNS掲載OKをもらった場合だけチェックして保存してください。"
+              : "画面でお客様に確認し、SNS掲載OKをもらった場合だけチェックして保存してください。印刷は必要に応じて行えます。"}
         </p>
         <p className="notice">{status}</p>
       </section>
