@@ -68,43 +68,9 @@ export function StoreHome() {
   return (
     <section className="login-panel" aria-label="店舗ホーム">
       <div className="login-summary">
-        <p className="eyebrow">Store</p>
+        <p className="eyebrow">今日のわんちゃん</p>
         <h2>{session.store.displayName}</h2>
-        <p>{session.store.storeName}</p>
-      </div>
-
-      <div className="store-settings-panel" aria-label="DBから読み込んだ店舗設定">
-        <p className="eyebrow">DBから読み込んだ店舗設定</p>
-        <dl className="settings-list">
-          <div>
-            <dt>店舗ID</dt>
-            <dd>{session.store.id}</dd>
-          </div>
-          <div>
-            <dt>店舗コード</dt>
-            <dd>{session.store.storeCode}</dd>
-          </div>
-          <div>
-            <dt>表示名</dt>
-            <dd>{session.store.displayName}</dd>
-          </div>
-          <div>
-            <dt>テーマ色</dt>
-            <dd>{session.store.themeColor ?? "未設定"}</dd>
-          </div>
-          <div>
-            <dt>ロゴURL</dt>
-            <dd>{session.store.logoUrl ?? "未設定"}</dd>
-          </div>
-          <div>
-            <dt>フレームURL</dt>
-            <dd>{session.store.frameUrl ?? "未設定"}</dd>
-          </div>
-          <div>
-            <dt>担当者数</dt>
-            <dd>{session.staffMembers.length}名</dd>
-          </div>
-        </dl>
+        <p>{session.staffMembers.length}名の担当者を読み込みました。</p>
       </div>
 
       <div className="toolbar">
@@ -121,7 +87,7 @@ export function StoreHome() {
       </div>
 
       <p className="notice">
-        担当者は写真を選んだ後に選択します。撮影データはまだクラウドへ保存しません。
+        撮影した写真は、最後にお客様からSNS掲載OKをもらうまでクラウドへ保存しません。
       </p>
     </section>
   );
