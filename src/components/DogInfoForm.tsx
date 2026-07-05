@@ -53,7 +53,7 @@ export function DogInfoForm({
               ))}
             </div>
           ) : (
-            <p>担当者が登録されていません。</p>
+            <p>担当者が登録されていません。本部画面で担当者を登録してから撮影してください。</p>
           )}
           <p>
             {selectedStaff
