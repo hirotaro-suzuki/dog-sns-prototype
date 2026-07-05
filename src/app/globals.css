@@ -684,6 +684,23 @@ p {
   align-items: end;
 }
 
+.admin-date-picker-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-date-picker-button {
+  min-height: 52px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ebe5d8;
+  color: var(--foreground);
+  font-weight: 700;
+  padding: 10px 12px;
+}
+
 .admin-toggle,
 .admin-store-chip {
   min-height: 48px;
