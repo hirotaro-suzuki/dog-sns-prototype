@@ -394,17 +394,16 @@ export function AdminMaintenance() {
 
       setStoreMasters(data.stores);
       setStores(data.stores);
-      const nextSelectedId =
-        selectedStoreMasterId && data.stores.some((store) => store.id === selectedStoreMasterId)
-          ? selectedStoreMasterId
-          : data.stores[0]?.id ?? null;
-      setSelectedStoreMasterId(nextSelectedId);
+      setSelectedStoreMasterId((currentId) => {
+        if (currentId && data.stores.some((store) => store.id === currentId)) return currentId;
+        return data.stores[0]?.id ?? null;
+      });
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "店舗マスタを取得できませんでした。");
     } finally {
       setIsLoading(false);
     }
-  }, [adminPin, handleAuthError, selectedStoreMasterId]);
+  }, [adminPin, handleAuthError]);
 
   const loadStaffMasters = useCallback(async (pin = adminPin) => {
     if (!pin) return;
@@ -437,10 +436,14 @@ export function AdminMaintenance() {
 
   useEffect(() => {
     if (!adminPin) return;
-    void loadAssets(adminPin);
     void loadStoreMasters(adminPin);
     void loadStaffMasters(adminPin);
-  }, [adminPin, loadAssets, loadStaffMasters, loadStoreMasters]);
+  }, [adminPin, loadStaffMasters, loadStoreMasters]);
+
+  useEffect(() => {
+    if (!adminPin) return;
+    void loadAssets(adminPin);
+  }, [adminPin, loadAssets]);
 
   useEffect(() => {
     setShortCaptionDraft(selectedAsset?.short_caption ?? "");
