@@ -1,6 +1,6 @@
 # 所有権・運用引き渡しメモ
 
-最終更新: 2026-07-04
+最終更新: 2026-07-05
 
 このプロジェクトは、ユーザー本人の長期事業ではなく、友人が経営する飲食店を支援するためのものである。
 
@@ -37,6 +37,7 @@ GitHub、Vercel、Supabase、環境変数、DB構造、Storage、管理画面、
 - 最上位原則: `docs/project-principles.md`
 - 設計書: `dog_sns_design.md`
 - 次スレッド開始指示: `docs/next-thread-start.md`
+- 本番前作業項目: `docs/production-readiness-checklist.md`
 - Supabase引き継ぎ: `docs/supabase-handoff.md`
 - Supabaseスキーマ: `supabase/schema.sql`
 - 追加SQL履歴: `supabase/migrations/`
@@ -114,6 +115,16 @@ DB・素材管理:
 - 2026-07-04に追加した `public/store-frames/karuizawa-premium-*.svg` と `public/store-frames/karuizawa-simple-*.svg` は仮素材。正式ロゴを使った社長確認用の完成フレームではない。
 - 2026-07-04に追加した `/admin/frame-cleanup` は一時補助画面。恒久機能として残すか、後で削除するかを決める。
 - `seed.example.sql` は本番運用では使わず、新規環境の動作確認用サンプルとして残す。
+
+## 本番前整理
+
+本番開始前の店舗、担当者、枠、保存済み写真、Storage画像の整理は `docs/production-readiness-checklist.md` を確認する。
+
+テスト期間中のDBデータやStorage画像を全削除して始めることは可能だが、DB構造、Storage bucket、Vercel環境変数、GitHub上のコードと文書は消さない。
+
+DB上の `assets` を削除してもStorage上の画像ファイルが自動で消えるとは限らないため、DB整理とStorage整理は別作業として扱う。
+
+本番前クリアを行う場合は、実行前に削除対象、再投入する本番初期データ、実行後の確認項目をGitHub上に残してから進める。
 
 ## 仮の運用分担
 
@@ -222,6 +233,7 @@ ADMIN_MAINTENANCE_PIN
 
 - `docs/project-principles.md` を読めば、プロジェクトの立ち位置、進め方、禁止事項が分かるか確認する。
 - `docs/next-thread-start.md` を読めば、次のCodexスレッドが迷わず再開できるか確認する。
+- `docs/production-readiness-checklist.md` を読めば、本番前のDB、Storage、初期データ整理が分かるか確認する。
 - ユーザー本人の記憶やローカルPCに依存しない状態になっているか確認する。
 - 店舗側、本部側、将来のSNS投稿機能が疎結合になっているか確認する。
 - SNS投稿やInstagram連携について、店舗側に誤って「自動でできる」と伝わらないように整理する。
