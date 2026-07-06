@@ -10,7 +10,7 @@ GitHub mainの `supabase/schema.sql` と `supabase/README.md` を正とし、こ
 - 撮影途中の写真、選ばれなかった写真、未許諾写真、キャンセル写真は保存しない。
 - ワンチャン情報はDB項目として保存しない。
 - ワンチャン情報は、写真上の短い文字として完成画像に焼き込む。
-- 店舗、担当者、ロゴ、フレーム、完成画像の保存先は、GitHub上のSQLと文書から追える状態にする。
+- 店舗、担当者、写真枠、完成画像の保存先は、GitHub上のSQLと文書から追える状態にする。
 - GitHub mainを正本とし、ローカルPCやDropboxを正本にしない。
 
 ## Storage
@@ -28,7 +28,8 @@ GitHub mainの `supabase/schema.sql` と `supabase/README.md` を正とし、こ
 
 ### store-assets
 
-店舗フレームなど、店舗設定に使う画像を保存する。
+店舗設定に使う画像を保存するためのbucket。既存互換のために残している。
+
 現在の方針では、ロゴは単独素材ではなく写真枠画像内に含める。既存の `stores.logo_url` は互換用として残っているが、後続で削除または非表示にする。
 
 今回追加した葡萄房の正方形枠は、GitHub mainの `public/store-frames/` 配下に静的SVGとして置いている。Supabase Storageへアップロードする枠ではなく、`store_frames.frame_url` に `/store-frames/...svg` のパスを登録して使う。各SVGは添付の背景透過ロゴPNGを `data:image/png;base64` として内包している。
@@ -38,8 +39,10 @@ GitHub mainの `supabase/schema.sql` と `supabase/README.md` を正とし、こ
 ### stores
 
 店舗マスタ。
-店舗名、表示名、ログインコード、PINハッシュ、ロゴURL、フレームURL、テーマ色を持つ。
+店舗名、表示名、ログインコード、PINハッシュ、テーマカラーなどを持つ。
 店舗を休止・閉店する場合も物理削除せず、`is_active = false` にする。
+
+`logo_url` や `frame_url` は互換用として残っているが、現在の標準では `store_frames` と枠画像内ロゴを使う。
 
 ### staff_members
 
@@ -69,13 +72,14 @@ GitHub mainの `supabase/schema.sql` と `supabase/README.md` を正とし、こ
 - 撮影日時、撮影日、店舗ごとの日次連番
 - 完成画像URL
 - Storage bucketとStorage path
-- 保存時点のロゴURL、フレームURL、テーマ色
 - 印刷日時
 - SNS掲載合意日時
 - 本部が使う40文字以内の一言メモ `short_caption`
 - 本部確認状態 `review_status`
 - 非表示日時、非表示理由
 - 管理ステータス
+
+`logo_url_snapshot` と `frame_url_snapshot` は旧来または互換用の項目として扱う。現在の保存画像は枠合成済みの正方形完成画像を正とし、枠IDや枠URLを必須の保存メタ情報として扱わない。
 
 `review_status` の内部値:
 
@@ -131,8 +135,8 @@ Success. No rows returned
 1. Supabase SQL Editorで `supabase/schema.sql` を実行する。
 2. 必要に応じて `supabase/seed.example.sql` を実行する。
 3. Vercelに環境変数を設定する。
-4. `store-assets` に店舗フレームを入れる。
-5. `store_frames.frame_url` に公開URLを登録する。
+4. 必要な店舗枠を `store_frames` に登録する。
+5. 枠画像をSupabase StorageまたはGitHub mainで管理できる場所に置き、`store_frames.frame_url` に登録する。
 
 既存Supabaseプロジェクトで別環境へ再適用する場合:
 
@@ -188,8 +192,9 @@ ADMIN_MAINTENANCE_PIN
 - 選択した写真の本部確認状態を更新する
 - 写真を物理削除せず、`assets.status = 'archived'` として非表示にする
 - 非表示写真を `assets.status = 'ready'` に戻す
-- 店舗マスタの表示名、SNS表示名、Instagram、標準ハッシュタグ、ロゴURL、フレームURL、テーマカラー、有効/無効を編集する
+- 店舗マスタの店舗名、表示名、並び順、有効/無効、メモを編集する
 - 担当者マスタの追加、表示名、役割、SNS承認可否、有効/無効、並び順を編集する
+- 店舗ごとの写真枠を追加、アップロード、差し替え、有効/無効、標準枠、並び順で管理する
 
 GitHub mainへ反映済みのDB/API/UI土台:
 
