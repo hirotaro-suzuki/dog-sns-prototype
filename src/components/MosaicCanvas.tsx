@@ -70,8 +70,9 @@ type TextDragSnapshot = {
 
 type EditMode = "adjust" | "mosaic" | "text";
 
-const CANVAS_WIDTH = 1270;
-const CANVAS_HEIGHT = 890;
+const CANVAS_SIZE = 1080;
+const CANVAS_WIDTH = CANVAS_SIZE;
+const CANVAS_HEIGHT = CANVAS_SIZE;
 const MOSAIC_RADIUS = 52;
 const MOSAIC_SAMPLE_SIZE = 12;
 const FALLBACK_THEME_COLOR = "#176f62";
@@ -174,8 +175,8 @@ function drawFrameDate(context: CanvasRenderingContext2D, store?: CaptureStore) 
   if (frame?.dateEnabled === false) return;
 
   const fontSize = frame?.dateFontSize ?? 38;
-  const x = frame?.dateX ?? CANVAS_WIDTH - 160;
-  const y = frame?.dateY ?? 70;
+  const x = frame?.dateX ?? 900;
+  const y = frame?.dateY ?? 90;
 
   context.save();
   context.textBaseline = "middle";
@@ -300,8 +301,8 @@ function drawFixedFrame(
       context.lineWidth = 4;
       context.strokeStyle = "rgba(0, 0, 0, 0.42)";
       context.fillStyle = "#ffffff";
-      context.strokeText(`担当: ${staff.displayName}`, CANVAS_WIDTH - 56, CANVAS_HEIGHT - 24);
-      context.fillText(`担当: ${staff.displayName}`, CANVAS_WIDTH - 56, CANVAS_HEIGHT - 24);
+      context.strokeText(`担当: ${staff.displayName}`, CANVAS_WIDTH - 56, CANVAS_HEIGHT - 34);
+      context.fillText(`担当: ${staff.displayName}`, CANVAS_WIDTH - 56, CANVAS_HEIGHT - 34);
       context.restore();
     }
 
@@ -309,8 +310,8 @@ function drawFixedFrame(
   }
 
   context.fillStyle = hexToRgba(themeColor, 0.78);
-  context.fillRect(0, 0, CANVAS_WIDTH, 120);
-  context.fillRect(0, CANVAS_HEIGHT - 150, CANVAS_WIDTH, 150);
+  context.fillRect(0, 0, CANVAS_WIDTH, 112);
+  context.fillRect(0, CANVAS_HEIGHT - 132, CANVAS_WIDTH, 132);
 
   context.strokeStyle = "rgba(255, 255, 255, 0.9)";
   context.lineWidth = 10;
@@ -322,16 +323,16 @@ function drawFixedFrame(
 
   context.fillStyle = "#ffffff";
   context.textBaseline = "middle";
-  context.font = "700 52px Arial, sans-serif";
+  context.font = "700 46px Arial, sans-serif";
   context.textAlign = "left";
-  context.fillText(getStoreDisplayName(store), 56, 70);
+  context.fillText(getStoreDisplayName(store), 56, 64);
 
   drawFrameDate(context, store);
 
   if (staff) {
     context.textAlign = "right";
     context.font = "500 24px Arial, sans-serif";
-    context.fillText(`担当: ${staff.displayName}`, CANVAS_WIDTH - 56, CANVAS_HEIGHT - 24);
+    context.fillText(`担当: ${staff.displayName}`, CANVAS_WIDTH - 56, CANVAS_HEIGHT - 34);
   }
 }
 
@@ -1055,7 +1056,6 @@ export function MosaicCanvas({
       setStatus("店舗または担当者を確認できないため保存できません。");
       return;
     }
-
 
     if (!hasConsent) {
       setStatus("お客様からSNS掲載OKをもらったことを確認してから保存してください。");
