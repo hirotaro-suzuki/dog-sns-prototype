@@ -61,6 +61,9 @@
 
 ## 直近ログ
 
+- `docs/session-2026-07-06-square-canvas.md`
+  - 正方形キャンバス化、正方形枠座標、Supabase migrationの作業ログ。
+
 - `docs/session-2026-07-05-store-flow-check.md`
   - 店舗側iPadフロー最終チェック。
 
