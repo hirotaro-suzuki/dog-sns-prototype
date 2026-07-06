@@ -44,6 +44,15 @@ GitHub mainの `supabase/schema.sql` と `supabase/README.md` を正とし、こ
 店舗ごとの担当者候補。
 担当者が退職・異動した場合も物理削除せず、`is_active = false` にする。
 
+### store_frames
+
+店舗ごとの写真枠を管理するテーブル。
+
+正方形化後の枠座標は、1080 x 1080 の正方形Canvasを基準に扱う。
+`date_x` と `date_y` は 0 から 1080 の範囲で保存する。
+
+既存Supabase環境では、`supabase/migrations/20260706_square_frame_coordinates.sql` を適用して、日付座標の既定値と制約を正方形前提へ更新する。
+
 ### assets
 
 保存済み完成画像の管理テーブル。
@@ -107,6 +116,8 @@ Success. No rows returned
 
 これにより、`assets.short_caption`、`assets.review_status`、40文字制約、確認状態値制約、検索用indexはSupabase本体へ反映済みと扱う。
 
+`supabase/migrations/20260706_square_frame_coordinates.sql` は、正方形枠へ移行するための追加migrationである。正方形枠を本登録する前にSupabase SQL Editorで適用する。
+
 ## 適用手順
 
 新規Supabaseプロジェクトの場合:
@@ -122,10 +133,12 @@ Success. No rows returned
 1. Supabase SQL Editorで `supabase/migrations/20260625_assets_storage_handoff.sql` を実行済みか確認する。
 2. Supabase SQL Editorで `supabase/migrations/20260704_frame_date_settings.sql` を実行済みか確認する。
 3. Supabase SQL Editorで `supabase/migrations/20260704_admin_asset_review_fields.sql` を実行する。
-4. `assets` に `short_caption` と `review_status` が追加されたことを確認する。
-5. `review_status` の既存写真が初期値 `new` になっていることを確認する。
-6. `final-images` と `store-assets` bucketがあることを確認する。
-7. 既存店舗の写真枠設定を必要に応じて確認する。
+4. Supabase SQL Editorで `supabase/migrations/20260706_square_frame_coordinates.sql` を実行する。
+5. `assets` に `short_caption` と `review_status` が追加されたことを確認する。
+6. `review_status` の既存写真が初期値 `new` になっていることを確認する。
+7. `store_frames.date_x` と `store_frames.date_y` が 0 から 1080 の範囲になっていることを確認する。
+8. `final-images` と `store-assets` bucketがあることを確認する。
+9. 既存店舗の写真枠設定を必要に応じて確認する。
 
 注意:
 
