@@ -30,7 +30,7 @@ GitHub mainを正本とし、ローカルPCやDropboxは参照しない。
 
 ### 葡萄房の正方形枠
 
-添付ロゴの色と意匠を参考に、正方形フレームを5枚追加した。
+添付の背景透過ロゴPNGを枠SVG内に埋め込み、正方形フレームを5枚追加した。
 
 本店用:
 
@@ -43,7 +43,7 @@ GitHub mainを正本とし、ローカルPCやDropboxは参照しない。
 - `public/store-frames/budoubou-karuizawa-charcoal-gold.svg`
 - `public/store-frames/budoubou-karuizawa-forest-gold.svg`
 
-注意: GitHubへ追加した枠はSVGとして管理できるよう、添付ロゴの雰囲気に合わせて起こした正方形フレームである。添付PNGそのものをSupabase Storageへ登録する作業は、必要なら別途 `/admin` から行う。
+各SVGは `data:image/png;base64` でロゴを内包しているため、Supabase Storageへ別途ロゴPNGを登録せずにVercel配信だけで表示できる。
 
 ### Supabase
 
