@@ -133,3 +133,52 @@ select
   34,
   date_color
 from frame_rows;
+
+-- SQL Editor confirmation: these counts should show 2 frames for each matched Honten store
+-- and 3 frames for each matched Karuizawa store. If no rows appear, store_code/store_name/display_name
+-- does not match the selectors above and the store mapping must be adjusted.
+with matched_stores as (
+  select
+    id,
+    store_code,
+    coalesce(display_name, store_name) as store_label,
+    case
+      when store_code in ('DEMO_TOKYO', 'TOKYO', 'HONTEN', 'BUDOU_BOOK_HONTEN', 'BUDOUBOU_HONTEN')
+        or store_name ilike '%本店%'
+        or display_name ilike '%本店%'
+      then 'honten'
+      when store_code in ('DEMO_KARUIZAWA', 'KARUIZAWA', 'BUDOU_BOOK_KARUIZAWA', 'BUDOUBOU_KARUIZAWA')
+        or store_name ilike '%軽井沢%'
+        or display_name ilike '%軽井沢%'
+      then 'karuizawa'
+    end as store_kind
+  from public.stores
+  where
+    store_code in (
+      'DEMO_TOKYO', 'TOKYO', 'HONTEN', 'BUDOU_BOOK_HONTEN', 'BUDOUBOU_HONTEN',
+      'DEMO_KARUIZAWA', 'KARUIZAWA', 'BUDOU_BOOK_KARUIZAWA', 'BUDOUBOU_KARUIZAWA'
+    )
+    or store_name ilike '%本店%'
+    or display_name ilike '%本店%'
+    or store_name ilike '%軽井沢%'
+    or display_name ilike '%軽井沢%'
+)
+select
+  ms.store_kind,
+  ms.store_code,
+  ms.store_label,
+  count(sf.id) as active_budoubou_square_frame_count,
+  string_agg(sf.frame_name, ', ' order by sf.sort_order) as active_budoubou_square_frames
+from matched_stores ms
+left join public.store_frames sf
+  on sf.store_id = ms.id
+  and sf.is_active = true
+  and sf.frame_url in (
+    '/store-frames/budoubou-honten-classic-camel.svg',
+    '/store-frames/budoubou-honten-noir-gold.svg',
+    '/store-frames/budoubou-karuizawa-ivory-wine.svg',
+    '/store-frames/budoubou-karuizawa-charcoal-gold.svg',
+    '/store-frames/budoubou-karuizawa-forest-gold.svg'
+  )
+group by ms.store_kind, ms.store_code, ms.store_label
+order by ms.store_kind, ms.store_code;
