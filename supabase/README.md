@@ -26,6 +26,12 @@ supabase/migrations/20260704_frame_date_settings.sql
 supabase/migrations/20260706_square_frame_coordinates.sql
 ```
 
+葡萄房の本店・軽井沢向け正方形枠を登録する場合は、正方形座標migrationの後に以下を実行する。
+
+```text
+supabase/migrations/20260706_budoubou_square_frames.sql
+```
+
 これらのmigrationは、現在の方針に合わせて以下を行う。
 
 - `final-images` bucketを作成する
@@ -34,6 +40,7 @@ supabase/migrations/20260706_square_frame_coordinates.sql
 - `assets` に `description`、`hidden_at`、`hidden_reason` を追加する
 - 店舗ごとの写真枠と日付表示座標を追加する
 - 写真枠の日付座標制約を正方形Canvas前提へ更新する
+- 葡萄房 本店2枚、軽井沢3枚の正方形枠を `store_frames` へ登録する
 - 犬情報項目を必須ではなくす
 
 詳しい引き継ぎメモは `docs/supabase-handoff.md` を読む。
