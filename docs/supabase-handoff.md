@@ -31,7 +31,7 @@ GitHub mainの `supabase/schema.sql` と `supabase/README.md` を正とし、こ
 店舗フレームなど、店舗設定に使う画像を保存する。
 現在の方針では、ロゴは単独素材ではなく写真枠画像内に含める。既存の `stores.logo_url` は互換用として残っているが、後続で削除または非表示にする。
 
-今回追加した葡萄房の正方形枠は、GitHub mainの `public/store-frames/` 配下に静的SVGとして置いている。Supabase Storageへアップロードする枠ではなく、`store_frames.frame_url` に `/store-frames/...svg` のパスを登録して使う。
+今回追加した葡萄房の正方形枠は、GitHub mainの `public/store-frames/` 配下に静的SVGとして置いている。Supabase Storageへアップロードする枠ではなく、`store_frames.frame_url` に `/store-frames/...svg` のパスを登録して使う。各SVGは添付の背景透過ロゴPNGを `data:image/png;base64` として内包している。
 
 ## 主なテーブル
 
@@ -153,7 +153,7 @@ Success. No rows returned
 - GitHub mainにAPI/UI変更が反映済みで、現Supabaseにも `20260704_admin_asset_review_fields.sql` は適用済み。
 - 別Supabase環境へ移す場合は、同じmigrationを忘れずに適用する。
 - 本番DBへ適用したSQLは、必ず `supabase/migrations/` にも記録する。今回の追加SQLはGitHub mainへ記録済み。
-- 葡萄房枠のSVGは添付ロゴの色味と意匠を参考にした初期枠であり、添付PNGそのものをSupabase Storageへ登録する方式ではない。
+- 葡萄房枠のSVGは、添付の背景透過ロゴPNGを内包した静的SVGである。Supabase Storageへ別途ロゴPNGをアップロードしなくても表示できる。
 
 ## Vercel環境変数
 
