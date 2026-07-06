@@ -5,6 +5,9 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 export const runtime = "nodejs";
 
 const MAX_ACTIVE_FRAMES_PER_STORE = 3;
+const SQUARE_CANVAS_SIZE = 1080;
+const DEFAULT_FRAME_DATE_X = 900;
+const DEFAULT_FRAME_DATE_Y = 90;
 const FRAME_SELECT_COLUMNS =
   "id, store_id, frame_name, frame_url, is_default, is_active, sort_order, date_enabled, date_x, date_y, date_font_size, date_color, created_at, updated_at";
 
@@ -164,8 +167,8 @@ export async function POST(request: Request) {
         is_active: isActive,
         sort_order: cleanNumber(body.sortOrder),
         date_enabled: dateEnabled,
-        date_x: cleanRangeNumber(body.dateX, 1030, 0, 1270),
-        date_y: cleanRangeNumber(body.dateY, 82, 0, 890),
+        date_x: cleanRangeNumber(body.dateX, DEFAULT_FRAME_DATE_X, 0, SQUARE_CANVAS_SIZE),
+        date_y: cleanRangeNumber(body.dateY, DEFAULT_FRAME_DATE_Y, 0, SQUARE_CANVAS_SIZE),
         date_font_size: cleanRangeNumber(body.dateFontSize, 38, 12, 96),
         date_color: cleanDateColor(body.dateColor),
       })
