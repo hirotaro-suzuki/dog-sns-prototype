@@ -49,6 +49,47 @@
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8), 0 0 2px rgba(0, 0, 0, 0.95);
 }
 
-.frame-preview-box {
+.frame-preview-box,
+.admin-photo-card img {
   aspect-ratio: 1 / 1;
+}
+
+.final-image-screen-panel {
+  max-width: min(100%, 680px);
+  margin-inline: auto;
+}
+
+.print-final-image {
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+}
+
+@media print {
+  @page {
+    margin: 0;
+    size: 108mm 108mm;
+  }
+
+  html,
+  body {
+    width: 108mm !important;
+    height: 108mm !important;
+  }
+
+  .app-shell,
+  .workspace,
+  .store-workspace,
+  .camera-panel,
+  .final-screen,
+  .final-image-panel,
+  .final-image-screen-panel {
+    width: 108mm !important;
+    height: 108mm !important;
+  }
+
+  .print-final-image {
+    width: 108mm !important;
+    height: 108mm !important;
+    object-fit: cover !important;
+  }
 }
