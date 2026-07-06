@@ -22,14 +22,18 @@ supabase/migrations/20260625_assets_storage_handoff.sql
 
 ```text
 supabase/migrations/20260704_store_frames.sql
+supabase/migrations/20260704_frame_date_settings.sql
+supabase/migrations/20260706_square_frame_coordinates.sql
 ```
 
-このmigrationは、現在の方針に合わせて以下を行う。
+これらのmigrationは、現在の方針に合わせて以下を行う。
 
 - `final-images` bucketを作成する
 - `store-assets` bucketを作成する
 - `assets` に `captured_at`、`saved_at`、`final_storage_bucket`、`final_storage_path` を追加する
 - `assets` に `description`、`hidden_at`、`hidden_reason` を追加する
+- 店舗ごとの写真枠と日付表示座標を追加する
+- 写真枠の日付座標制約を正方形Canvas前提へ更新する
 - 犬情報項目を必須ではなくす
 
 詳しい引き継ぎメモは `docs/supabase-handoff.md` を読む。
