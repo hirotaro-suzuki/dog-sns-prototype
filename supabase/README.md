@@ -59,9 +59,11 @@ final-images
 store-assets
 ```
 
-店舗ロゴ、写真フレームなどを保存する。
+店舗設定に使う画像を保存するためのbucket。既存互換のために残している。
 
-店舗マスタ `stores.logo_url` と `stores.frame_url` には、`store-assets` に置いた画像の公開URLを登録する。
+現在の葡萄房向け正方形枠は、Supabase StorageではなくGitHub mainの `public/store-frames/` 配下に静的SVGとして置いている。`store_frames.frame_url` には `/store-frames/...svg` のパスを登録して使う。各SVGはロゴを内包しているため、ロゴ単体画像を別途アップロードしなくても表示できる。
+
+`stores.logo_url` と `stores.frame_url` は互換用として残っているが、現在の標準運用では写真枠テーブル `store_frames` と枠画像内ロゴを使う。
 
 ## 既にschema.sqlを適用済みで権限エラーが出る場合
 
@@ -110,8 +112,8 @@ PIN: 0000
 担当者: 軽井沢 店長 / 軽井沢 鈴木 / 軽井沢 高橋
 ```
 
-`logo_url` と `frame_url` には確認用のSVGデータURLを入れている。これは、ログインした店舗ごとにDBの値が撮影画面と編集画面へ渡っていることを確認しやすくするためである。
-本番店舗では、この2項目をSupabase Storageの公開URLへ置き換える。
+`logo_url` と `frame_url` には確認用のSVGデータURLを入れている。これは、ログインした店舗ごとにDBの値が撮影画面と編集画面へ渡っていることを確認しやすくするための互換用データである。
+本番店舗では、現在の標準として `store_frames` に正方形枠を登録し、ロゴは枠画像内へ含める。
 
 `pin_hash` はデモ用に `sha256:` 形式で入れている。本番店舗では `scripts/create-store-pin-hash.mjs` で生成した `scrypt:` 形式を使う。
 
@@ -120,7 +122,7 @@ PIN: 0000
 - 実店舗名、本物のPIN、実ロゴURL、実フレームURLをリポジトリに書かない。
 - 本番PINは `scripts/create-store-pin-hash.mjs` でハッシュ化してからSupabaseへ登録する。
 - 店舗や担当者を削除したい場合も、原則として物理削除ではなく `is_active = false` にする。
-- ロゴやフレームはSupabase Storageなど、引き渡し先が管理できる場所に置く。
+- 写真枠は `store_frames` で管理し、現在の標準では正方形枠画像内にロゴを含める。
 - ワンチャン情報はDB項目として保存せず、完成画像に焼き込まれた文字を正とする。
 
 ## Vercel環境変数
