@@ -28,10 +28,30 @@ GitHub mainを正本とし、ローカルPCやDropboxは参照しない。
 - 枠が読めない場合の仮フレームも正方形Canvas内で描画する。
 - 完成画像確認画面と印刷対象も正方形表示へ寄せた。
 
+### 葡萄房の正方形枠
+
+添付ロゴの色と意匠を参考に、正方形フレームを5枚追加した。
+
+本店用:
+
+- `public/store-frames/budoubou-honten-classic-camel.svg`
+- `public/store-frames/budoubou-honten-noir-gold.svg`
+
+軽井沢用:
+
+- `public/store-frames/budoubou-karuizawa-ivory-wine.svg`
+- `public/store-frames/budoubou-karuizawa-charcoal-gold.svg`
+- `public/store-frames/budoubou-karuizawa-forest-gold.svg`
+
+注意: GitHubへ追加した枠はSVGとして管理できるよう、添付ロゴの雰囲気に合わせて起こした正方形フレームである。添付PNGそのものをSupabase Storageへ登録する作業は、必要なら別途 `/admin` から行う。
+
 ### Supabase
 
 - `store_frames.date_x` と `store_frames.date_y` の基準を `0..1080` に変更するmigrationを追加した。
 - 追加migration: `supabase/migrations/20260706_square_frame_coordinates.sql`
+- 葡萄房 本店2枚、軽井沢3枚を登録するmigrationを追加した。
+- 追加migration: `supabase/migrations/20260706_budoubou_square_frames.sql`
+- `20260706_budoubou_square_frames.sql` は、対象店舗の既存有効枠を停止し、正方形枠を有効枠として登録する。
 - `supabase/schema.sql` も正方形座標前提に更新した。
 - `docs/supabase-handoff.md` と `supabase/README.md` に適用手順を追記した。
 
@@ -41,8 +61,14 @@ GitHub mainを正本とし、ローカルPCやDropboxは参照しない。
 - `src/app/frame-print-overrides.css`
 - `src/app/api/admin/frames/route.ts`
 - `src/app/api/admin/frames/[id]/route.ts`
+- `public/store-frames/budoubou-honten-classic-camel.svg`
+- `public/store-frames/budoubou-honten-noir-gold.svg`
+- `public/store-frames/budoubou-karuizawa-ivory-wine.svg`
+- `public/store-frames/budoubou-karuizawa-charcoal-gold.svg`
+- `public/store-frames/budoubou-karuizawa-forest-gold.svg`
 - `supabase/schema.sql`
 - `supabase/migrations/20260706_square_frame_coordinates.sql`
+- `supabase/migrations/20260706_budoubou_square_frames.sql`
 - `docs/supabase-handoff.md`
 - `supabase/README.md`
 
@@ -51,6 +77,7 @@ GitHub mainを正本とし、ローカルPCやDropboxは参照しない。
 - Vercelビルド成功
 - iPad Safariでの撮影、編集、完成画像作成、保存の通し確認
 - Supabase SQL Editorで `20260706_square_frame_coordinates.sql` を適用すること
+- Supabase SQL Editorで `20260706_budoubou_square_frames.sql` を適用すること
 - 正方形枠画像を登録した時の撮影画面、編集画面、完成画像の見え方
 - 印刷時にAirPrintやSELPHY側で期待通り扱えるか
 
