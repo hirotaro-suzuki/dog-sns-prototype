@@ -31,6 +31,8 @@ GitHub mainの `supabase/schema.sql` と `supabase/README.md` を正とし、こ
 店舗フレームなど、店舗設定に使う画像を保存する。
 現在の方針では、ロゴは単独素材ではなく写真枠画像内に含める。既存の `stores.logo_url` は互換用として残っているが、後続で削除または非表示にする。
 
+今回追加した葡萄房の正方形枠は、GitHub mainの `public/store-frames/` 配下に静的SVGとして置いている。Supabase Storageへアップロードする枠ではなく、`store_frames.frame_url` に `/store-frames/...svg` のパスを登録して使う。
+
 ## 主なテーブル
 
 ### stores
@@ -52,6 +54,8 @@ GitHub mainの `supabase/schema.sql` と `supabase/README.md` を正とし、こ
 `date_x` と `date_y` は 0 から 1080 の範囲で保存する。
 
 既存Supabase環境では、`supabase/migrations/20260706_square_frame_coordinates.sql` を適用して、日付座標の既定値と制約を正方形前提へ更新する。
+
+葡萄房の初期正方形枠は、`supabase/migrations/20260706_budoubou_square_frames.sql` で登録する。このmigrationは、本店向け2枚、軽井沢向け3枚を `store_frames` に追加し、対象店舗の既存枠を無効化して新しい正方形枠を有効化する。
 
 ### assets
 
@@ -118,6 +122,8 @@ Success. No rows returned
 
 `supabase/migrations/20260706_square_frame_coordinates.sql` は、正方形枠へ移行するための追加migrationである。正方形枠を本登録する前にSupabase SQL Editorで適用する。
 
+`supabase/migrations/20260706_budoubou_square_frames.sql` は、葡萄房 本店2枚・葡萄房 軽井沢3枚の正方形枠を登録するための追加migrationである。`20260706_square_frame_coordinates.sql` の後に適用する。
+
 ## 適用手順
 
 新規Supabaseプロジェクトの場合:
@@ -134,17 +140,20 @@ Success. No rows returned
 2. Supabase SQL Editorで `supabase/migrations/20260704_frame_date_settings.sql` を実行済みか確認する。
 3. Supabase SQL Editorで `supabase/migrations/20260704_admin_asset_review_fields.sql` を実行する。
 4. Supabase SQL Editorで `supabase/migrations/20260706_square_frame_coordinates.sql` を実行する。
-5. `assets` に `short_caption` と `review_status` が追加されたことを確認する。
-6. `review_status` の既存写真が初期値 `new` になっていることを確認する。
-7. `store_frames.date_x` と `store_frames.date_y` が 0 から 1080 の範囲になっていることを確認する。
-8. `final-images` と `store-assets` bucketがあることを確認する。
-9. 既存店舗の写真枠設定を必要に応じて確認する。
+5. Supabase SQL Editorで `supabase/migrations/20260706_budoubou_square_frames.sql` を実行する。
+6. `assets` に `short_caption` と `review_status` が追加されたことを確認する。
+7. `review_status` の既存写真が初期値 `new` になっていることを確認する。
+8. `store_frames.date_x` と `store_frames.date_y` が 0 から 1080 の範囲になっていることを確認する。
+9. 葡萄房 本店に正方形枠2枚、葡萄房 軽井沢に正方形枠3枚が追加され、有効になっていることを確認する。
+10. `final-images` と `store-assets` bucketがあることを確認する。
+11. 既存店舗の写真枠設定を必要に応じて確認する。
 
 注意:
 
 - GitHub mainにAPI/UI変更が反映済みで、現Supabaseにも `20260704_admin_asset_review_fields.sql` は適用済み。
 - 別Supabase環境へ移す場合は、同じmigrationを忘れずに適用する。
 - 本番DBへ適用したSQLは、必ず `supabase/migrations/` にも記録する。今回の追加SQLはGitHub mainへ記録済み。
+- 葡萄房枠のSVGは添付ロゴの色味と意匠を参考にした初期枠であり、添付PNGそのものをSupabase Storageへ登録する方式ではない。
 
 ## Vercel環境変数
 
