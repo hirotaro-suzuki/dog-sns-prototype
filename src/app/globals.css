@@ -246,7 +246,7 @@ p {
   position: relative;
   overflow: hidden;
   width: 100%;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 1 / 1;
   background: #1f2524;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -386,7 +386,7 @@ p {
 .photo-tile,
 .photo-choice {
   overflow: hidden;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 1 / 1;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
@@ -430,7 +430,7 @@ p {
 
 .selected-preview {
   overflow: hidden;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 1 / 1;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
@@ -813,7 +813,7 @@ p {
 
 .frame-preview-box {
   overflow: hidden;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 1 / 1;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fffdf8;
@@ -865,7 +865,7 @@ p {
 .admin-photo-card img {
   display: block;
   width: 100%;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 1 / 1;
   object-fit: cover;
 }
 
