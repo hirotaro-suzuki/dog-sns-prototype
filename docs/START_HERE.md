@@ -2,9 +2,11 @@
 
 最終更新: 2026-07-06
 
-このファイルは、新しいCodexスレッドで最初に読むための入口です。
+このファイルは、新しいCodexスレッドでCodexが最初に読む入口です。
 
 目的は、毎回GitHub接続やドキュメント探索で時間を使いすぎないようにすることです。
+
+ユーザーが次スレッド冒頭に貼る短い文は `docs/next-thread-start.md` を使います。
 
 ## 最初に守ること
 
@@ -13,16 +15,6 @@
 - GitHubの確認と更新は、まずGitHubコネクタを使います。
 - GitHubコネクタで詰まった場合は、ローカルやDropboxへ逃げず、何ができて何ができないかをユーザーへ説明して止まります。
 - 実装前に、目的、OK条件、確認方法、更新する文書を短く整理します。
-
-## 次スレッドでユーザーが貼る短い指示
-
-```text
-GitHubコネクタだけを使ってください。
-作業対象は hirotaro-suzuki/dog-sns-prototype の main です。
-ローカル/Dropbox は参照しないでください。
-まず docs/START_HERE.md と docs/DOC_INDEX.md だけを読んで、現在地を整理してください。
-まだファイル変更はしないでください。
-```
 
 ## 最初に読むファイル
 
@@ -36,7 +28,6 @@ GitHubコネクタだけを使ってください。
 3. `docs/project-principles.md`
 4. `README.md`
 5. `dog_sns_design.md`
-6. `docs/next-thread-start.md`
 
 Supabase、引き渡し、直近作業ログが必要な場合は、`docs/DOC_INDEX.md` の分類に従って必要なものだけ読みます。
 
