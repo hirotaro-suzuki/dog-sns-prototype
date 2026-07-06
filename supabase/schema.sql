@@ -111,8 +111,8 @@ create table if not exists public.store_frames (
   ends_at timestamptz,
   sort_order integer not null default 0,
   date_enabled boolean not null default true,
-  date_x integer not null default 1030,
-  date_y integer not null default 82,
+  date_x integer not null default 900,
+  date_y integer not null default 90,
   date_font_size integer not null default 38,
   date_color text not null default '#ffffff',
   created_at timestamptz not null default now(),
@@ -120,8 +120,8 @@ create table if not exists public.store_frames (
   constraint store_frames_frame_name_not_blank check (length(trim(frame_name)) > 0),
   constraint store_frames_frame_url_not_blank check (length(trim(frame_url)) > 0),
   constraint store_frames_date_range_valid check (ends_at is null or starts_at is null or ends_at > starts_at),
-  constraint store_frames_date_x_range check (date_x between 0 and 1270),
-  constraint store_frames_date_y_range check (date_y between 0 and 890),
+  constraint store_frames_date_x_range check (date_x between 0 and 1080),
+  constraint store_frames_date_y_range check (date_y between 0 and 1080),
   constraint store_frames_date_font_size_range check (date_font_size between 12 and 96),
   constraint store_frames_date_color_format check (date_color ~ '^#[0-9A-Fa-f]{6}$')
 );
