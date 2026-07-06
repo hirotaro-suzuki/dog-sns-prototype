@@ -395,14 +395,15 @@ export function CameraCapture({ store, staffMembers = [], onBack, onLogout }: Ca
             <p>{message}</p>
           </div>
         )}
-        {activeStore?.frameUrl && (
+        {activeStore?.frameUrl ? (
           <img className="store-frame-image" src={activeStore.frameUrl} alt="店舗フレーム" />
+        ) : (
+          <div
+            className="frame-overlay"
+            data-store={displayStore}
+            data-date={getTodayLabel()}
+          />
         )}
-        <div
-          className="frame-overlay"
-          data-store={displayStore}
-          data-date={getTodayLabel()}
-        />
       </div>
 
       <div className="toolbar">
