@@ -1,6 +1,6 @@
 # プロジェクト原則
 
-最終更新: 2026-07-06
+最終更新: 2026-07-07
 
 この文書は、店舗分散型SNS自動投稿システムを進めるうえで、スレッドが変わってもぶれないための最上位方針です。
 
@@ -24,16 +24,17 @@
 
 仕様、判断理由、作業手順、未決事項、注意点はGitHub上の文書に残します。
 
-## 3. クラウドを正とする
+## 3. クラウドとCodespacesを正とする
 
-このプロジェクトでは、GitHub、Vercel、Supabaseを正とします。
+このプロジェクトでは、GitHub、Codespaces、Vercel、Supabaseを正とします。
 
 - ソースコードと文書は GitHub `main`
+- 実装、ビルド、コミット、pushは GitHub Codespaces
 - 実行、ビルド、公開確認は Vercel
 - DB、Storage、Auth、店舗設定、担当者、枠、完成画像は Supabase
 - ローカルPC、Dropbox、手元コピーは正本にしない
 
-Codexは、まずGitHubコネクタで確認と更新を試みます。GitHubコネクタで詰まった場合は、ローカルやDropboxへ逃げず、何ができて何ができないかをユーザーへ説明して止まります。
+Codexは、GitHub上の確認ではまずGitHubコネクタを使います。実装やビルド確認が必要な場合はCodespacesを使います。GitHubコネクタまたはCodespacesで詰まった場合は、ローカルやDropboxへ逃げず、何ができて何ができないかをユーザーへ説明して止まります。
 
 ## 4. Codexは先走らない
 
