@@ -6,6 +6,10 @@
 
 ## 入口
 
+- `CLAUDE.md`（リポジトリ直下）
+  - Claude Codeが起動時に自動で読み込む要約版。開始文の貼り忘れ対策。
+  - 詳しい内容は `docs/START_HERE.md` を正とする。
+
 - `docs/next-thread-start.md`
   - ユーザーが次スレッドの最初に貼る短いコピペ文。
   - 説明文書ではないため、Claude Codeが毎回深読みする必要はない。
