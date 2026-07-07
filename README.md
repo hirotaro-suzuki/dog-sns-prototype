@@ -10,9 +10,18 @@
 
 - ソースコードと文書: GitHub `main`
 - 作業環境: GitHub Codespaces
-- 実行、ビルド、公開確認: Vercel
+- 公開、デプロイ、ビルド結果の確認: Vercel
 - DB、Storage、Auth、店舗設定、担当者、枠、完成画像: Supabase
 - ローカルPC、Dropbox、手元コピー: 正本ではありません
+
+## 環境の役割
+
+- GitHub: コード、文書、migration、作業履歴を残す場所。
+- Codespaces: 実装、ビルド確認、コミット、pushを行う場所。
+- Vercel: 公開URL、デプロイ成否、実画面を確認する場所。
+- Supabase: DB、Storage、Auth、店舗設定、担当者、枠、完成画像を管理する場所。
+
+GitHubへ反映済みでも、VercelデプロイやSupabase適用がまだの場合があります。作業報告では、GitHub反映、Codespacesビルド、Vercelデプロイ、Vercel実画面確認、Supabase適用、iPad実機確認を分けて扱います。
 
 ## 最初に読むもの
 
