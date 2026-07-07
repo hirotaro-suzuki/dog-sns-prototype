@@ -37,9 +37,20 @@ Supabase、引き渡し、直近作業ログが必要な場合は、`docs/DOC_IN
 
 - ソースコードと文書: GitHub `main`
 - 作業環境: GitHub Codespaces
-- 実行、ビルド、公開確認: Vercel
+- 公開、デプロイ、ビルド結果の確認: Vercel
 - DB、Storage、Auth、店舗設定、担当者、枠、完成画像: Supabase
 - ローカルPCとDropbox: 正本ではない
+
+## 環境ごとの役割
+
+- GitHub: ソースコード、文書、migration、作業履歴の正本。
+- Codespaces: 実装、ビルド確認、コミット、pushを行う作業場所。
+- Vercel: 最新デプロイの成否と、公開URL上の実画面を確認する場所。
+- Supabase: DB、Storage、Auth、店舗設定、担当者、枠、完成画像を確認・変更する場所。
+
+GitHubへ反映したこと、Codespacesでビルドが通ったこと、Vercelのデプロイが成功したこと、Vercel上で実操作できたこと、SupabaseへSQLや設定を適用したことは、それぞれ別物として扱います。
+
+Supabase変更は、GitHubにSQLを置いただけなのか、Supabase SQL Editorなどで実環境へ適用済みなのかを必ず分けて報告します。
 
 ## 現在の作業姿勢
 
