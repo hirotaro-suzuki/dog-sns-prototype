@@ -274,6 +274,8 @@ export function AdminMaintenance() {
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
   const [selectedStoreMasterId, setSelectedStoreMasterId] = useState<string | null>(null);
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
+  const [includeInactiveStores, setIncludeInactiveStores] = useState(false);
+  const [includeInactiveStaff, setIncludeInactiveStaff] = useState(false);
   const [storeDraft, setStoreDraft] = useState<StoreMaster>(emptyStoreDraft);
   const [staffDraft, setStaffDraft] = useState<StaffMaster>(emptyStaffDraft());
   const [newStaffDraft, setNewStaffDraft] = useState<StaffMaster>(emptyStaffDraft());
@@ -312,8 +314,15 @@ export function AdminMaintenance() {
 
   const staffStoreId = staffDraft.store_id || selectedStoreMasterId || stores[0]?.id || "";
   const visibleStaff = useMemo(
-    () => staffMasters.filter((staff) => !staffStoreId || staff.store_id === staffStoreId),
-    [staffMasters, staffStoreId]
+    () =>
+      staffMasters.filter(
+        (staff) => (!staffStoreId || staff.store_id === staffStoreId) && (includeInactiveStaff || staff.is_active)
+      ),
+    [staffMasters, staffStoreId, includeInactiveStaff]
+  );
+  const visibleStoreMasters = useMemo(
+    () => storeMasters.filter((store) => includeInactiveStores || store.is_active),
+    [storeMasters, includeInactiveStores]
   );
 
   useEffect(() => {
@@ -1017,7 +1026,15 @@ export function AdminMaintenance() {
       {activeTab === "stores" ? (
         <section className="admin-main-grid">
           <div className="admin-master-list">
-            {storeMasters.map((store) => (
+            <label className="admin-toggle">
+              <input
+                type="checkbox"
+                checked={includeInactiveStores}
+                onChange={(event) => setIncludeInactiveStores(event.target.checked)}
+              />
+              停止中も表示
+            </label>
+            {visibleStoreMasters.map((store) => (
               <button
                 key={store.id}
                 className={`admin-master-row${selectedStoreMasterId === store.id ? " is-selected" : ""}${
@@ -1099,6 +1116,14 @@ export function AdminMaintenance() {
                   </option>
                 ))}
               </select>
+            </label>
+            <label className="admin-toggle">
+              <input
+                type="checkbox"
+                checked={includeInactiveStaff}
+                onChange={(event) => setIncludeInactiveStaff(event.target.checked)}
+              />
+              停止中も表示
             </label>
 
             {visibleStaff.map((staff) => (
@@ -1195,8 +1220,15 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
   const [isFrameLoading, setIsFrameLoading] = useState(false);
   const [isFrameSaving, setIsFrameSaving] = useState(false);
   const [frameMessage, setFrameMessage] = useState("");
+  const [includeInactiveFrames, setIncludeInactiveFrames] = useState(false);
 
-  const visibleFrames = useMemo(() => frames.filter((frame) => frame.store_id === selectedStoreId), [frames, selectedStoreId]);
+  const visibleFrames = useMemo(
+    () =>
+      frames.filter(
+        (frame) => frame.store_id === selectedStoreId && (includeInactiveFrames || frame.is_active)
+      ),
+    [frames, selectedStoreId, includeInactiveFrames]
+  );
   const selectedFrame = useMemo(() => frames.find((frame) => frame.id === selectedFrameId) ?? null, [frames, selectedFrameId]);
   const activeFrameCount = visibleFrames.filter((frame) => frame.is_active).length;
   const liveFrame = useMemo(() => visibleFrames.find((frame) => frame.is_active) ?? null, [visibleFrames]);
@@ -1452,6 +1484,14 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
               </option>
             ))}
           </select>
+        </label>
+        <label className="admin-toggle">
+          <input
+            type="checkbox"
+            checked={includeInactiveFrames}
+            onChange={(event) => setIncludeInactiveFrames(event.target.checked)}
+          />
+          停止中も表示
         </label>
 
         <p className="notice">有効な枠は1店舗につき最大3件までです。現在 {activeFrameCount} 件。</p>
