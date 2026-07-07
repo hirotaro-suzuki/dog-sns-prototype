@@ -3,7 +3,6 @@
 import type { CSSProperties, TouchEvent } from "react";
 import { useEffect, useReducer, useRef, useState } from "react";
 import type { CapturedPhoto } from "@/lib/imageStore";
-import { phaseZeroStore } from "@/config/stores";
 import type { CaptureStaff, CaptureStore } from "@/types/captureContext";
 
 type MosaicCanvasProps = {
@@ -75,7 +74,6 @@ const CANVAS_WIDTH = CANVAS_SIZE;
 const CANVAS_HEIGHT = CANVAS_SIZE;
 const MOSAIC_RADIUS = 52;
 const MOSAIC_SAMPLE_SIZE = 12;
-const FALLBACK_THEME_COLOR = "#176f62";
 const MAX_TEXT_BOXES = 8;
 const MAX_TEXT_LENGTH = 15;
 const TEXT_COLORS = [
@@ -102,14 +100,6 @@ function createStrokeId() {
 
 function createTextBoxId() {
   return `text-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
-
-function getTodayLabel() {
-  const date = new Date();
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}.${month}.${day}`;
 }
 
 function getTouchPoint(canvas: HTMLCanvasElement, touch: React.Touch) {
@@ -152,50 +142,6 @@ function getBaseImageScale(image: HTMLImageElement) {
     CANVAS_WIDTH / image.naturalWidth,
     CANVAS_HEIGHT / image.naturalHeight
   );
-}
-
-function getStoreDisplayName(store?: CaptureStore) {
-  return store?.displayName ?? phaseZeroStore.displayName;
-}
-
-function getStoreThemeColor(store?: CaptureStore) {
-  return store?.themeColor ?? FALLBACK_THEME_COLOR;
-}
-
-function getSelectedFrame(store?: CaptureStore) {
-  return store?.frames.find((frame) => frame.frameUrl === store.frameUrl) ?? store?.frames[0] ?? null;
-}
-
-function getFrameDateColor(color?: string) {
-  return color && /^#[0-9A-Fa-f]{6}$/.test(color) ? color : "#ffffff";
-}
-
-function drawFrameDate(context: CanvasRenderingContext2D, store?: CaptureStore) {
-  const frame = getSelectedFrame(store);
-  if (frame?.dateEnabled === false) return;
-
-  const fontSize = frame?.dateFontSize ?? 38;
-  const x = frame?.dateX ?? 900;
-  const y = frame?.dateY ?? 90;
-
-  context.save();
-  context.textBaseline = "middle";
-  context.textAlign = "center";
-  context.font = `700 ${fontSize}px Arial, sans-serif`;
-  context.lineWidth = Math.max(3, Math.round(fontSize * 0.12));
-  context.strokeStyle = "rgba(0, 0, 0, 0.45)";
-  context.fillStyle = getFrameDateColor(frame?.dateColor);
-  context.strokeText(getTodayLabel(), x, y);
-  context.fillText(getTodayLabel(), x, y);
-  context.restore();
-}
-
-function hexToRgba(hex: string, alpha: number) {
-  const normalized = /^#[0-9A-Fa-f]{6}$/.test(hex) ? hex : FALLBACK_THEME_COLOR;
-  const red = Number.parseInt(normalized.slice(1, 3), 16);
-  const green = Number.parseInt(normalized.slice(3, 5), 16);
-  const blue = Number.parseInt(normalized.slice(5, 7), 16);
-  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
 }
 
 function loadCanvasImage(url: string): Promise<HTMLImageElement | null> {
@@ -283,57 +229,22 @@ function drawPhotoLayer(
 
 function drawFixedFrame(
   context: CanvasRenderingContext2D,
-  store?: CaptureStore,
-  staff?: CaptureStaff,
   frameImage?: HTMLImageElement | null
 ) {
-  const themeColor = getStoreThemeColor(store);
-
   if (frameImage) {
     context.drawImage(frameImage, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    drawFrameDate(context, store);
-
-    if (staff) {
-      context.save();
-      context.textAlign = "right";
-      context.textBaseline = "middle";
-      context.font = "500 24px Arial, sans-serif";
-      context.lineWidth = 4;
-      context.strokeStyle = "rgba(0, 0, 0, 0.42)";
-      context.fillStyle = "#ffffff";
-      context.strokeText(`担当: ${staff.displayName}`, CANVAS_WIDTH - 56, CANVAS_HEIGHT - 34);
-      context.fillText(`担当: ${staff.displayName}`, CANVAS_WIDTH - 56, CANVAS_HEIGHT - 34);
-      context.restore();
-    }
-
     return;
   }
 
-  context.fillStyle = hexToRgba(themeColor, 0.78);
-  context.fillRect(0, 0, CANVAS_WIDTH, 112);
-  context.fillRect(0, CANVAS_HEIGHT - 132, CANVAS_WIDTH, 132);
-
-  context.strokeStyle = "rgba(255, 255, 255, 0.9)";
+  context.save();
+  context.strokeStyle = "rgba(255, 255, 255, 0.88)";
   context.lineWidth = 10;
   context.strokeRect(32, 32, CANVAS_WIDTH - 64, CANVAS_HEIGHT - 64);
 
-  context.strokeStyle = themeColor;
+  context.strokeStyle = "rgba(23, 111, 98, 0.78)";
   context.lineWidth = 6;
   context.strokeRect(44, 44, CANVAS_WIDTH - 88, CANVAS_HEIGHT - 88);
-
-  context.fillStyle = "#ffffff";
-  context.textBaseline = "middle";
-  context.font = "700 46px Arial, sans-serif";
-  context.textAlign = "left";
-  context.fillText(getStoreDisplayName(store), 56, 64);
-
-  drawFrameDate(context, store);
-
-  if (staff) {
-    context.textAlign = "right";
-    context.font = "500 24px Arial, sans-serif";
-    context.fillText(`担当: ${staff.displayName}`, CANVAS_WIDTH - 56, CANVAS_HEIGHT - 34);
-  }
+  context.restore();
 }
 
 function clampScale(scale: number) {
@@ -598,12 +509,7 @@ export function MosaicCanvas({
     drawPhotoLayer(context, image, transformRef.current);
     drawMosaicStrokes(context, image, transformRef.current, strokesRef.current);
     drawTextBoxes(context, image, transformRef.current, textBoxesRef.current, selectedTextBoxIdRef.current, showSelection);
-    drawFixedFrame(
-      context,
-      store,
-      staff,
-      frameImageRef.current
-    );
+    drawFixedFrame(context, frameImageRef.current);
   }
 
   function syncTextBoxes(nextTextBoxes: TextBox[], nextSelectedId = selectedTextBoxIdRef.current) {
