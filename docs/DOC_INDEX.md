@@ -2,17 +2,17 @@
 
 最終更新: 2026-07-07
 
-この索引は、Codexが毎回すべての文書を読んでコンテキストを消費しすぎないようにするための地図です。
+この索引は、Claude Codeが毎回すべての文書を読んでコンテキストを消費しすぎないようにするための地図です。
 
 ## 入口
 
 - `docs/next-thread-start.md`
   - ユーザーが次スレッドの最初に貼る短いコピペ文。
-  - 説明文書ではないため、Codexが毎回深読みする必要はない。
+  - 説明文書ではないため、Claude Codeが毎回深読みする必要はない。
 
 - `docs/START_HERE.md`
-  - 新しいCodexスレッドでCodexが最初に読む入口。
-  - ローカル/Dropboxを見ない、GitHub mainとCodespacesを正とし、Codexは直接編集せず実行用コマンドを提示する、という最短ルール。
+  - 新しいClaude Codeスレッドで最初に読む入口。
+  - ローカル/Dropboxを見ない、GitHub mainとCodespacesを正とし、Claude Codeが自身のツールで直接編集・Git操作を行う、という最短ルール。
 
 - `docs/DOC_INDEX.md`
   - このファイル。

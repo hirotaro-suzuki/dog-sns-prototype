@@ -6,7 +6,7 @@
 
 細かな画面仕様やDB仕様は `dog_sns_design.md` を正とします。ただし、判断に迷った場合は、この文書の原則を優先します。
 
-新しいCodexスレッドの開始手順は `docs/START_HERE.md`、読む文書の分類は `docs/DOC_INDEX.md` を参照します。
+新しいClaude Codeスレッドの開始手順は `docs/START_HERE.md`、読む文書の分類は `docs/DOC_INDEX.md` を参照します。
 
 ## 1. 引き渡せる形を最優先する
 
@@ -29,16 +29,16 @@
 このプロジェクトでは、GitHub、Codespaces、Vercel、Supabaseを正とします。
 
 - ソースコードと文書は GitHub `main`
-- 実装、ビルド、コミット、pushはユーザーがGitHub Codespacesターミナルで行う
+- 実装、ビルド、コミット、pushはClaude CodeがGitHub Codespacesターミナルで行う
 - 公開、デプロイ、ビルド結果の確認は Vercel
 - DB、Storage、Auth、店舗設定、担当者、枠、完成画像は Supabase
 - ローカルPC、Dropbox、手元コピーは正本にしない
 
-Codexは、備え付けのGitHubプラグインを使った直接ファイル編集やpushを行いません。変更が必要な場合は、ユーザーがCodespacesターミナルへコピペして実行できる短いコマンドまたはスクリプトを提示します。Codespacesターミナルで進められない場合は、ローカルやDropboxへ逃げず、何ができて何ができないかをユーザーへ説明して止まります。
+Claude Codeは、自身のツールを用いて直接ファイルを編集し、コミット・pushなどのGit操作を行います。Codespacesターミナルで進められない場合は、ローカルやDropboxへ逃げず、何ができて何ができないかをユーザーへ説明して止まります。
 
 GitHubへ反映したこと、Codespacesでビルドが通ったこと、Vercelのデプロイが成功したこと、Vercel上で実操作できたこと、SupabaseへSQLや設定を適用したことは、それぞれ別物として扱います。
 
-## 4. Codexは先走らない
+## 4. Claude Codeは先走らない
 
 目的、OK条件、保存先、運用者、影響範囲が曖昧な機能は、実装前に候補を出してユーザーと確認します。
 

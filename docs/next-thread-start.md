@@ -1,22 +1,21 @@
-# 次のCodexスレッド開始時の指示文
+# 次のClaude Codeスレッド開始時の指示文
 
-次のCodexスレッドで開発を再開するときは、最初に以下をそのまま貼る。
+次のClaude Codeスレッドで開発を再開するときは、最初に以下をそのまま貼る。
 
 ```text
 作業対象は hirotaro-suzuki/dog-sns-prototype の main です。
 作業環境は、ユーザーが開いているGitHub Codespacesの `/workspaces/dog-sns-prototype` を正として扱ってください。
-備え付けのGitHubプラグインを使った直接ファイル編集やpushは行わないでください。
-コード修正や文書更新が必要な場合は、ユーザーがCodespacesターミナルへコピペして実行できる短いBash/Python/Node.jsコマンドを提示してください。
-実装、ビルド、コミット、pushはユーザーがCodespacesターミナルで行います。
+Claude Codeは、自身のツールを用いて直接ファイルを編集し、コミット・pushなどのGit操作を行ってください。
+実装、ビルド、コミット、pushはClaude Code自身がCodespacesターミナルで行います。
 公開、デプロイ、ビルド結果の確認はVercelを正として扱ってください。
 DB、Storage、Auth、店舗設定、担当者、枠、完成画像はSupabaseを正として扱ってください。
 ローカルPC、Dropbox、手元コピーは参照しないでください。
 リポジトリ検索に頼らず、まず docs/START_HERE.md と docs/DOC_INDEX.md を直接取得して読んでください。
 まだファイル変更はしないでください。
 
-今回は、統括Codexを窓口にして進めます。
-ユーザーは統括Codexにだけ話します。
-統括Codexは、必要に応じて調査係・実装係・確認係・ドキュメント係の役割を内部で分けてください。
+今回は、統括Claude Codeを窓口にして進めます。
+ユーザーは統括Claude Codeにだけ話します。
+統括Claude Codeは、必要に応じて調査係・実装係・確認係・ドキュメント係の役割を内部で分けてください。
 ただし、コード変更を行う担当は原則1本化してください。
 
 現在の大方針:
