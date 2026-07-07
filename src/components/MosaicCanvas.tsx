@@ -227,12 +227,50 @@ function drawPhotoLayer(
   context.restore();
 }
 
+function getTodayLabel() {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}.${month}.${day}`;
+}
+
+function getSelectedFrame(store?: CaptureStore) {
+  return store?.frames.find((frame) => frame.frameUrl === store.frameUrl) ?? store?.frames[0] ?? null;
+}
+
+function getFrameDateColor(color?: string) {
+  return color && /^#[0-9A-Fa-f]{6}$/.test(color) ? color : "#ffffff";
+}
+
+function drawFrameDate(context: CanvasRenderingContext2D, store?: CaptureStore) {
+  const frame = getSelectedFrame(store);
+  if (frame?.dateEnabled === false) return;
+
+  const fontSize = frame?.dateFontSize ?? 38;
+  const x = frame?.dateX ?? 900;
+  const y = frame?.dateY ?? 90;
+
+  context.save();
+  context.textBaseline = "middle";
+  context.textAlign = "center";
+  context.font = `700 ${fontSize}px Arial, sans-serif`;
+  context.lineWidth = Math.max(3, Math.round(fontSize * 0.12));
+  context.strokeStyle = "rgba(0, 0, 0, 0.45)";
+  context.fillStyle = getFrameDateColor(frame?.dateColor);
+  context.strokeText(getTodayLabel(), x, y);
+  context.fillText(getTodayLabel(), x, y);
+  context.restore();
+}
+
 function drawFixedFrame(
   context: CanvasRenderingContext2D,
+  store: CaptureStore | undefined,
   frameImage?: HTMLImageElement | null
 ) {
   if (frameImage) {
     context.drawImage(frameImage, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    drawFrameDate(context, store);
     return;
   }
 
@@ -509,7 +547,7 @@ export function MosaicCanvas({
     drawPhotoLayer(context, image, transformRef.current);
     drawMosaicStrokes(context, image, transformRef.current, strokesRef.current);
     drawTextBoxes(context, image, transformRef.current, textBoxesRef.current, selectedTextBoxIdRef.current, showSelection);
-    drawFixedFrame(context, frameImageRef.current);
+    drawFixedFrame(context, store, frameImageRef.current);
   }
 
   function syncTextBoxes(nextTextBoxes: TextBox[], nextSelectedId = selectedTextBoxIdRef.current) {
