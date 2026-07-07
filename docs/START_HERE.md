@@ -1,6 +1,6 @@
 # START HERE for Codex
 
-最終更新: 2026-07-06
+最終更新: 2026-07-07
 
 このファイルは、新しいCodexスレッドでCodexが最初に読む入口です。
 
@@ -11,9 +11,11 @@
 ## 最初に守ること
 
 - 作業対象は GitHub `hirotaro-suzuki/dog-sns-prototype` の `main` です。
+- 作業環境は、このリポジトリの GitHub Codespaces を正として扱います。
 - ローカルPC、Dropbox、手元フォルダ、古い複製リポジトリは参照しません。
-- GitHubの確認と更新は、まずGitHubコネクタを使います。
-- GitHubコネクタで詰まった場合は、ローカルやDropboxへ逃げず、何ができて何ができないかをユーザーへ説明して止まります。
+- GitHub上の確認は、まずGitHubコネクタを使います。
+- 実装、ビルド、コミット、pushは、原則としてCodespacesで行います。
+- GitHubコネクタまたはCodespacesで詰まった場合は、ローカルやDropboxへ逃げず、何ができて何ができないかをユーザーへ説明して止まります。
 - 実装前に、目的、OK条件、確認方法、更新する文書を短く整理します。
 
 ## 最初に読むファイル
@@ -34,6 +36,7 @@ Supabase、引き渡し、直近作業ログが必要な場合は、`docs/DOC_IN
 ## このプロジェクトの正本
 
 - ソースコードと文書: GitHub `main`
+- 作業環境: GitHub Codespaces
 - 実行、ビルド、公開確認: Vercel
 - DB、Storage、Auth、店舗設定、担当者、枠、完成画像: Supabase
 - ローカルPCとDropbox: 正本ではない
