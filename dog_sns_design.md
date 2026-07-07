@@ -4,7 +4,7 @@
 
 この文書は、画面仕様、DB設計、保存方針、現在の開発方針を引き継ぐための基本設計書です。
 
-プロジェクト全体の判断原則は `docs/project-principles.md` を最上位とします。新しいCodexスレッドの開始手順は `docs/START_HERE.md`、読む文書の分類は `docs/DOC_INDEX.md` を参照します。
+プロジェクト全体の判断原則は `docs/project-principles.md` を最上位とします。新しいClaude Codeスレッドの開始手順は `docs/START_HERE.md`、読む文書の分類は `docs/DOC_INDEX.md` を参照します。
 
 ## 1. プロジェクトの目的
 

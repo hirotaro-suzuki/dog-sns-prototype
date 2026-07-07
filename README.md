@@ -20,18 +20,18 @@
 - Codespaces: 実装、ビルド確認、コミット、pushを行う場所。
 - Vercel: 公開URL、デプロイ成否、実画面を確認する場所。
 - Supabase: DB、Storage、Auth、店舗設定、担当者、枠、完成画像を管理する場所。
-- Codex: 直接編集せず、Codespacesターミナルで実行する短いコマンドやスクリプトを作る役。
+- Claude Code: 自身のツールで直接ファイルを編集し、コミット・pushまで行う役。
 
 GitHubへ反映済みでも、VercelデプロイやSupabase適用がまだの場合があります。作業報告では、GitHub反映、Codespacesビルド、Vercelデプロイ、Vercel実画面確認、Supabase適用、iPad実機確認を分けて扱います。
 
 ## 最初に読むもの
 
-- 新しいCodexスレッドの入口: `docs/START_HERE.md`
+- 新しいClaude Codeスレッドの入口: `docs/START_HERE.md`
 - ドキュメント索引: `docs/DOC_INDEX.md`
 - 最上位原則: `docs/project-principles.md`
 - 設計・仕様の正本: `dog_sns_design.md`
 
-次のCodexスレッドで再開するときは、`docs/next-thread-start.md` の短い指示文を最初に貼ります。
+次のClaude Codeスレッドで再開するときは、`docs/next-thread-start.md` の短い指示文を最初に貼ります。
 
 ## 現在できていること
 
@@ -76,7 +76,7 @@ VercelでこのGitHubリポジトリをImportします。
 
 詳しい分類は `docs/DOC_INDEX.md` を正とします。
 
-- `docs/START_HERE.md`: Codexが最初に読む入口
+- `docs/START_HERE.md`: Claude Codeが最初に読む入口
 - `docs/DOC_INDEX.md`: ドキュメント索引
 - `docs/project-principles.md`: 最上位原則
 - `dog_sns_design.md`: 設計・仕様の正本

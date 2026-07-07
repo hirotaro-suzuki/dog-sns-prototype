@@ -63,6 +63,7 @@
 
 - `docs/session-2026-07-06-square-canvas.md`
   - 正方形キャンバス化、正方形枠座標、Supabase migrationの作業ログ。
+  - 2026-07-07追記: 葡萄房の枠を実ロゴ入り正方形デザインへ差し替え、日付表示の回帰修正、Admin枠並び順・所属店舗表示・停止中フィルター追加。
 
 - `docs/session-2026-07-05-store-flow-check.md`
   - 店舗側iPadフロー最終チェック。
