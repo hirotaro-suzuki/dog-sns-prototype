@@ -97,6 +97,8 @@ export async function GET(request: Request) {
     let query = supabase
       .from("store_frames")
       .select(FRAME_SELECT_COLUMNS)
+      .order("is_active", { ascending: false })
+      .order("is_default", { ascending: false })
       .order("sort_order", { ascending: true })
       .order("frame_name", { ascending: true });
 

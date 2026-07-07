@@ -1138,6 +1138,10 @@ export function AdminMaintenance() {
                     <dt>担当者コード</dt>
                     <dd>{selectedStaff.staff_code}</dd>
                   </div>
+                  <div>
+                    <dt>所属店舗</dt>
+                    <dd>{stores.find((store) => store.id === selectedStaff.store_id)?.display_name ?? "不明"}</dd>
+                  </div>
                 </dl>
                 <div className="admin-form-grid">
                   <label className="field-label">
@@ -1195,6 +1199,7 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
   const visibleFrames = useMemo(() => frames.filter((frame) => frame.store_id === selectedStoreId), [frames, selectedStoreId]);
   const selectedFrame = useMemo(() => frames.find((frame) => frame.id === selectedFrameId) ?? null, [frames, selectedFrameId]);
   const activeFrameCount = visibleFrames.filter((frame) => frame.is_active).length;
+  const liveFrame = useMemo(() => visibleFrames.find((frame) => frame.is_active) ?? null, [visibleFrames]);
 
   const loadFrameStores = useCallback(async () => {
     if (!adminPin) return;
@@ -1460,7 +1465,10 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
             onClick={() => setSelectedFrameId(frame.id)}
           >
             <strong>{frame.frame_name}</strong>
-            <span>{frame.is_default ? "標準" : "通常"}</span>
+            <span>
+              {frame.is_default ? "標準" : "通常"}
+              {liveFrame?.id === frame.id ? "・iPad表示中" : ""}
+            </span>
             <span>{frame.is_active ? "有効" : "停止中"}</span>
           </button>
         ))}
