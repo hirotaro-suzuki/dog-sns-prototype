@@ -12,7 +12,7 @@
 
 - `docs/START_HERE.md`
   - 新しいCodexスレッドでCodexが最初に読む入口。
-  - ローカル/Dropboxを見ない、GitHub mainとCodespacesを正とする、という最短ルール。
+  - ローカル/Dropboxを見ない、GitHub mainとCodespacesを正とし、Codexは直接編集せず実行用コマンドを提示する、という最短ルール。
 
 - `docs/DOC_INDEX.md`
   - このファイル。
@@ -97,7 +97,7 @@
 - 実装対象に関係する文書だけ追加で読む。
 - 古い作業ログを全部読む必要はない。
 - 矛盾がある場合は、`docs/project-principles.md` を最上位、次に `dog_sns_design.md`、次に直近ログの順で判断する。
-- GitHubコネクタやCodespacesで読めない場合は、ローカル/Dropboxへ逃げず、ユーザーへ状況を説明する。
+- Codespacesターミナルで読めない場合は、ローカル/Dropboxへ逃げず、ユーザーへ状況を説明する。
 
 ## 今は読まなくてよいもの
 

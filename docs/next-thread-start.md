@@ -3,10 +3,11 @@
 次のCodexスレッドで開発を再開するときは、最初に以下をそのまま貼る。
 
 ```text
-GitHubコネクタを優先して使ってください。
 作業対象は hirotaro-suzuki/dog-sns-prototype の main です。
-作業環境は、このリポジトリのGitHub Codespacesを正として扱ってください。
-実装、ビルド、コミット、pushは原則Codespacesで行ってください。
+作業環境は、ユーザーが開いているGitHub Codespacesの `/workspaces/dog-sns-prototype` を正として扱ってください。
+備え付けのGitHubプラグインを使った直接ファイル編集やpushは行わないでください。
+コード修正や文書更新が必要な場合は、ユーザーがCodespacesターミナルへコピペして実行できる短いBash/Python/Node.jsコマンドを提示してください。
+実装、ビルド、コミット、pushはユーザーがCodespacesターミナルで行います。
 公開、デプロイ、ビルド結果の確認はVercelを正として扱ってください。
 DB、Storage、Auth、店舗設定、担当者、枠、完成画像はSupabaseを正として扱ってください。
 ローカルPC、Dropbox、手元コピーは参照しないでください。

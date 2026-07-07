@@ -13,8 +13,9 @@
 - 作業対象は GitHub `hirotaro-suzuki/dog-sns-prototype` の `main` です。
 - 作業環境は、このリポジトリの GitHub Codespaces を正として扱います。
 - ローカルPC、Dropbox、手元フォルダ、古い複製リポジトリは参照しません。
-- GitHub上の確認は、まずGitHubコネクタを使います。
-- 実装、ビルド、コミット、pushは、原則としてCodespacesで行います。
+- 備え付けのGitHubプラグインを使った直接ファイル編集やpushは行いません。
+- Codexは、Codespacesターミナルへコピペして実行できる短いコマンドやスクリプトを提示します。
+- 実装、ビルド、コミット、pushは、ユーザーがCodespacesターミナルで行います。
 - GitHubコネクタまたはCodespacesで詰まった場合は、ローカルやDropboxへ逃げず、何ができて何ができないかをユーザーへ説明して止まります。
 - 実装前に、目的、OK条件、確認方法、更新する文書を短く整理します。
 

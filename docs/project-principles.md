@@ -29,12 +29,12 @@
 このプロジェクトでは、GitHub、Codespaces、Vercel、Supabaseを正とします。
 
 - ソースコードと文書は GitHub `main`
-- 実装、ビルド、コミット、pushは GitHub Codespaces
+- 実装、ビルド、コミット、pushはユーザーがGitHub Codespacesターミナルで行う
 - 公開、デプロイ、ビルド結果の確認は Vercel
 - DB、Storage、Auth、店舗設定、担当者、枠、完成画像は Supabase
 - ローカルPC、Dropbox、手元コピーは正本にしない
 
-Codexは、GitHub上の確認ではまずGitHubコネクタを使います。実装やビルド確認が必要な場合はCodespacesを使います。GitHubコネクタまたはCodespacesで詰まった場合は、ローカルやDropboxへ逃げず、何ができて何ができないかをユーザーへ説明して止まります。
+Codexは、備え付けのGitHubプラグインを使った直接ファイル編集やpushを行いません。変更が必要な場合は、ユーザーがCodespacesターミナルへコピペして実行できる短いコマンドまたはスクリプトを提示します。Codespacesターミナルで進められない場合は、ローカルやDropboxへ逃げず、何ができて何ができないかをユーザーへ説明して止まります。
 
 GitHubへ反映したこと、Codespacesでビルドが通ったこと、Vercelのデプロイが成功したこと、Vercel上で実操作できたこと、SupabaseへSQLや設定を適用したことは、それぞれ別物として扱います。
 
