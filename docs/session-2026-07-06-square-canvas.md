@@ -1,10 +1,10 @@
 # 2026-07-06 正方形キャンバス化の作業ログ
 
-最終更新: 2026-07-06
+最終更新: 2026-07-07
 
 この文書は、店舗側の完成画像を正方形前提へ寄せるために行った最初の実装記録である。
 
-GitHub mainを正本とし、ローカルPCやDropboxは参照しない。
+GitHub mainとCodespacesを正本とし、ローカルPCやDropboxは参照しない。
 
 ## 目的
 
@@ -25,7 +25,8 @@ GitHub mainを正本とし、ローカルPCやDropboxは参照しない。
 - `src/components/MosaicCanvas.tsx` のCanvas基準を `1080 x 1080` に変更した。
 - 写真移動、拡大縮小、回転、モザイク、文字位置は既存の座標変換ロジックを維持した。
 - 枠画像は `1080 x 1080` に描画する。
-- 枠が読めない場合の仮フレームも正方形Canvas内で描画する。
+- 枠が読めない場合だけ、ロゴ・店名・担当者名・日付を含まない簡易の正方形枠を描画する。
+- 実枠がある場合は簡易枠を重ねない。
 - 完成画像確認画面と印刷対象も正方形表示へ寄せた。
 
 ### 葡萄房の正方形枠
@@ -55,6 +56,16 @@ GitHub mainを正本とし、ローカルPCやDropboxは参照しない。
 - `supabase/schema.sql` も正方形座標前提に更新した。
 - `docs/supabase-handoff.md` と `supabase/README.md` に適用手順を追記した。
 
+## 2026-07-07 追加修正
+
+実枠画像がある時に、古い臨時枠や日付、担当者名、店名が重なる問題を修正した。
+
+- `src/components/MosaicCanvas.tsx` の枠描画を整理した。
+- 実枠画像がある場合は、その枠画像だけを合成する。
+- 枠画像がない場合だけ、ロゴ・店名・担当者名・日付を含まない簡易の正方形枠を表示する。
+- Codespacesで `npm run build` 成功を確認した。
+- GitHub main反映済みコミット: `868c413725b4092f2ad387f81740081831830d00`
+
 ## 更新した主なファイル
 
 - `src/components/MosaicCanvas.tsx`
@@ -74,7 +85,7 @@ GitHub mainを正本とし、ローカルPCやDropboxは参照しない。
 
 ## 未確認
 
-- Vercelビルド成功
+- Vercel最新デプロイ成功
 - iPad Safariでの撮影、編集、完成画像作成、保存の通し確認
 - Supabase SQL Editorで `20260706_square_frame_coordinates.sql` を適用すること
 - Supabase SQL Editorで `20260706_budoubou_square_frames.sql` を適用すること
