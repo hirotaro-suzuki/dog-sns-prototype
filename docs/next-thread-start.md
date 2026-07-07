@@ -7,6 +7,8 @@ GitHubコネクタを優先して使ってください。
 作業対象は hirotaro-suzuki/dog-sns-prototype の main です。
 作業環境は、このリポジトリのGitHub Codespacesを正として扱ってください。
 実装、ビルド、コミット、pushは原則Codespacesで行ってください。
+公開、デプロイ、ビルド結果の確認はVercelを正として扱ってください。
+DB、Storage、Auth、店舗設定、担当者、枠、完成画像はSupabaseを正として扱ってください。
 ローカルPC、Dropbox、手元コピーは参照しないでください。
 リポジトリ検索に頼らず、まず docs/START_HERE.md と docs/DOC_INDEX.md を直接取得して読んでください。
 まだファイル変更はしないでください。
@@ -34,6 +36,7 @@ GitHubコネクタを優先して使ってください。
 2. 必要に応じて dog_sns_design.md、README.md、supabase関連文書だけを追加で読んでください。
 3. 実装や文書更新に入る前に、目的、OK条件、更新候補ファイル、Vercel確認、Supabase確認、更新すべき文書を短く整理してユーザーに確認してください。
 4. ドキュメントが古い場合は、膨らませずに、矛盾箇所だけを最小限で直す方針にしてください。
+5. 報告では、GitHub反映、Codespacesビルド、Vercelデプロイ、Vercel実画面確認、Supabase適用、iPad実機確認を分けてください。
 ```
 
 このファイルは、ユーザーが次スレッドの最初に貼るための開始指示を置く場所です。
