@@ -5,6 +5,8 @@
 ```text
 GitHubコネクタを優先して使ってください。
 作業対象は hirotaro-suzuki/dog-sns-prototype の main です。
+作業環境は、このリポジトリのGitHub Codespacesを正として扱ってください。
+実装、ビルド、コミット、pushは原則Codespacesで行ってください。
 ローカルPC、Dropbox、手元コピーは参照しないでください。
 リポジトリ検索に頼らず、まず docs/START_HERE.md と docs/DOC_INDEX.md を直接取得して読んでください。
 まだファイル変更はしないでください。
