@@ -248,7 +248,7 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
     }
     returnedHighlightTimeoutRef.current = setTimeout(() => {
       setReturnedPhotoId(null);
-    }, 1500);
+    }, 3000);
   }
 
   function backToCapture() {
@@ -372,6 +372,7 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
               )}
             </div>
           )}
+          {isCameraReady && isPhotoStockFull && <div className="camera-stage-full-overlay" aria-hidden="true" />}
           {activeStore?.frameUrl ? (
             <img className="store-frame-image" src={activeStore.frameUrl} alt="店舗フレーム" />
           ) : (
@@ -381,7 +382,7 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
       </div>
 
       <div className="capture-control-row">
-        <div className={`thumbnail-strip${isPhotoStockFull ? " is-full" : ""}`} aria-label="一時保持された写真">
+        <div className="thumbnail-strip" aria-label="一時保持された写真">
           {photos.map((photo, index) => (
             <div
               className={`thumbnail-item${photo.id === returnedPhotoId ? " is-returned" : ""}`}
