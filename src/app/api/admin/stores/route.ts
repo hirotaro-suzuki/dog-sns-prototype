@@ -217,7 +217,9 @@ export async function POST(request: Request) {
       const { data, error } = await framesTable
         .update({ frame_url: publicUrl, updated_at: new Date().toISOString() })
         .eq("id", frameId)
-        .select("id, store_id, frame_name, frame_url, is_default, is_active, sort_order, created_at, updated_at")
+        .select(
+          "id, store_id, frame_name, frame_url, is_default, sort_order, date_enabled, date_x, date_y, date_font_size, date_color, created_at, updated_at"
+        )
         .single();
 
       if (error) {

@@ -1128,6 +1128,129 @@ p {
   object-fit: contain;
 }
 
+.admin-frame-tab {
+  display: grid;
+  gap: 14px;
+}
+
+.frame-slot-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.frame-slot-thumb,
+.frame-slot-blank {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.frame-slot-thumb {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: 0 10px 26px rgba(43, 34, 22, 0.1);
+}
+
+.frame-slot-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.frame-slot-thumb.is-dragging {
+  opacity: 0.4;
+}
+
+.frame-slot-thumb.is-drag-over,
+.frame-slot-blank.is-drag-over {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.frame-slot-badge {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+}
+
+.frame-slot-blank {
+  display: grid;
+  place-items: center;
+  border: 2px dashed var(--line);
+  background: #fffdf8;
+  color: var(--muted);
+}
+
+.admin-frame-edit-overlay {
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.admin-frame-edit-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.14);
+  border-color: transparent;
+  color: #ffffff;
+}
+
+.admin-frame-edit-close:hover {
+  color: #ffffff;
+  border-color: transparent;
+}
+
+.admin-frame-edit-panel {
+  display: grid;
+  gap: 14px;
+  width: min(100%, 480px);
+  margin: 0 auto;
+  border-radius: var(--radius);
+  background: var(--panel);
+  padding: 18px;
+}
+
+.frame-date-preview {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 1 / 1;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #1f2524;
+}
+
+.frame-date-preview img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.frame-date-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  cursor: grab;
+  font-weight: 700;
+  font-size: 15px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.65);
+  touch-action: none;
+  padding: 4px 8px;
+  border: 2px dashed rgba(255, 255, 255, 0.7);
+  border-radius: var(--radius-sm);
+}
+
 .admin-create-panel {
   display: grid;
   gap: 10px;
@@ -1257,7 +1380,8 @@ p {
   .admin-date-row,
   .admin-main-grid,
   .admin-photo-list,
-  .admin-form-grid {
+  .admin-form-grid,
+  .frame-slot-row {
     grid-template-columns: 1fr;
   }
 

@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, PointerEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { MAX_FRAMES_PER_STORE } from "@/lib/frameLimits";
 
 type AdminTab = "assets" | "stores" | "staff" | "frames";
 type AssetReviewStatus = "new" | "candidate" | "hold" | "rejected";
@@ -50,8 +51,12 @@ type StoreFrame = {
   frame_name: string;
   frame_url: string;
   is_default: boolean;
-  is_active: boolean;
   sort_order: number;
+  date_enabled: boolean;
+  date_x: number;
+  date_y: number;
+  date_font_size: number;
+  date_color: string;
 };
 
 type AdminAsset = {
@@ -119,11 +124,14 @@ type FramesResponse = {
 type FrameDraft = {
   id: string;
   store_id: string;
-  frame_name: string;
   frame_url: string;
   is_default: boolean;
-  is_active: boolean;
   sort_order: number;
+  date_enabled: boolean;
+  date_x: number;
+  date_y: number;
+  date_font_size: number;
+  date_color: string;
 };
 
 const PIN_STORAGE_KEY = "dog-sns-admin-pin";
@@ -157,12 +165,23 @@ const emptyStoreDraft: StoreMaster = {
 const emptyFrameDraft: FrameDraft = {
   id: "",
   store_id: "",
-  frame_name: "",
   frame_url: "",
   is_default: false,
-  is_active: true,
   sort_order: 0,
+  date_enabled: true,
+  date_x: 900,
+  date_y: 90,
+  date_font_size: 38,
+  date_color: "#ffffff",
 };
+
+const DATE_MARKER_COLORS = [
+  { label: "白", value: "#ffffff" },
+  { label: "黒", value: "#111111" },
+  { label: "赤", value: "#d73a31" },
+  { label: "青", value: "#1d64d8" },
+  { label: "黄", value: "#f2c94c" },
+];
 
 function emptyStaffDraft(storeId = ""): StaffMaster {
   return {
@@ -1214,24 +1233,35 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
   const [frameStores, setFrameStores] = useState<StoreMaster[]>([]);
   const [frames, setFrames] = useState<StoreFrame[]>([]);
   const [selectedStoreId, setSelectedStoreId] = useState("");
-  const [selectedFrameId, setSelectedFrameId] = useState<string | null>(null);
-  const [frameDraft, setFrameDraft] = useState<FrameDraft>(emptyFrameDraft);
-  const [newFrameDraft, setNewFrameDraft] = useState<FrameDraft>(emptyFrameDraft);
+  const [editingFrameId, setEditingFrameId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<FrameDraft>(emptyFrameDraft);
   const [isFrameLoading, setIsFrameLoading] = useState(false);
   const [isFrameSaving, setIsFrameSaving] = useState(false);
   const [frameMessage, setFrameMessage] = useState("");
-  const [includeInactiveFrames, setIncludeInactiveFrames] = useState(false);
+  const [draggingFrameId, setDraggingFrameId] = useState<string | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const previewRef = useRef<HTMLDivElement | null>(null);
+  const createFileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
-  const visibleFrames = useMemo(
+  const storeFrames = useMemo(
     () =>
-      frames.filter(
-        (frame) => frame.store_id === selectedStoreId && (includeInactiveFrames || frame.is_active)
-      ),
-    [frames, selectedStoreId, includeInactiveFrames]
+      [...frames]
+        .filter((frame) => frame.store_id === selectedStoreId)
+        .sort((a, b) => {
+          if (a.is_default !== b.is_default) return a.is_default ? -1 : 1;
+          if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
+          return a.frame_name.localeCompare(b.frame_name);
+        }),
+    [frames, selectedStoreId]
   );
-  const selectedFrame = useMemo(() => frames.find((frame) => frame.id === selectedFrameId) ?? null, [frames, selectedFrameId]);
-  const activeFrameCount = visibleFrames.filter((frame) => frame.is_active).length;
-  const liveFrame = useMemo(() => visibleFrames.find((frame) => frame.is_active) ?? null, [visibleFrames]);
+  const slots = useMemo(
+    () => Array.from({ length: MAX_FRAMES_PER_STORE }, (_, index) => storeFrames[index] ?? null),
+    [storeFrames]
+  );
+  const editingFrame = useMemo(
+    () => frames.find((frame) => frame.id === editingFrameId) ?? null,
+    [frames, editingFrameId]
+  );
 
   const loadFrameStores = useCallback(async () => {
     if (!adminPin) return;
@@ -1250,7 +1280,8 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
       setFrameStores(data.stores);
       setSelectedStoreId((currentId) => {
         if (currentId && data.stores?.some((store) => store.id === currentId)) return currentId;
-        return data.stores?.[0]?.id ?? "";
+        const activeStore = data.stores?.find((store) => store.is_active);
+        return activeStore?.id ?? data.stores?.[0]?.id ?? "";
       });
     } catch (error) {
       setFrameMessage(error instanceof Error ? error.message : "店舗一覧を取得できませんでした。");
@@ -1274,10 +1305,6 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
       }
 
       setFrames(data.frames);
-      setSelectedFrameId((currentId) => {
-        if (currentId && data.frames?.some((frame) => frame.id === currentId)) return currentId;
-        return data.frames?.[0]?.id ?? null;
-      });
     } catch (error) {
       setFrameMessage(error instanceof Error ? error.message : "枠一覧を取得できませんでした。");
     } finally {
@@ -1291,46 +1318,71 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
   }, [loadFrameStores, loadFrames]);
 
   useEffect(() => {
-    setFrameDraft(selectedFrame ?? { ...emptyFrameDraft, store_id: selectedStoreId });
-  }, [selectedFrame, selectedStoreId]);
-
-  useEffect(() => {
-    setNewFrameDraft((current) => ({ ...current, store_id: current.store_id || selectedStoreId }));
+    setEditingFrameId(null);
   }, [selectedStoreId]);
 
-  async function createFrame() {
-    if (!adminPin) return;
+  useEffect(() => {
+    if (!editingFrame) return;
+    setEditDraft({
+      id: editingFrame.id,
+      store_id: editingFrame.store_id,
+      frame_url: editingFrame.frame_url,
+      is_default: editingFrame.is_default,
+      sort_order: editingFrame.sort_order,
+      date_enabled: editingFrame.date_enabled,
+      date_x: editingFrame.date_x,
+      date_y: editingFrame.date_y,
+      date_font_size: editingFrame.date_font_size,
+      date_color: editingFrame.date_color,
+    });
+  }, [editingFrame]);
+
+  async function createFrameInSlot(index: number, file: File) {
+    if (!adminPin || !selectedStoreId) return;
     setIsFrameSaving(true);
     setFrameMessage("");
 
     try {
-      const response = await fetch("/api/admin/frames", {
+      const formData = new FormData();
+      formData.append("storeId", selectedStoreId);
+      formData.append("assetType", "frame");
+      formData.append("file", file);
+
+      const uploadResponse = await fetch("/api/admin/stores", {
+        method: "POST",
+        headers: { "x-admin-pin": adminPin },
+        body: formData,
+      });
+      const uploadData = (await uploadResponse.json()) as StoreAssetUploadResponse;
+
+      if (!uploadResponse.ok || !uploadData.publicUrl) {
+        setFrameMessage(getErrorMessage(uploadData, "枠画像をアップロードできませんでした。"));
+        return;
+      }
+
+      const createResponse = await fetch("/api/admin/frames", {
         method: "POST",
         headers: { "content-type": "application/json", "x-admin-pin": adminPin },
         body: JSON.stringify({
-          storeId: newFrameDraft.store_id,
-          frameName: newFrameDraft.frame_name,
-          frameUrl: newFrameDraft.frame_url,
-          isDefault: newFrameDraft.is_default,
-          isActive: newFrameDraft.is_active,
-          sortOrder: newFrameDraft.sort_order,
+          storeId: selectedStoreId,
+          frameUrl: uploadData.publicUrl,
+          sortOrder: index * 10,
+          isDefault: index === 0,
         }),
       });
-      const data = (await response.json()) as FramesResponse;
+      const createData = (await createResponse.json()) as FramesResponse;
 
-      if (!response.ok || !data.frame) {
-        setFrameMessage(getErrorMessage(data, "枠を追加できませんでした。"));
+      if (!createResponse.ok || !createData.frame) {
+        setFrameMessage(getErrorMessage(createData, "枠を追加できませんでした。"));
         return;
       }
 
       setFrames((current) => {
-        const withoutOldDefault = data.frame?.is_default
-          ? current.map((frame) => (frame.store_id === data.frame?.store_id ? { ...frame, is_default: false } : frame))
+        const withoutOldDefault = createData.frame?.is_default
+          ? current.map((frame) => (frame.store_id === createData.frame?.store_id ? { ...frame, is_default: false } : frame))
           : current;
-        return [...withoutOldDefault, data.frame as StoreFrame];
+        return [...withoutOldDefault, createData.frame as StoreFrame];
       });
-      setSelectedFrameId(data.frame.id);
-      setNewFrameDraft({ ...emptyFrameDraft, store_id: data.frame.store_id });
       setFrameMessage("枠を追加しました。");
     } catch (error) {
       setFrameMessage(error instanceof Error ? error.message : "枠を追加できませんでした。");
@@ -1339,21 +1391,24 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
     }
   }
 
-  async function saveFrame() {
-    if (!adminPin || !frameDraft.id) return;
+  async function saveEditDraft() {
+    if (!adminPin || !editDraft.id) return;
     setIsFrameSaving(true);
     setFrameMessage("");
 
     try {
-      const response = await fetch(`/api/admin/frames/${frameDraft.id}`, {
+      const response = await fetch(`/api/admin/frames/${editDraft.id}`, {
         method: "PATCH",
         headers: { "content-type": "application/json", "x-admin-pin": adminPin },
         body: JSON.stringify({
-          frameName: frameDraft.frame_name,
-          frameUrl: frameDraft.frame_url,
-          isDefault: frameDraft.is_default,
-          isActive: frameDraft.is_active,
-          sortOrder: frameDraft.sort_order,
+          frameUrl: editDraft.frame_url,
+          isDefault: editDraft.is_default,
+          sortOrder: editDraft.sort_order,
+          dateEnabled: editDraft.date_enabled,
+          dateX: editDraft.date_x,
+          dateY: editDraft.date_y,
+          dateFontSize: editDraft.date_font_size,
+          dateColor: editDraft.date_color,
         }),
       });
       const data = (await response.json()) as FramesResponse;
@@ -1365,12 +1420,11 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
 
       setFrames((current) =>
         current.map((frame) => {
-          if (frame.id === data.frame?.id) return data.frame;
+          if (frame.id === data.frame?.id) return data.frame as StoreFrame;
           if (data.frame?.is_default && frame.store_id === data.frame.store_id) return { ...frame, is_default: false };
           return frame;
         })
       );
-      setFrameDraft(data.frame);
       setFrameMessage("枠を保存しました。");
     } catch (error) {
       setFrameMessage(error instanceof Error ? error.message : "枠を保存できませんでした。");
@@ -1379,22 +1433,17 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
     }
   }
 
-  async function deleteFrame() {
-    if (!adminPin || !selectedFrame) return;
+  async function deleteEditingFrame() {
+    if (!adminPin || !editingFrame) return;
 
-    if (selectedFrame.is_active) {
-      setFrameMessage("有効な枠は削除できません。先に有効を外して保存してください。");
-      return;
-    }
-
-    const confirmed = window.confirm("停止中の枠「" + selectedFrame.frame_name + "」を削除します。よろしいですか？");
+    const confirmed = window.confirm("この枠を削除します。よろしいですか？");
     if (!confirmed) return;
 
     setIsFrameSaving(true);
     setFrameMessage("");
 
     try {
-      const response = await fetch("/api/admin/frames/" + selectedFrame.id, {
+      const response = await fetch(`/api/admin/frames/${editingFrame.id}`, {
         method: "DELETE",
         headers: { "x-admin-pin": adminPin },
       });
@@ -1405,11 +1454,8 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
         return;
       }
 
-      const remainingFrames = frames.filter((frame) => frame.id !== data.deletedFrameId);
-      const nextFrame = remainingFrames.find((frame) => frame.store_id === selectedFrame.store_id) ?? null;
-      setFrames(remainingFrames);
-      setSelectedFrameId(nextFrame?.id ?? null);
-      setFrameDraft(nextFrame ?? { ...emptyFrameDraft, store_id: selectedStoreId });
+      setFrames((current) => current.filter((frame) => frame.id !== data.deletedFrameId));
+      setEditingFrameId(null);
       setFrameMessage("枠を削除しました。");
     } catch (error) {
       setFrameMessage(error instanceof Error ? error.message : "枠を削除できませんでした。");
@@ -1418,17 +1464,17 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
     }
   }
 
-  async function uploadFrameImage(file: File | null, target: "new" | "selected") {
-    if (!adminPin || !selectedStoreId || !file) return;
+  async function replaceEditingFrameImage(file: File) {
+    if (!adminPin || !editingFrame) return;
     setIsFrameSaving(true);
     setFrameMessage("");
 
     try {
       const formData = new FormData();
-      formData.append("storeId", selectedStoreId);
+      formData.append("storeId", editingFrame.store_id);
       formData.append("assetType", "frame");
       formData.append("file", file);
-      if (target === "selected" && frameDraft.id) formData.append("frameId", frameDraft.id);
+      formData.append("frameId", editingFrame.id);
 
       const response = await fetch("/api/admin/stores", {
         method: "POST",
@@ -1437,162 +1483,295 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
       });
       const data = (await response.json()) as StoreAssetUploadResponse;
 
-      if (!response.ok || !data.publicUrl) {
-        setFrameMessage(getErrorMessage(data, "枠画像をアップロードできませんでした。"));
+      if (!response.ok || !data.frame) {
+        setFrameMessage(getErrorMessage(data, "枠画像を差し替えできませんでした。"));
         return;
       }
 
-      if (target === "selected" && data.frame) {
-        setFrames((current) => current.map((frame) => (frame.id === data.frame?.id ? data.frame : frame)));
-        setFrameDraft(data.frame);
-        setFrameMessage("枠画像をアップロードして保存しました。");
-        return;
-      }
-
-      if (target === "selected") {
-        setFrameDraft((current) => ({ ...current, frame_url: data.publicUrl ?? current.frame_url }));
-        setFrameMessage("枠画像をアップロードしました。保存ボタンで反映してください。");
-        return;
-      }
-
-      setNewFrameDraft((current) => ({ ...current, frame_url: data.publicUrl ?? current.frame_url }));
-      setFrameMessage("枠画像をアップロードしました。枠名を確認して追加してください。");
+      const updatedFrame = data.frame;
+      setFrames((current) => current.map((frame) => (frame.id === updatedFrame.id ? updatedFrame : frame)));
+      setEditDraft((current) => ({ ...current, frame_url: updatedFrame.frame_url }));
+      setFrameMessage("枠画像を差し替えました。");
     } catch (error) {
-      setFrameMessage(error instanceof Error ? error.message : "枠画像をアップロードできませんでした。");
+      setFrameMessage(error instanceof Error ? error.message : "枠画像を差し替えできませんでした。");
     } finally {
       setIsFrameSaving(false);
     }
   }
 
+  async function reorderFrames(nextOrderedIds: string[]) {
+    if (!adminPin || !selectedStoreId) return;
+    setIsFrameSaving(true);
+    setFrameMessage("");
+
+    try {
+      const response = await fetch("/api/admin/frames/reorder", {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-admin-pin": adminPin },
+        body: JSON.stringify({ storeId: selectedStoreId, frameIds: nextOrderedIds }),
+      });
+      const data = (await response.json()) as FramesResponse;
+
+      if (!response.ok || !data.frames) {
+        setFrameMessage(getErrorMessage(data, "並び替えできませんでした。"));
+        return;
+      }
+
+      const reorderedFrames = data.frames;
+      setFrames((current) => [
+        ...current.filter((frame) => frame.store_id !== selectedStoreId),
+        ...reorderedFrames,
+      ]);
+    } catch (error) {
+      setFrameMessage(error instanceof Error ? error.message : "並び替えできませんでした。");
+    } finally {
+      setIsFrameSaving(false);
+    }
+  }
+
+  function handleSlotDrop(targetIndex: number) {
+    const draggedId = draggingFrameId;
+    setDraggingFrameId(null);
+    setDragOverIndex(null);
+    if (!draggedId) return;
+
+    const currentIds = storeFrames.map((frame) => frame.id);
+    const fromIndex = currentIds.indexOf(draggedId);
+    if (fromIndex === -1) return;
+
+    const nextIds = [...currentIds];
+    nextIds.splice(fromIndex, 1);
+    const insertAt = Math.min(targetIndex, nextIds.length);
+    nextIds.splice(insertAt, 0, draggedId);
+
+    void reorderFrames(nextIds);
+  }
+
+  function nudgeDatePosition(dx: number, dy: number) {
+    setEditDraft((current) => ({
+      ...current,
+      date_x: Math.min(Math.max(current.date_x + dx, 0), 1080),
+      date_y: Math.min(Math.max(current.date_y + dy, 0), 1080),
+    }));
+  }
+
+  function nudgeFontSize(delta: number) {
+    setEditDraft((current) => ({
+      ...current,
+      date_font_size: Math.min(Math.max(current.date_font_size + delta, 12), 96),
+    }));
+  }
+
+  function updateMarkerFromPointer(clientX: number, clientY: number) {
+    const wrap = previewRef.current;
+    if (!wrap) return;
+    const rect = wrap.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+
+    const x = Math.min(Math.max(((clientX - rect.left) / rect.width) * 1080, 0), 1080);
+    const y = Math.min(Math.max(((clientY - rect.top) / rect.height) * 1080, 0), 1080);
+    setEditDraft((current) => ({ ...current, date_x: Math.round(x), date_y: Math.round(y) }));
+  }
+
+  function handleMarkerPointerDown(event: PointerEvent<HTMLDivElement>) {
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    updateMarkerFromPointer(event.clientX, event.clientY);
+  }
+
+  function handleMarkerPointerMove(event: PointerEvent<HTMLDivElement>) {
+    if (event.buttons !== 1) return;
+    updateMarkerFromPointer(event.clientX, event.clientY);
+  }
+
   return (
-    <section className="admin-main-grid">
-      <div className="admin-master-list">
-        <label className="field-label">
-          店舗
-          <select
-            value={selectedStoreId}
-            onChange={(event) => {
-              const nextStoreId = event.target.value;
-              setSelectedStoreId(nextStoreId);
-              setNewFrameDraft((current) => ({ ...current, store_id: nextStoreId }));
-              setSelectedFrameId(frames.find((frame) => frame.store_id === nextStoreId)?.id ?? null);
-            }}
-          >
-            {frameStores.map((store) => (
-              <option key={store.id} value={store.id}>
-                {store.display_name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="admin-toggle">
-          <input
-            type="checkbox"
-            checked={includeInactiveFrames}
-            onChange={(event) => setIncludeInactiveFrames(event.target.checked)}
-          />
-          停止中も表示
-        </label>
+    <section className="admin-frame-tab">
+      <label className="field-label">
+        店舗
+        <select value={selectedStoreId} onChange={(event) => setSelectedStoreId(event.target.value)}>
+          {frameStores.map((store) => (
+            <option key={store.id} value={store.id}>
+              {store.display_name}
+              {store.is_active ? "" : "（停止中）"}
+            </option>
+          ))}
+        </select>
+      </label>
 
-        <p className="notice">有効な枠は1店舗につき最大3件までです。現在 {activeFrameCount} 件。</p>
-        {frameMessage ? <p className="notice">{frameMessage}</p> : null}
+      {frameMessage ? <p className="notice">{frameMessage}</p> : null}
 
-        {visibleFrames.map((frame) => (
-          <button
-            key={frame.id}
-            className={`admin-master-row${selectedFrameId === frame.id ? " is-selected" : ""}${frame.is_active ? "" : " is-archived"}`}
-            type="button"
-            onClick={() => setSelectedFrameId(frame.id)}
-          >
-            <strong>{frame.frame_name}</strong>
-            <span>
-              {frame.is_default ? "標準" : "通常"}
-              {liveFrame?.id === frame.id ? "・iPad表示中" : ""}
-            </span>
-            <span>{frame.is_active ? "有効" : "停止中"}</span>
-          </button>
-        ))}
-
-        <div className="admin-create-panel">
-          <h2>枠追加</h2>
-          <label className="field-label">
-            枠名
-            <input value={newFrameDraft.frame_name} onChange={(event) => setNewFrameDraft((current) => ({ ...current, frame_name: event.target.value }))} />
-          </label>
-          <label className="field-label">
-            枠画像URL
-            <input value={newFrameDraft.frame_url} onChange={(event) => setNewFrameDraft((current) => ({ ...current, frame_url: event.target.value }))} />
-          </label>
-          <label className="field-label">
-            枠画像アップロード
-            <input
-              type="file"
-              accept="image/png,image/jpeg,image/webp,image/svg+xml"
-              disabled={isFrameSaving || isFrameLoading}
-              onChange={(event) => {
-                void uploadFrameImage(event.target.files?.[0] ?? null, "new");
-                event.currentTarget.value = "";
+      <div className="frame-slot-row">
+        {slots.map((frame, index) =>
+          frame ? (
+            <div
+              key={frame.id}
+              className={`frame-slot-thumb${draggingFrameId === frame.id ? " is-dragging" : ""}${
+                dragOverIndex === index ? " is-drag-over" : ""
+              }`}
+              draggable
+              onDragStart={() => setDraggingFrameId(frame.id)}
+              onDragEnd={() => {
+                setDraggingFrameId(null);
+                setDragOverIndex(null);
               }}
-            />
-          </label>
-          <button className="action-button secondary" type="button" disabled={isFrameSaving || isFrameLoading} onClick={createFrame}>
-            追加
-          </button>
-        </div>
+              onDragOver={(event) => {
+                event.preventDefault();
+                setDragOverIndex(index);
+              }}
+              onDragLeave={() => setDragOverIndex((current) => (current === index ? null : current))}
+              onDrop={(event) => {
+                event.preventDefault();
+                handleSlotDrop(index);
+              }}
+              onClick={() => setEditingFrameId(frame.id)}
+            >
+              <img src={frame.frame_url} alt="枠" />
+              {index === 0 && <span className="frame-slot-badge">標準</span>}
+            </div>
+          ) : (
+            <div
+              key={`blank-${index}`}
+              className={`frame-slot-blank${dragOverIndex === index ? " is-drag-over" : ""}`}
+              onDragOver={(event) => {
+                event.preventDefault();
+                setDragOverIndex(index);
+              }}
+              onDragLeave={() => setDragOverIndex((current) => (current === index ? null : current))}
+              onDrop={(event) => {
+                event.preventDefault();
+                handleSlotDrop(index);
+              }}
+              onClick={() => createFileInputRefs.current[index]?.click()}
+            >
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+              </svg>
+              <input
+                ref={(element) => {
+                  createFileInputRefs.current[index] = element;
+                }}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                disabled={isFrameSaving || isFrameLoading}
+                style={{ display: "none" }}
+                onChange={(event) => {
+                  const file = event.target.files?.[0] ?? null;
+                  event.currentTarget.value = "";
+                  if (file) void createFrameInSlot(index, file);
+                }}
+              />
+            </div>
+          )
+        )}
       </div>
 
-      <aside className="admin-edit-panel">
-        {selectedFrame ? (
-          <>
-            <div className="frame-preview-box">
-              <img src={frameDraft.frame_url} alt={frameDraft.frame_name} />
+      {editingFrame && (
+        <div className="photo-preview-overlay admin-frame-edit-overlay" role="dialog" aria-modal="true" aria-label="枠編集">
+          <button className="icon-button admin-frame-edit-close" type="button" onClick={() => setEditingFrameId(null)} aria-label="閉じる">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M6 6L18 18M18 6L6 18" strokeLinecap="round" />
+            </svg>
+          </button>
+
+          <div className="admin-frame-edit-panel">
+            <div className="frame-date-preview" ref={previewRef}>
+              <img src={editDraft.frame_url} alt="枠プレビュー" />
+              {editDraft.date_enabled && (
+                <div
+                  className="frame-date-marker"
+                  style={{
+                    left: `${(editDraft.date_x / 1080) * 100}%`,
+                    top: `${(editDraft.date_y / 1080) * 100}%`,
+                    color: editDraft.date_color,
+                  }}
+                  onPointerDown={handleMarkerPointerDown}
+                  onPointerMove={handleMarkerPointerMove}
+                >
+                  2026.07.08
+                </div>
+              )}
             </div>
-            <div className="admin-form-grid">
-              <label className="field-label">
-                枠名
-                <input value={frameDraft.frame_name} onChange={(event) => setFrameDraft((current) => ({ ...current, frame_name: event.target.value }))} />
-              </label>
-              <label className="field-label">
-                並び順
-                <input type="number" value={frameDraft.sort_order} onChange={(event) => setFrameDraft((current) => ({ ...current, sort_order: Number(event.target.value) }))} />
-              </label>
+
+            <div className="toolbar">
+              <button className="icon-button" type="button" onClick={() => nudgeDatePosition(0, -10)} aria-label="日付を上へ">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 19V5M5 12l7-7 7 7" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <button className="icon-button" type="button" onClick={() => nudgeDatePosition(0, 10)} aria-label="日付を下へ">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 5v14M19 12l-7 7-7-7" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <button className="icon-button" type="button" onClick={() => nudgeDatePosition(-10, 0)} aria-label="日付を左へ">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M19 12H5M12 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <button className="icon-button" type="button" onClick={() => nudgeDatePosition(10, 0)} aria-label="日付を右へ">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+
+              <button className="mini-control-button" type="button" onClick={() => nudgeFontSize(-2)} aria-label="文字を小さく">
+                −
+              </button>
+              <span className="text-count">{editDraft.date_font_size}</span>
+              <button className="mini-control-button" type="button" onClick={() => nudgeFontSize(2)} aria-label="文字を大きく">
+                ＋
+              </button>
             </div>
-            <label className="field-label">
-              枠画像URL
-              <input value={frameDraft.frame_url} onChange={(event) => setFrameDraft((current) => ({ ...current, frame_url: event.target.value }))} />
+
+            <div className="canvas-text-color-row" aria-label="日付の色">
+              {DATE_MARKER_COLORS.map((color) => (
+                <button
+                  key={color.value}
+                  className={`mini-color-button${editDraft.date_color === color.value ? " is-selected" : ""}`}
+                  type="button"
+                  style={{ backgroundColor: color.value }}
+                  onClick={() => setEditDraft((current) => ({ ...current, date_color: color.value }))}
+                  aria-label={`${color.label}にする`}
+                />
+              ))}
+            </div>
+
+            <label className="admin-toggle">
+              <input
+                type="checkbox"
+                checked={editDraft.date_enabled}
+                onChange={(event) => setEditDraft((current) => ({ ...current, date_enabled: event.target.checked }))}
+              />
+              日付を表示
             </label>
+
             <label className="field-label">
-              枠画像アップロード
+              画像差し替え
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/webp,image/svg+xml"
                 disabled={isFrameSaving}
                 onChange={(event) => {
-                  void uploadFrameImage(event.target.files?.[0] ?? null, "selected");
+                  const file = event.target.files?.[0] ?? null;
                   event.currentTarget.value = "";
+                  if (file) void replaceEditingFrameImage(file);
                 }}
               />
             </label>
-            <label className="admin-toggle">
-              <input type="checkbox" checked={frameDraft.is_default} onChange={(event) => setFrameDraft((current) => ({ ...current, is_default: event.target.checked }))} />
-              標準枠
-            </label>
-            <label className="admin-toggle">
-              <input type="checkbox" checked={frameDraft.is_active} onChange={(event) => setFrameDraft((current) => ({ ...current, is_active: event.target.checked }))} />
-              有効
-            </label>
-            <button className="action-button" type="button" disabled={isFrameSaving} onClick={saveFrame}>
-              枠を保存
-            </button>
-            <p className="notice">削除は停止中の枠だけ可能です。有効な枠は先に有効を外して保存してください。</p>
-            <button className="action-button danger" type="button" disabled={isFrameSaving || frameDraft.is_active} onClick={deleteFrame}>
-              停止中の枠を削除
-            </button>
-          </>
-        ) : (
-          <p className="notice">枠を選択してください。</p>
-        )}
-      </aside>
+
+            <div className="toolbar">
+              <button className="action-button" type="button" disabled={isFrameSaving} onClick={saveEditDraft}>
+                保存
+              </button>
+              <button className="icon-button danger" type="button" disabled={isFrameSaving} onClick={deleteEditingFrame} aria-label="削除">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M4 7h16M9 7V4h6v3m-9 0 1 13a2 2 0 002 2h6a2 2 0 002-2l1-13" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

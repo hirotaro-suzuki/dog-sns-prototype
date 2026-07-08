@@ -1,22 +1,20 @@
 import { NextResponse } from "next/server";
 import { verifyAdminPin } from "@/lib/adminAuth";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { MAX_FRAMES_PER_STORE } from "@/lib/frameLimits";
 
 export const runtime = "nodejs";
 
-const MAX_ACTIVE_FRAMES_PER_STORE = 3;
 const SQUARE_CANVAS_SIZE = 1080;
 const DEFAULT_FRAME_DATE_X = 900;
 const DEFAULT_FRAME_DATE_Y = 90;
 const FRAME_SELECT_COLUMNS =
-  "id, store_id, frame_name, frame_url, is_default, is_active, sort_order, date_enabled, date_x, date_y, date_font_size, date_color, created_at, updated_at";
+  "id, store_id, frame_name, frame_url, is_default, sort_order, date_enabled, date_x, date_y, date_font_size, date_color, created_at, updated_at";
 
 type CreateFrameRequest = {
   storeId?: unknown;
-  frameName?: unknown;
   frameUrl?: unknown;
   isDefault?: unknown;
-  isActive?: unknown;
   sortOrder?: unknown;
   dateEnabled?: unknown;
   dateX?: unknown;
@@ -73,13 +71,16 @@ function formatSupabaseError(error: SupabaseLikeError) {
   return [error.code, error.message, error.details, error.hint].filter(Boolean).join(" / ");
 }
 
-async function countActiveFrames(supabase: ReturnType<typeof createServerSupabaseClient>, storeId: string) {
+function generateInternalFrameName() {
+  return `frame-${Date.now()}`;
+}
+
+async function countFrames(supabase: ReturnType<typeof createServerSupabaseClient>, storeId: string) {
   const { data, error } = await supabase
     .from("store_frames")
     .select("id")
     .eq("store_id", storeId)
-    .eq("is_active", true)
-    .limit(MAX_ACTIVE_FRAMES_PER_STORE + 1);
+    .limit(MAX_FRAMES_PER_STORE + 1);
 
   if (error) throw new Error(formatSupabaseError(error));
   return (data ?? []).length;
@@ -97,7 +98,6 @@ export async function GET(request: Request) {
     let query = supabase
       .from("store_frames")
       .select(FRAME_SELECT_COLUMNS)
-      .order("is_active", { ascending: false })
       .order("is_default", { ascending: false })
       .order("sort_order", { ascending: true })
       .order("frame_name", { ascending: true });
@@ -135,25 +135,21 @@ export async function POST(request: Request) {
   }
 
   const storeId = cleanText(body.storeId, 80);
-  const frameName = cleanText(body.frameName, 80);
   const frameUrl = cleanText(body.frameUrl, 1000);
-  const isActive = body.isActive === undefined ? true : Boolean(body.isActive);
-  const isDefault = Boolean(body.isDefault) && isActive;
+  const isDefault = Boolean(body.isDefault);
   const dateEnabled = body.dateEnabled === undefined ? true : Boolean(body.dateEnabled);
 
-  if (!storeId || !frameName || !frameUrl) {
-    return NextResponse.json({ message: "店舗、枠名、枠画像URLを入力してください。" }, { status: 400 });
+  if (!storeId || !frameUrl) {
+    return NextResponse.json({ message: "店舗と枠画像を入力してください。" }, { status: 400 });
   }
 
   try {
     const supabase = createServerSupabaseClient();
     const framesTable = supabase.from("store_frames") as unknown as StoreFramesMutationTable;
 
-    if (isActive) {
-      const activeFrameCount = await countActiveFrames(supabase, storeId);
-      if (activeFrameCount >= MAX_ACTIVE_FRAMES_PER_STORE) {
-        return NextResponse.json({ message: "有効な枠は1店舗につき最大3件までです。" }, { status: 400 });
-      }
+    const frameCount = await countFrames(supabase, storeId);
+    if (frameCount >= MAX_FRAMES_PER_STORE) {
+      return NextResponse.json({ message: `枠は1店舗につき最大${MAX_FRAMES_PER_STORE}件までです。` }, { status: 400 });
     }
 
     if (isDefault) {
@@ -163,10 +159,9 @@ export async function POST(request: Request) {
     const { data, error } = await framesTable
       .insert({
         store_id: storeId,
-        frame_name: frameName,
+        frame_name: generateInternalFrameName(),
         frame_url: frameUrl,
         is_default: isDefault,
-        is_active: isActive,
         sort_order: cleanNumber(body.sortOrder),
         date_enabled: dateEnabled,
         date_x: cleanRangeNumber(body.dateX, DEFAULT_FRAME_DATE_X, 0, SQUARE_CANVAS_SIZE),

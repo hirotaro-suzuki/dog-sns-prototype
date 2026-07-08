@@ -106,7 +106,6 @@ create table if not exists public.store_frames (
   frame_name text not null,
   frame_url text not null,
   is_default boolean not null default false,
-  is_active boolean not null default true,
   starts_at timestamptz,
   ends_at timestamptz,
   sort_order integer not null default 0,
@@ -126,12 +125,12 @@ create table if not exists public.store_frames (
   constraint store_frames_date_color_format check (date_color ~ '^#[0-9A-Fa-f]{6}$')
 );
 
-create index if not exists store_frames_store_id_active_idx
-on public.store_frames (store_id, is_active, is_default desc, sort_order, frame_name);
+create index if not exists store_frames_store_id_sort_idx
+on public.store_frames (store_id, is_default desc, sort_order, frame_name);
 
 create unique index if not exists store_frames_one_default_per_store_idx
 on public.store_frames (store_id)
-where is_default = true and is_active = true;
+where is_default = true;
 
 create trigger store_frames_set_updated_at
 before update on public.store_frames

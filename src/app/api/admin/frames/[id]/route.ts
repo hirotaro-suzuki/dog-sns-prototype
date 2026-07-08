@@ -4,18 +4,15 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
-const MAX_ACTIVE_FRAMES_PER_STORE = 3;
 const SQUARE_CANVAS_SIZE = 1080;
 const DEFAULT_FRAME_DATE_X = 900;
 const DEFAULT_FRAME_DATE_Y = 90;
 const FRAME_SELECT_COLUMNS =
-  "id, store_id, frame_name, frame_url, is_default, is_active, sort_order, date_enabled, date_x, date_y, date_font_size, date_color, created_at, updated_at";
+  "id, store_id, frame_name, frame_url, is_default, sort_order, date_enabled, date_x, date_y, date_font_size, date_color, created_at, updated_at";
 
 type UpdateFrameRequest = {
-  frameName?: unknown;
   frameUrl?: unknown;
   isDefault?: unknown;
-  isActive?: unknown;
   sortOrder?: unknown;
   dateEnabled?: unknown;
   dateX?: unknown;
@@ -34,7 +31,6 @@ type SupabaseLikeError = {
 type CurrentFrameRow = {
   id: string;
   store_id: string;
-  is_active?: boolean;
 };
 
 type FrameUpdateQuery = {
@@ -93,14 +89,12 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     return NextResponse.json({ message: "更新内容を読み取れませんでした。" }, { status: 400 });
   }
 
-  const frameName = cleanText(body.frameName, 80);
   const frameUrl = cleanText(body.frameUrl, 1000);
-  const isActive = Boolean(body.isActive);
-  const isDefault = Boolean(body.isDefault) && isActive;
+  const isDefault = Boolean(body.isDefault);
   const dateEnabled = body.dateEnabled === undefined ? true : Boolean(body.dateEnabled);
 
-  if (!frameName || !frameUrl) {
-    return NextResponse.json({ message: "枠名と枠画像URLを入力してください。" }, { status: 400 });
+  if (!frameUrl) {
+    return NextResponse.json({ message: "枠画像を入力してください。" }, { status: 400 });
   }
 
   try {
@@ -124,37 +118,14 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       return NextResponse.json({ message: "枠が見つかりませんでした。" }, { status: 404 });
     }
 
-    if (isActive) {
-      const { data: activeFrames, error: countError } = await supabase
-        .from("store_frames")
-        .select("id")
-        .eq("store_id", currentFrame.store_id)
-        .eq("is_active", true)
-        .neq("id", id)
-        .limit(MAX_ACTIVE_FRAMES_PER_STORE);
-
-      if (countError) {
-        return NextResponse.json(
-          { message: "有効な枠数を確認できませんでした。", detail: formatSupabaseError(countError) },
-          { status: 500 }
-        );
-      }
-
-      if ((activeFrames ?? []).length >= MAX_ACTIVE_FRAMES_PER_STORE) {
-        return NextResponse.json({ message: "有効な枠は1店舗につき最大3件までです。" }, { status: 400 });
-      }
-    }
-
     if (isDefault) {
       await framesTable.update({ is_default: false }).eq("store_id", currentFrame.store_id).neq("id", id);
     }
 
     const { data, error } = await framesTable
       .update({
-        frame_name: frameName,
         frame_url: frameUrl,
         is_default: isDefault,
-        is_active: isActive,
         sort_order: cleanNumber(body.sortOrder),
         date_enabled: dateEnabled,
         date_x: cleanRangeNumber(body.dateX, DEFAULT_FRAME_DATE_X, 0, SQUARE_CANVAS_SIZE),
@@ -194,7 +165,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
     const framesTable = supabase.from("store_frames") as unknown as StoreFramesMutationTable;
     const { data: currentFrameData, error: currentError } = await supabase
       .from("store_frames")
-      .select("id, store_id, is_active")
+      .select("id, store_id")
       .eq("id", id)
       .maybeSingle();
     const currentFrame = currentFrameData as CurrentFrameRow | null;
@@ -208,10 +179,6 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
 
     if (!currentFrame) {
       return NextResponse.json({ message: "枠が見つかりませんでした。" }, { status: 404 });
-    }
-
-    if (currentFrame.is_active) {
-      return NextResponse.json({ message: "有効な枠は削除できません。先に停止して保存してください。" }, { status: 400 });
     }
 
     const { error } = await framesTable.delete().eq("id", id);

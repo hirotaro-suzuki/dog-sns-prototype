@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { verifyStorePin } from "@/lib/storePin";
+import { MAX_FRAMES_PER_STORE } from "@/lib/frameLimits";
 import type { StoreSession } from "@/types/storeSession";
 
 export const runtime = "nodejs";
 
-const MAX_SESSION_FRAMES = 3;
-const MIN_DEMO_FRAMES = 3;
+const MAX_SESSION_FRAMES = MAX_FRAMES_PER_STORE;
+const MIN_DEMO_FRAMES = MAX_FRAMES_PER_STORE;
 const FRAME_SELECT_COLUMNS =
   "id, frame_name, frame_url, is_default, date_enabled, date_x, date_y, date_font_size, date_color";
 
@@ -122,7 +123,6 @@ async function ensureDemoFrames(
     frame_name: frame.frame_name,
     frame_url: getPublicUrl(request, frame.frame_path),
     is_default: false,
-    is_active: true,
     sort_order: frame.sort_order,
     date_enabled: true,
     date_x: frame.date_x,
@@ -203,7 +203,6 @@ export async function POST(request: Request) {
       .from("store_frames")
       .select(FRAME_SELECT_COLUMNS)
       .eq("store_id", store.id)
-      .eq("is_active", true)
       .order("is_default", { ascending: false })
       .order("sort_order", { ascending: true })
       .order("frame_name", { ascending: true })
@@ -236,7 +235,6 @@ export async function POST(request: Request) {
         .from("store_frames")
         .select(FRAME_SELECT_COLUMNS)
         .eq("store_id", store.id)
-        .eq("is_active", true)
         .order("is_default", { ascending: false })
         .order("sort_order", { ascending: true })
         .order("frame_name", { ascending: true })

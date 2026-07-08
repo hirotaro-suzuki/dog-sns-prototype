@@ -12,12 +12,13 @@ import {
   releaseCapturedPhotos,
 } from "@/lib/imageStore";
 import { phaseZeroStore } from "@/config/stores";
+import { MAX_FRAMES_PER_STORE } from "@/lib/frameLimits";
 import type { CaptureStaff, CaptureStore } from "@/types/captureContext";
 
 const MAX_PHOTOS = 3;
 const MAX_CAPTURE_EDGE = 2400;
 const CAPTURE_JPEG_QUALITY = 0.9;
-const MAX_FRAME_CHOICES = 3;
+const MAX_FRAME_CHOICES = MAX_FRAMES_PER_STORE;
 
 type Step = "capture" | "process";
 
