@@ -1078,6 +1078,35 @@ p {
   gap: 10px;
 }
 
+.admin-stores-tab {
+  display: grid;
+  gap: 18px;
+}
+
+.admin-store-selector {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-master-list.is-horizontal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.admin-master-list.is-horizontal .admin-master-row {
+  flex: 0 1 220px;
+  min-width: 160px;
+  min-height: 0;
+}
+
+.admin-store-staff-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
 .admin-master-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
@@ -1379,6 +1408,7 @@ p {
   .color-selector,
   .admin-date-row,
   .admin-main-grid,
+  .admin-store-staff-grid,
   .admin-photo-list,
   .admin-form-grid,
   .frame-slot-row {

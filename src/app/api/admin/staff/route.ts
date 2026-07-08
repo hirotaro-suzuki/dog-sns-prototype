@@ -6,7 +6,6 @@ export const runtime = "nodejs";
 
 type CreateStaffRequest = {
   storeId?: unknown;
-  staffCode?: unknown;
   displayName?: unknown;
   sortOrder?: unknown;
   notes?: unknown;
@@ -60,6 +59,10 @@ function formatSupabaseError(error: SupabaseLikeError) {
   return [error.code, error.message, error.details, error.hint].filter(Boolean).join(" / ");
 }
 
+function generateInternalStaffCode() {
+  return `staff-${Date.now()}`;
+}
+
 export async function GET(request: Request) {
   const authError = verifyAdminPin(request);
   if (authError) return authError;
@@ -108,11 +111,10 @@ export async function POST(request: Request) {
   }
 
   const storeId = requiredText(body.storeId, 80);
-  const staffCode = requiredText(body.staffCode, 80);
   const displayName = requiredText(body.displayName, 120);
 
-  if (!storeId || !staffCode || !displayName) {
-    return NextResponse.json({ message: "店舗、担当者コード、表示名を入力してください。" }, { status: 400 });
+  if (!storeId || !displayName) {
+    return NextResponse.json({ message: "店舗、担当者名を入力してください。" }, { status: 400 });
   }
 
   try {
@@ -121,7 +123,7 @@ export async function POST(request: Request) {
     const { data, error } = await staffTable
       .insert({
         store_id: storeId,
-        staff_code: staffCode,
+        staff_code: generateInternalStaffCode(),
         display_name: displayName,
         is_active: true,
         sort_order: cleanNumber(body.sortOrder),

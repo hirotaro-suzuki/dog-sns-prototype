@@ -739,7 +739,6 @@ export function AdminMaintenance() {
         },
         body: JSON.stringify({
           storeId: newStaffDraft.store_id,
-          staffCode: newStaffDraft.staff_code,
           displayName: newStaffDraft.display_name,
           sortOrder: newStaffDraft.sort_order,
           notes: newStaffDraft.notes,
@@ -1079,8 +1078,8 @@ export function AdminMaintenance() {
       ) : null}
 
       {activeTab === "stores" ? (
-        <section className="admin-main-grid">
-          <div className="admin-master-list">
+        <section className="admin-stores-tab">
+          <div className="admin-store-selector">
             <label className="admin-toggle">
               <input
                 type="checkbox"
@@ -1089,139 +1088,140 @@ export function AdminMaintenance() {
               />
               停止中も表示
             </label>
-            {visibleStoreMasters.map((store) => (
-              <button
-                key={store.id}
-                className={`admin-master-row${selectedStoreMasterId === store.id ? " is-selected" : ""}${
-                  store.is_active ? "" : " is-archived"
-                }`}
-                type="button"
-                onClick={() => setSelectedStoreMasterId(store.id)}
-              >
-                <strong>{store.display_name}</strong>
-                <span>{store.store_code}</span>
-                <span>{store.is_active ? "有効" : "停止中"}</span>
-              </button>
-            ))}
+            <div className="admin-master-list is-horizontal">
+              {visibleStoreMasters.map((store) => (
+                <button
+                  key={store.id}
+                  className={`admin-master-row${selectedStoreMasterId === store.id ? " is-selected" : ""}${
+                    store.is_active ? "" : " is-archived"
+                  }`}
+                  type="button"
+                  onClick={() => setSelectedStoreMasterId(store.id)}
+                >
+                  <strong>{store.display_name}</strong>
+                  <span>{store.store_code}</span>
+                  <span>{store.is_active ? "有効" : "停止中"}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
-          <aside className="admin-edit-panel">
-            {selectedStoreMaster ? (
-              <>
-                <dl className="settings-list">
-                  <div>
-                    <dt>店舗コード</dt>
-                    <dd>{selectedStoreMaster.store_code}</dd>
-                  </div>
-                  <div>
-                    <dt>ログインコード</dt>
-                    <dd>{selectedStoreMaster.login_code}</dd>
-                  </div>
-                </dl>
-                <div className="admin-form-grid">
-                  <label className="field-label">
-                    店舗名
-                    <input value={storeDraft.store_name} onChange={(event) => setStoreDraft((current) => ({ ...current, store_name: event.target.value }))} />
-                  </label>
-                  <label className="field-label">
-                    表示名
-                    <input value={storeDraft.display_name} onChange={(event) => setStoreDraft((current) => ({ ...current, display_name: event.target.value }))} />
-                  </label>
-                  <label className="field-label">
-                    並び順
-                    <input type="number" value={storeDraft.sort_order} onChange={(event) => setStoreDraft((current) => ({ ...current, sort_order: Number(event.target.value) }))} />
-                  </label>
-                </div>
-                <label className="field-label">
-                  メモ
-                  <textarea rows={3} value={nullableText(storeDraft.notes)} onChange={(event) => setStoreDraft((current) => ({ ...current, notes: event.target.value }))} />
-                </label>
-                <label className="admin-toggle">
-                  <input type="checkbox" checked={storeDraft.is_active} onChange={(event) => setStoreDraft((current) => ({ ...current, is_active: event.target.checked }))} />
-                  有効
-                </label>
-                <button className="action-button" type="button" disabled={isSaving} onClick={saveStoreMaster}>
-                  店舗を保存
-                </button>
-
-                <h2>担当者</h2>
-                <label className="admin-toggle">
-                  <input
-                    type="checkbox"
-                    checked={includeInactiveStaff}
-                    onChange={(event) => setIncludeInactiveStaff(event.target.checked)}
-                  />
-                  停止中も表示
-                </label>
-
-                <div className="admin-master-list">
-                  {visibleStaff.map((staff) => (
-                    <button
-                      key={staff.id}
-                      className={`admin-master-row${selectedStaffId === staff.id ? " is-selected" : ""}${staff.is_active ? "" : " is-archived"}`}
-                      type="button"
-                      onClick={() => setSelectedStaffId(staff.id)}
-                    >
-                      <strong>{staff.display_name}</strong>
-                      <span>{staff.staff_code}</span>
-                      <span>{staff.is_active ? "有効" : "停止中"}</span>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="admin-create-panel">
-                  <h2>担当者追加</h2>
-                  <label className="field-label">
-                    担当者コード
-                    <input value={newStaffDraft.staff_code} onChange={(event) => setNewStaffDraft((current) => ({ ...current, staff_code: event.target.value }))} />
-                  </label>
-                  <label className="field-label">
-                    表示名
-                    <input value={newStaffDraft.display_name} onChange={(event) => setNewStaffDraft((current) => ({ ...current, display_name: event.target.value }))} />
-                  </label>
-                  <button className="action-button secondary" type="button" disabled={isSaving} onClick={createStaffMember}>
-                    追加
-                  </button>
-                </div>
-
-                {selectedStaff ? (
-                  <>
-                    <dl className="settings-list">
-                      <div>
-                        <dt>担当者コード</dt>
-                        <dd>{selectedStaff.staff_code}</dd>
-                      </div>
-                    </dl>
-                    <div className="admin-form-grid">
-                      <label className="field-label">
-                        表示名
-                        <input value={staffDraft.display_name} onChange={(event) => setStaffDraft((current) => ({ ...current, display_name: event.target.value }))} />
-                      </label>
-                      <label className="field-label">
-                        並び順
-                        <input type="number" value={staffDraft.sort_order} onChange={(event) => setStaffDraft((current) => ({ ...current, sort_order: Number(event.target.value) }))} />
-                      </label>
+          <div className="admin-store-staff-grid">
+            <aside className="admin-edit-panel">
+              {selectedStoreMaster ? (
+                <>
+                  <dl className="settings-list">
+                    <div>
+                      <dt>店舗コード</dt>
+                      <dd>{selectedStoreMaster.store_code}</dd>
                     </div>
-                    <label className="admin-toggle">
-                      <input type="checkbox" checked={staffDraft.is_active} onChange={(event) => setStaffDraft((current) => ({ ...current, is_active: event.target.checked }))} />
-                      有効
+                    <div>
+                      <dt>ログインコード</dt>
+                      <dd>{selectedStoreMaster.login_code}</dd>
+                    </div>
+                  </dl>
+                  <div className="admin-form-grid">
+                    <label className="field-label">
+                      店舗名
+                      <input value={storeDraft.store_name} onChange={(event) => setStoreDraft((current) => ({ ...current, store_name: event.target.value }))} />
                     </label>
                     <label className="field-label">
-                      メモ
-                      <textarea rows={3} value={nullableText(staffDraft.notes)} onChange={(event) => setStaffDraft((current) => ({ ...current, notes: event.target.value }))} />
+                      表示名
+                      <input value={storeDraft.display_name} onChange={(event) => setStoreDraft((current) => ({ ...current, display_name: event.target.value }))} />
                     </label>
-                    <button className="action-button" type="button" disabled={isSaving} onClick={saveStaffMaster}>
-                      担当者を保存
+                    <label className="field-label">
+                      並び順
+                      <input type="number" value={storeDraft.sort_order} onChange={(event) => setStoreDraft((current) => ({ ...current, sort_order: Number(event.target.value) }))} />
+                    </label>
+                  </div>
+                  <label className="field-label">
+                    メモ
+                    <textarea rows={3} value={nullableText(storeDraft.notes)} onChange={(event) => setStoreDraft((current) => ({ ...current, notes: event.target.value }))} />
+                  </label>
+                  <label className="admin-toggle">
+                    <input type="checkbox" checked={storeDraft.is_active} onChange={(event) => setStoreDraft((current) => ({ ...current, is_active: event.target.checked }))} />
+                    有効
+                  </label>
+                  <button className="action-button" type="button" disabled={isSaving} onClick={saveStoreMaster}>
+                    店舗を保存
+                  </button>
+                </>
+              ) : (
+                <p className="notice">店舗を選択してください。</p>
+              )}
+            </aside>
+
+            <aside className="admin-edit-panel">
+              {selectedStoreMaster ? (
+                <>
+                  <h2>担当者</h2>
+                  <label className="admin-toggle">
+                    <input
+                      type="checkbox"
+                      checked={includeInactiveStaff}
+                      onChange={(event) => setIncludeInactiveStaff(event.target.checked)}
+                    />
+                    停止中も表示
+                  </label>
+
+                  <div className="admin-master-list">
+                    {visibleStaff.map((staff) => (
+                      <button
+                        key={staff.id}
+                        className={`admin-master-row${selectedStaffId === staff.id ? " is-selected" : ""}${staff.is_active ? "" : " is-archived"}`}
+                        type="button"
+                        onClick={() => setSelectedStaffId(staff.id)}
+                      >
+                        <strong>{staff.display_name}</strong>
+                        <span>{staff.is_active ? "有効" : "停止中"}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="admin-create-panel">
+                    <h2>担当者追加</h2>
+                    <label className="field-label">
+                      担当者名
+                      <input value={newStaffDraft.display_name} onChange={(event) => setNewStaffDraft((current) => ({ ...current, display_name: event.target.value }))} />
+                    </label>
+                    <button className="action-button secondary" type="button" disabled={isSaving} onClick={createStaffMember}>
+                      追加
                     </button>
-                  </>
-                ) : (
-                  <p className="notice">担当者を選択してください。</p>
-                )}
-              </>
-            ) : (
-              <p className="notice">店舗を選択してください。</p>
-            )}
-          </aside>
+                  </div>
+
+                  {selectedStaff ? (
+                    <>
+                      <div className="admin-form-grid">
+                        <label className="field-label">
+                          担当者名
+                          <input value={staffDraft.display_name} onChange={(event) => setStaffDraft((current) => ({ ...current, display_name: event.target.value }))} />
+                        </label>
+                        <label className="field-label">
+                          並び順
+                          <input type="number" value={staffDraft.sort_order} onChange={(event) => setStaffDraft((current) => ({ ...current, sort_order: Number(event.target.value) }))} />
+                        </label>
+                      </div>
+                      <label className="admin-toggle">
+                        <input type="checkbox" checked={staffDraft.is_active} onChange={(event) => setStaffDraft((current) => ({ ...current, is_active: event.target.checked }))} />
+                        有効
+                      </label>
+                      <label className="field-label">
+                        メモ
+                        <textarea rows={3} value={nullableText(staffDraft.notes)} onChange={(event) => setStaffDraft((current) => ({ ...current, notes: event.target.value }))} />
+                      </label>
+                      <button className="action-button" type="button" disabled={isSaving} onClick={saveStaffMaster}>
+                        担当者を保存
+                      </button>
+                    </>
+                  ) : (
+                    <p className="notice">担当者を選択してください。</p>
+                  )}
+                </>
+              ) : (
+                <p className="notice">店舗を選択してください。</p>
+              )}
+            </aside>
+          </div>
         </section>
       ) : null}
 
