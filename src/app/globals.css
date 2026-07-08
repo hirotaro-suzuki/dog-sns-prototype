@@ -684,7 +684,7 @@ p {
   gap: 10px;
 }
 
-.consent-label {
+.field-label.consent-label {
   display: flex;
   flex-direction: row;
   align-items: center;
