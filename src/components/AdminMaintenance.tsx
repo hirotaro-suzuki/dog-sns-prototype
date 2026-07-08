@@ -1133,7 +1133,7 @@ export function AdminMaintenance() {
                   setSelectedStaffId(firstStaff?.id ?? null);
                 }}
               >
-                {stores.map((store) => (
+                {stores.filter((store) => store.is_active).map((store) => (
                   <option key={store.id} value={store.id}>
                     {store.display_name}
                   </option>
