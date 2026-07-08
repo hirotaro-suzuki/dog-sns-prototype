@@ -530,6 +530,28 @@ p {
   box-shadow: var(--shadow);
 }
 
+.thumbnail-item.is-returned .thumbnail-image-button {
+  animation: thumbnail-returned-blink 1.4s ease-in-out;
+}
+
+@keyframes thumbnail-returned-blink {
+  0%,
+  100% {
+    border-color: var(--line);
+    box-shadow: var(--shadow);
+  }
+  20%,
+  60% {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 55%, transparent), var(--shadow);
+  }
+  40%,
+  80% {
+    border-color: var(--line);
+    box-shadow: var(--shadow);
+  }
+}
+
 .shutter-button {
   justify-self: center;
   width: 84px;

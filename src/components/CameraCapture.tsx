@@ -69,9 +69,11 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
   const selectedPhotoRef = useRef<CapturedPhoto | null>(null);
   const hasAutoStartedCameraRef = useRef(false);
   const isEncodingRef = useRef(false);
+  const returnedHighlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [step, setStep] = useState<Step>("capture");
   const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
   const [previewPhoto, setPreviewPhoto] = useState<CapturedPhoto | null>(null);
+  const [returnedPhotoId, setReturnedPhotoId] = useState<string | null>(null);
   const [selectedPhoto, setSelectedPhoto] = useState<CapturedPhoto | null>(null);
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
   const [selectedFrameId, setSelectedFrameId] = useState<string | null>(null);
@@ -115,6 +117,9 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
       if (selectedPhotoRef.current && !selectedPhotoWasReleased) {
         releaseCapturedPhoto(selectedPhotoRef.current);
       }
+      if (returnedHighlightTimeoutRef.current) {
+        clearTimeout(returnedHighlightTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -145,6 +150,10 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
     }
     replaceSelectedPhoto(null);
     setPreviewPhoto(null);
+    setReturnedPhotoId(null);
+    if (returnedHighlightTimeoutRef.current) {
+      clearTimeout(returnedHighlightTimeoutRef.current);
+    }
     setSelectedStaffId(null);
     stopCameraStream(streamRef.current);
     streamRef.current = null;
@@ -229,6 +238,17 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
     releaseCapturedPhoto(photo);
     replacePhotos(next);
     setPreviewPhoto(null);
+  }
+
+  function closePreview(photo: CapturedPhoto) {
+    setPreviewPhoto(null);
+    setReturnedPhotoId(photo.id);
+    if (returnedHighlightTimeoutRef.current) {
+      clearTimeout(returnedHighlightTimeoutRef.current);
+    }
+    returnedHighlightTimeoutRef.current = setTimeout(() => {
+      setReturnedPhotoId(null);
+    }, 1500);
   }
 
   function backToCapture() {
@@ -363,7 +383,10 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
       <div className="capture-control-row">
         <div className={`thumbnail-strip${isPhotoStockFull ? " is-full" : ""}`} aria-label="一時保持された写真">
           {photos.map((photo, index) => (
-            <div className="thumbnail-item" key={photo.id}>
+            <div
+              className={`thumbnail-item${photo.id === returnedPhotoId ? " is-returned" : ""}`}
+              key={photo.id}
+            >
               <button
                 className="thumbnail-image-button"
                 type="button"
@@ -409,7 +432,7 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
           photo={previewPhoto}
           onConfirm={() => selectPhoto(previewPhoto)}
           onDelete={() => deletePhoto(previewPhoto)}
-          onClose={() => setPreviewPhoto(null)}
+          onClose={() => closePreview(previewPhoto)}
         />
       )}
     </div>
