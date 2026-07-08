@@ -490,10 +490,17 @@ p {
 }
 
 .thumbnail-item {
-  overflow: hidden;
+  position: relative;
   width: 56px;
   height: 56px;
   flex: none;
+}
+
+.thumbnail-image-button {
+  overflow: hidden;
+  display: block;
+  width: 100%;
+  height: 100%;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: var(--panel);
@@ -501,11 +508,26 @@ p {
   padding: 0;
 }
 
-.thumbnail-item img {
+.thumbnail-image-button img {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.thumbnail-delete-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--panel);
+  border-radius: 999px;
+  background: var(--danger);
+  color: #ffffff;
+  box-shadow: var(--shadow);
 }
 
 .shutter-button {

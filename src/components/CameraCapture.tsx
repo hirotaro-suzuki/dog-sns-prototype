@@ -363,15 +363,26 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
       <div className="capture-control-row">
         <div className={`thumbnail-strip${isPhotoStockFull ? " is-full" : ""}`} aria-label="一時保持された写真">
           {photos.map((photo, index) => (
-            <button
-              className="thumbnail-item"
-              key={photo.id}
-              type="button"
-              onClick={() => setPreviewPhoto(photo)}
-              aria-label={`撮影写真 ${index + 1} をプレビュー`}
-            >
-              <img src={photo.objectUrl} alt={`撮影写真 ${index + 1}`} />
-            </button>
+            <div className="thumbnail-item" key={photo.id}>
+              <button
+                className="thumbnail-image-button"
+                type="button"
+                onClick={() => setPreviewPhoto(photo)}
+                aria-label={`撮影写真 ${index + 1} をプレビュー`}
+              >
+                <img src={photo.objectUrl} alt={`撮影写真 ${index + 1}`} />
+              </button>
+              <button
+                className="thumbnail-delete-badge"
+                type="button"
+                onClick={() => deletePhoto(photo)}
+                aria-label={`撮影写真 ${index + 1} を消す`}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                  <path d="M6 6L18 18M18 6L6 18" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
           ))}
         </div>
 
