@@ -663,7 +663,7 @@ p {
 .final-image-frame {
   position: relative;
   overflow: hidden;
-  width: min(100%, 68dvh);
+  width: min(100%, 80dvh);
   aspect-ratio: 1 / 1;
   border: 1px solid var(--line);
   border-radius: var(--radius);
