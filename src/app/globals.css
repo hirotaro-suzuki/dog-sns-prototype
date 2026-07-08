@@ -243,8 +243,9 @@ p {
 
 .staff-chip.is-selected {
   border-color: var(--accent);
-  background: var(--accent);
-  color: #ffffff;
+  background: color-mix(in srgb, var(--accent) 14%, #fffdf8);
+  color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 .icon-button {
@@ -272,8 +273,9 @@ p {
 
 .icon-button.is-selected {
   border-color: var(--accent);
-  background: var(--accent);
-  color: #ffffff;
+  background: color-mix(in srgb, var(--accent) 14%, var(--panel));
+  color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 .icon-button:disabled {
@@ -307,8 +309,9 @@ p {
 
 .frame-choice-button.is-selected {
   border-color: var(--accent);
-  background: var(--accent);
-  color: #ffffff;
+  background: color-mix(in srgb, var(--accent) 14%, #fffdf8);
+  color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 .compact-button {
@@ -783,8 +786,9 @@ p {
 
 .mini-control-button.is-selected {
   border-color: var(--accent);
-  background: var(--accent);
-  color: #ffffff;
+  background: color-mix(in srgb, var(--accent) 14%, #ebe5d8);
+  color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 .mini-control-button.danger {
