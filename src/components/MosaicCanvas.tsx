@@ -12,7 +12,6 @@ type MosaicCanvasProps = {
   onCancel: () => void;
   onBackToPhotos?: () => void;
   onStartNext?: () => void;
-  onFinishSession?: () => void;
   onLogout?: () => void;
 };
 
@@ -504,7 +503,6 @@ export function MosaicCanvas({
   onCancel,
   onBackToPhotos,
   onStartNext,
-  onFinishSession,
   onLogout,
 }: MosaicCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -536,7 +534,7 @@ export function MosaicCanvas({
   const [savedAssetCode, setSavedAssetCode] = useState<string | null>(null);
   const [frameLoadError, setFrameLoadError] = useState("");
   const [editError, setEditError] = useState("");
-  const [status, setStatus] = useState("");
+  const [saveError, setSaveError] = useState("");
   const [, refreshTextEditor] = useReducer((value: number) => value + 1, 0);
 
   function pushHistory() {
@@ -1014,7 +1012,6 @@ export function MosaicCanvas({
       setPrintedAt(null);
       setHasConsent(false);
       setSavedAssetCode(null);
-      setStatus("完成画像を作成しました。お客様に画面または印刷で確認し、SNS掲載OKをもらった場合だけ保存してください。");
     } catch {
       setCompletedImageUrl(null);
       setEditError("完成画像を作成できませんでした。フレーム画像の読み込み設定を確認してください。");
@@ -1023,23 +1020,14 @@ export function MosaicCanvas({
 
   function handlePrintFinalImage() {
     setPrintedAt(new Date().toISOString());
-    setStatus("印刷画面を開きました。印刷後にお客様からSNS掲載OKをもらった場合だけ保存してください。");
     window.print();
   }
 
   async function saveFinalImage() {
-    if (!completedImageUrl || !store || !staff) {
-      setStatus("店舗または担当者を確認できないため保存できません。");
-      return;
-    }
-
-    if (!hasConsent) {
-      setStatus("お客様からSNS掲載OKをもらったことを確認してから保存してください。");
-      return;
-    }
+    if (!completedImageUrl || !store || !staff || !hasConsent) return;
 
     setIsSavingAsset(true);
-    setStatus("完成画像をクラウドへ保存しています。");
+    setSaveError("");
 
     try {
       const response = await fetch("/api/assets", {
@@ -1066,9 +1054,8 @@ export function MosaicCanvas({
       }
 
       setSavedAssetCode(result.manageCode ?? "保存済み");
-      setStatus(`保存しました。管理コード: ${result.manageCode ?? "確認中"}`);
     } catch (error) {
-      setStatus(
+      setSaveError(
         error instanceof Error
           ? error.message
           : "完成画像を保存できませんでした。"
@@ -1108,83 +1095,87 @@ export function MosaicCanvas({
   if (completedImageUrl) {
     return (
       <section className="final-screen" aria-label="完成画像確認">
-        <div className="section-heading compact-section-heading">
-          <p className="eyebrow">Final Image</p>
-          <h2>完成画像確認</h2>
-          <p>お客様に画面または印刷で確認し、SNS掲載OKをもらった場合だけ保存します。</p>
-        </div>
-
-        <div className="final-image-panel final-image-screen-panel">
-          <img className="print-final-image" src={completedImageUrl} alt="完成画像" />
-        </div>
-
-        <div className="toolbar">
+        <div className="toolbar utility-toolbar">
           <button
-            className="action-button primary-wide"
+            className="icon-button"
             type="button"
-            onClick={handlePrintFinalImage}
+            onClick={() => setCompletedImageUrl(null)}
+            disabled={Boolean(savedAssetCode)}
+            aria-label="編集へ戻る"
           >
-            印刷
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M15 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </button>
-          <label className="field-label compact-summary">
-            <input
-              type="checkbox"
-              checked={hasConsent}
-              disabled={Boolean(savedAssetCode)}
-              onChange={(event) => setHasConsent(event.target.checked)}
-            />
-            お客様からSNS掲載OKをもらいました
-          </label>
-          <button
-            className="action-button primary-wide"
-            type="button"
-            onClick={saveFinalImage}
-            disabled={isSavingAsset || Boolean(savedAssetCode) || !store || !staff || !hasConsent}
-          >
-            {isSavingAsset
-              ? "保存中"
-              : savedAssetCode
-                ? "保存済み"
-                : "SNS掲載OKを確認したので保存"}
-          </button>
-          {savedAssetCode && onStartNext && (
-            <button className="action-button primary-wide" type="button" onClick={onStartNext}>
-              次のわんちゃんを撮る
-            </button>
-          )}
-          {savedAssetCode && onFinishSession && (
-            <button className="action-button secondary" type="button" onClick={onFinishSession}>
-              撮影を終了する
-            </button>
-          )}
-          <button className="action-button secondary" type="button" onClick={() => setCompletedImageUrl(null)} disabled={Boolean(savedAssetCode)}>
-            編集へ戻る
-          </button>
-          {onBackToPhotos && (
-            <button className="action-button secondary" type="button" onClick={onBackToPhotos} disabled={Boolean(savedAssetCode)}>
-              写真選択へ戻る
-            </button>
-          )}
           {!savedAssetCode && (
-            <button className="action-button secondary" type="button" onClick={onCancel}>
-              キャンセル
+            <button className="icon-button" type="button" onClick={onCancel} aria-label="キャンセル">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M4 7h16M9 7V4h6v3m-9 0 1 13a2 2 0 002 2h6a2 2 0 002-2l1-13" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </button>
           )}
           {onLogout && (
-            <button className="action-button secondary" type="button" onClick={onLogout}>
-              ログアウト
+            <button className="icon-button" type="button" onClick={onLogout} aria-label="ログアウト">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M6 6L18 18M18 6L6 18" strokeLinecap="round" />
+              </svg>
             </button>
           )}
         </div>
 
-        <p className="notice">
-          {savedAssetCode
-            ? `クラウドへ保存済みです。管理コード: ${savedAssetCode}`
-            : printedAt
-              ? "印刷済みです。SNS掲載OKをもらった場合だけチェックして保存してください。"
-              : "画面でお客様に確認し、SNS掲載OKをもらった場合だけチェックして保存してください。印刷は必要に応じて行えます。"}
-        </p>
-        <p className="notice">{status}</p>
+        <div className="final-image-wrap">
+          <img className="print-final-image" src={completedImageUrl} alt="完成画像" />
+        </div>
+
+        {!savedAssetCode ? (
+          <div className="final-action-area">
+            <div className="toolbar">
+              <button className="action-button secondary" type="button" onClick={handlePrintFinalImage}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M6 9V4h12v5" strokeLinecap="round" strokeLinejoin="round" />
+                  <rect x="4" y="9" width="16" height="8" rx="1.5" />
+                  <path d="M8 14h8v6H8z" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                印刷
+              </button>
+              <label className="field-label consent-label">
+                <input
+                  type="checkbox"
+                  checked={hasConsent}
+                  onChange={(event) => setHasConsent(event.target.checked)}
+                />
+                お客様からSNS掲載OKをもらいました
+              </label>
+            </div>
+            <button
+              className="action-button primary-wide"
+              type="button"
+              onClick={saveFinalImage}
+              disabled={isSavingAsset || !store || !staff || !hasConsent}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M7 18a4 4 0 01-1-7.87A5 5 0 0116 7a4.5 4.5 0 011 8.9" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M12 12v7m0-7l-3 3m3-3l3 3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {isSavingAsset ? "保存中" : "保存"}
+            </button>
+          </div>
+        ) : (
+          <div className="final-action-area">
+            <span className="status-pill">保存済み: {savedAssetCode}</span>
+            {onStartNext && (
+              <button className="action-button primary-wide" type="button" onClick={onStartNext}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M4 8h3l2-2h6l2 2h3a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z" strokeLinecap="round" strokeLinejoin="round" />
+                  <circle cx="12" cy="13" r="3.5" />
+                </svg>
+                次のわんちゃんを撮る
+              </button>
+            )}
+          </div>
+        )}
+
+        {saveError && <p className="notice error">{saveError}</p>}
       </section>
     );
   }

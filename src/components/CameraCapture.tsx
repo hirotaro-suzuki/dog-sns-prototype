@@ -270,12 +270,6 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
     void startCamera();
   }
 
-  function finishSession() {
-    clearCaptureData();
-    hasAutoStartedCameraRef.current = true;
-    setStep("capture");
-  }
-
   const canCapture = isCameraReady && Boolean(selectedStaffId) && photos.length < MAX_PHOTOS;
   const isPhotoStockFull = photos.length >= MAX_PHOTOS;
   const displayStore = getDisplayStore(store);
@@ -306,7 +300,6 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
           onCancel={cancelSession}
           onBackToPhotos={backToCapture}
           onStartNext={retakePhotos}
-          onFinishSession={finishSession}
           onLogout={onLogout ? handleLogout : undefined}
         />
       </div>

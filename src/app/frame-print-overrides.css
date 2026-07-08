@@ -54,7 +54,7 @@
   aspect-ratio: 1 / 1;
 }
 
-.final-image-screen-panel {
+.final-image-wrap {
   max-width: min(100%, 680px);
   margin-inline: auto;
 }
@@ -81,8 +81,7 @@
   .store-workspace,
   .camera-panel,
   .final-screen,
-  .final-image-panel,
-  .final-image-screen-panel {
+  .final-image-wrap {
     width: 108mm !important;
     height: 108mm !important;
   }
