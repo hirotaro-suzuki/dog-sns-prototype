@@ -69,6 +69,13 @@ type TextDragSnapshot = {
 
 type EditMode = "adjust" | "mosaic" | "text";
 
+type EditSnapshot = {
+  transform: PhotoTransform;
+  strokes: MosaicStroke[];
+  textBoxes: TextBox[];
+  selectedTextBoxId: string | null;
+};
+
 const CANVAS_SIZE = 1080;
 const CANVAS_WIDTH = CANVAS_SIZE;
 const CANVAS_HEIGHT = CANVAS_SIZE;
@@ -87,6 +94,11 @@ const TEXT_SIZE_LABELS: Record<TextBoxSize, string> = {
   small: "小",
   medium: "中",
   large: "大",
+};
+const TEXT_SIZE_ICON_PX: Record<TextBoxSize, number> = {
+  small: 14,
+  medium: 18,
+  large: 22,
 };
 const TEXT_FONT_SIZES: Record<TextBoxSize, number> = {
   small: 34,
@@ -505,14 +517,16 @@ export function MosaicCanvas({
     rotation: 0,
   });
   const gestureRef = useRef<GestureSnapshot | null>(null);
+  const hasPushedGestureHistoryRef = useRef(false);
   const textDragRef = useRef<TextDragSnapshot | null>(null);
   const strokesRef = useRef<MosaicStroke[]>([]);
   const textBoxesRef = useRef<TextBox[]>([]);
   const selectedTextBoxIdRef = useRef<string | null>(null);
   const activeStrokeIdRef = useRef<string | null>(null);
   const editModeRef = useRef<EditMode>("adjust");
+  const historyRef = useRef<EditSnapshot[]>([]);
   const [editMode, setEditMode] = useState<EditMode>("adjust");
-  const [strokeCount, setStrokeCount] = useState(0);
+  const [historyCount, setHistoryCount] = useState(0);
   const [textBoxes, setTextBoxes] = useState<TextBox[]>([]);
   const [selectedTextBoxId, setSelectedTextBoxId] = useState<string | null>(null);
   const [completedImageUrl, setCompletedImageUrl] = useState<string | null>(null);
@@ -520,9 +534,36 @@ export function MosaicCanvas({
   const [hasConsent, setHasConsent] = useState(false);
   const [isSavingAsset, setIsSavingAsset] = useState(false);
   const [savedAssetCode, setSavedAssetCode] = useState<string | null>(null);
-  const [assetStatus, setAssetStatus] = useState("店舗フレームのURLを確認しています。");
-  const [status, setStatus] = useState("Canvas加工を準備しています。");
+  const [frameLoadError, setFrameLoadError] = useState("");
+  const [editError, setEditError] = useState("");
+  const [status, setStatus] = useState("");
   const [, refreshTextEditor] = useReducer((value: number) => value + 1, 0);
+
+  function pushHistory() {
+    historyRef.current.push({
+      transform: { ...transformRef.current },
+      strokes: strokesRef.current,
+      textBoxes: textBoxesRef.current,
+      selectedTextBoxId: selectedTextBoxIdRef.current,
+    });
+    setHistoryCount(historyRef.current.length);
+  }
+
+  function undo() {
+    const previous = historyRef.current.pop();
+    if (!previous) return;
+
+    transformRef.current = previous.transform;
+    strokesRef.current = previous.strokes;
+    textBoxesRef.current = previous.textBoxes;
+    selectedTextBoxIdRef.current = previous.selectedTextBoxId;
+    setTextBoxes(previous.textBoxes);
+    setSelectedTextBoxId(previous.selectedTextBoxId);
+    setHistoryCount(historyRef.current.length);
+    setCompletedImageUrl(null);
+    refreshTextEditor();
+    renderCanvas();
+  }
 
   function prepareCanvas() {
     const canvas = canvasRef.current;
@@ -562,13 +603,6 @@ export function MosaicCanvas({
   function switchMode(nextMode: EditMode) {
     editModeRef.current = nextMode;
     setEditMode(nextMode);
-    setStatus(
-      nextMode === "mosaic"
-        ? "モザイクモードです。隠したい場所を指でなぞってください。"
-        : nextMode === "text"
-          ? "文字を選択中です。文字の上を指で動かせます。"
-          : "写真調整モードです。写真だけを移動・拡大縮小・回転できます。"
-    );
   }
 
   useEffect(() => {
@@ -587,15 +621,16 @@ export function MosaicCanvas({
       textBoxesRef.current = [];
       selectedTextBoxIdRef.current = null;
       activeStrokeIdRef.current = null;
-      setStrokeCount(0);
+      historyRef.current = [];
+      setHistoryCount(0);
       setTextBoxes([]);
       setSelectedTextBoxId(null);
       renderCanvas();
-      setStatus("写真調整モードです。文字を入れる場合は文字を追加してください。");
+      setEditError("");
     };
 
     image.onerror = () => {
-      setStatus("画像の読み込みに失敗しました。");
+      setEditError("画像の読み込みに失敗しました。");
     };
 
     image.src = photo.objectUrl;
@@ -619,8 +654,9 @@ export function MosaicCanvas({
 
       frameImageRef.current = frameImage;
 
-      const frameState = store?.frameUrl ? (frameImage ? "フレーム画像を読み込みました" : "フレームURLはありますが画像は読めませんでした") : "フレームURL未設定";
-      setAssetStatus(`${frameState}。`);
+      setFrameLoadError(
+        store?.frameUrl && !frameImage ? "店舗フレーム画像を読み込めませんでした。本部の管理画面で確認してください。" : ""
+      );
       renderCanvas();
     }
 
@@ -658,13 +694,13 @@ export function MosaicCanvas({
     const mosaicPoint = createMosaicPoint(canvasPoint);
     if (!mosaicPoint) return;
 
+    pushHistory();
     const stroke: MosaicStroke = {
       id: createStrokeId(),
       points: [mosaicPoint],
     };
     strokesRef.current = [...strokesRef.current, stroke];
     activeStrokeIdRef.current = stroke.id;
-    setStrokeCount(strokesRef.current.length);
     setCompletedImageUrl(null);
     renderCanvas();
   }
@@ -701,10 +737,11 @@ export function MosaicCanvas({
     if (!image) return;
 
     if (textBoxesRef.current.length >= MAX_TEXT_BOXES) {
-      setStatus(`文字は最大${MAX_TEXT_BOXES}個までです。`);
+      setEditError(`文字は最大${MAX_TEXT_BOXES}個までです。`);
       return;
     }
 
+    pushHistory();
     const centerPoint = transformCanvasPointToPhoto(
       image,
       transformRef.current,
@@ -720,7 +757,7 @@ export function MosaicCanvas({
     };
     switchMode("text");
     syncTextBoxes([...textBoxesRef.current, textBox], textBox.id);
-    setStatus("文字を追加しました。15文字以内で入力し、文字の上を指で動かせます。");
+    setEditError("");
   }
 
   function updateTextBox(id: string, nextValues: Partial<TextBox>) {
@@ -733,12 +770,12 @@ export function MosaicCanvas({
   function deleteSelectedTextBox() {
     const selectedId = selectedTextBoxIdRef.current;
     if (!selectedId) return;
+    pushHistory();
     syncTextBoxes(
       textBoxesRef.current.filter((textBox) => textBox.id !== selectedId),
       null
     );
     switchMode("adjust");
-    setStatus("選択中の文字を削除しました。");
   }
 
   function clearSelectedTextBox() {
@@ -746,14 +783,13 @@ export function MosaicCanvas({
     setSelectedTextBoxId(null);
     switchMode("adjust");
     renderCanvas();
-    setStatus("文字の編集を閉じました。文字を動かす場合は、もう一度文字を指で触って動かしてください。");
   }
 
   function levelSelectedTextBox() {
     const selectedId = selectedTextBoxIdRef.current;
     if (!selectedId) return;
+    pushHistory();
     updateTextBox(selectedId, { rotation: -transformRef.current.rotation });
-    setStatus("選択中の文字を画面上で水平にしました。");
   }
 
   function startTextDrag(canvasPoint: CanvasPoint) {
@@ -766,6 +802,7 @@ export function MosaicCanvas({
       return false;
     }
 
+    pushHistory();
     selectedTextBoxIdRef.current = hit.textBox.id;
     setSelectedTextBoxId(hit.textBox.id);
     textDragRef.current = {
@@ -789,6 +826,7 @@ export function MosaicCanvas({
     const photoPoint = transformCanvasPointToPhoto(image, transformRef.current, canvasPoint);
     if (!photoPoint) return false;
 
+    pushHistory();
     textDragRef.current = {
       id: selectedId,
       offset: {
@@ -847,6 +885,7 @@ export function MosaicCanvas({
       ...geometry,
       transform: { ...transformRef.current },
     };
+    hasPushedGestureHistoryRef.current = false;
     if (editModeRef.current !== "adjust") {
       switchMode("adjust");
     }
@@ -869,6 +908,11 @@ export function MosaicCanvas({
 
     const gesture = gestureRef.current;
     if (!gesture) return;
+
+    if (!hasPushedGestureHistoryRef.current) {
+      pushHistory();
+      hasPushedGestureHistoryRef.current = true;
+    }
 
     const geometry = getTouchGeometry(canvas, event.touches);
     const nextTransform: PhotoTransform = {
@@ -897,13 +941,11 @@ export function MosaicCanvas({
 
     if (editModeRef.current === "mosaic") {
       activeStrokeIdRef.current = null;
-      setStatus(`${strokesRef.current.length}か所のモザイクを追加しました。`);
       return;
     }
 
     if (textDragRef.current) {
       textDragRef.current = null;
-      setStatus("文字の位置を調整しました。写真を動かすと文字も一緒に動きます。");
       return;
     }
 
@@ -946,10 +988,10 @@ export function MosaicCanvas({
     event.preventDefault();
     event.stopPropagation();
     textDragRef.current = null;
-    setStatus("文字の位置を調整しました。選択中の文字は、もう一度触って動かせます。");
   }
 
   function resetTransform() {
+    pushHistory();
     transformRef.current = {
       x: CANVAS_WIDTH / 2,
       y: CANVAS_HEIGHT / 2,
@@ -959,16 +1001,6 @@ export function MosaicCanvas({
     setCompletedImageUrl(null);
     refreshTextEditor();
     renderCanvas();
-    setStatus("写真位置を初期状態に戻しました。");
-  }
-
-  function undoLastMosaic() {
-    if (strokesRef.current.length === 0) return;
-    strokesRef.current = strokesRef.current.slice(0, -1);
-    setStrokeCount(strokesRef.current.length);
-    setCompletedImageUrl(null);
-    renderCanvas();
-    setStatus("直前のモザイクを取り消しました。");
   }
 
   function finalizeImage() {
@@ -985,7 +1017,7 @@ export function MosaicCanvas({
       setStatus("完成画像を作成しました。お客様に画面または印刷で確認し、SNS掲載OKをもらった場合だけ保存してください。");
     } catch {
       setCompletedImageUrl(null);
-      setStatus("完成画像を作成できませんでした。フレーム画像の読み込み設定を確認してください。");
+      setEditError("完成画像を作成できませんでした。フレーム画像の読み込み設定を確認してください。");
     }
   }
 
@@ -1159,10 +1191,26 @@ export function MosaicCanvas({
 
   return (
     <section className="canvas-panel" aria-label="画像加工プレビュー">
-      <div className="section-heading compact-section-heading">
-        <p className="eyebrow">Canvas Preview</p>
-        <h2>画像加工プレビュー</h2>
-        <p>写真位置を調整し、必要な場所だけモザイクや文字を追加できます。</p>
+      <div className="toolbar utility-toolbar">
+        {onBackToPhotos && (
+          <button className="icon-button" type="button" onClick={onBackToPhotos} aria-label="写真選択へ戻る">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M15 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        )}
+        <button className="icon-button" type="button" onClick={onCancel} aria-label="キャンセル">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M4 7h16M9 7V4h6v3m-9 0 1 13a2 2 0 002 2h6a2 2 0 002-2l1-13" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        {onLogout && (
+          <button className="icon-button" type="button" onClick={onLogout} aria-label="ログアウト">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M6 6L18 18M18 6L6 18" strokeLinecap="round" />
+            </svg>
+          </button>
+        )}
       </div>
 
       <div className={`canvas-frame ${editMode === "mosaic" ? "is-mosaic-mode" : ""}`}>
@@ -1201,17 +1249,24 @@ export function MosaicCanvas({
 
             <div className="canvas-text-control-panel" aria-label="選択中の文字編集">
               <div className="canvas-text-control-row">
-                <button className="mini-control-button" type="button" onClick={levelSelectedTextBox}>
-                  水平
+                <button className="mini-control-button" type="button" onClick={levelSelectedTextBox} aria-label="水平にする">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                 </button>
-                {Object.entries(TEXT_SIZE_LABELS).map(([size, label]) => (
+                {Object.entries(TEXT_SIZE_ICON_PX).map(([size, px]) => (
                   <button
                     className={`mini-control-button ${selectedTextBox.size === size ? "is-selected" : ""}`}
                     key={size}
                     type="button"
-                    onClick={() => updateTextBox(selectedTextBox.id, { size: size as TextBoxSize })}
+                    style={{ fontSize: px }}
+                    onClick={() => {
+                      pushHistory();
+                      updateTextBox(selectedTextBox.id, { size: size as TextBoxSize });
+                    }}
+                    aria-label={`文字サイズ ${TEXT_SIZE_LABELS[size as TextBoxSize]}`}
                   >
-                    {label}
+                    A
                   </button>
                 ))}
               </div>
@@ -1223,15 +1278,22 @@ export function MosaicCanvas({
                     key={color.value}
                     type="button"
                     style={{ backgroundColor: color.value }}
-                    onClick={() => updateTextBox(selectedTextBox.id, { color: color.value })}
+                    onClick={() => {
+                      pushHistory();
+                      updateTextBox(selectedTextBox.id, { color: color.value });
+                    }}
                     aria-label={`${color.label}にする`}
                   />
                 ))}
-                <button className="mini-control-button danger" type="button" onClick={deleteSelectedTextBox}>
-                  削除
+                <button className="mini-control-button danger" type="button" onClick={deleteSelectedTextBox} aria-label="削除">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M4 7h16M9 7V4h6v3m-9 0 1 13a2 2 0 002 2h6a2 2 0 002-2l1-13" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                 </button>
-                <button className="mini-control-button" type="button" onClick={clearSelectedTextBox}>
-                  閉じる
+                <button className="mini-control-button" type="button" onClick={clearSelectedTextBox} aria-label="閉じる">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M6 6L18 18M18 6L6 18" strokeLinecap="round" />
+                  </svg>
                 </button>
               </div>
 
@@ -1243,48 +1305,59 @@ export function MosaicCanvas({
 
       <div className="toolbar">
         <button
-          className={`action-button ${editMode === "adjust" ? "" : "secondary"}`}
+          className={`icon-button ${editMode === "adjust" ? "is-selected" : ""}`}
           type="button"
           onClick={() => switchMode("adjust")}
+          aria-label="写真を調整"
         >
-          写真を調整
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="5 9 2 12 5 15" />
+            <polyline points="9 5 12 2 15 5" />
+            <polyline points="15 19 12 22 9 19" />
+            <polyline points="19 9 22 12 19 15" />
+            <line x1="2" y1="12" x2="22" y2="12" />
+            <line x1="12" y1="2" x2="12" y2="22" />
+          </svg>
         </button>
         <button
-          className={`action-button ${editMode === "mosaic" ? "" : "secondary"}`}
+          className={`icon-button ${editMode === "mosaic" ? "is-selected" : ""}`}
           type="button"
           onClick={() => switchMode("mosaic")}
+          aria-label="モザイク"
         >
-          モザイク
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="3" y="3" width="7" height="7" />
+            <rect x="14" y="3" width="7" height="7" />
+            <rect x="3" y="14" width="7" height="7" />
+            <rect x="14" y="14" width="7" height="7" />
+          </svg>
         </button>
-        <button className="action-button secondary" type="button" onClick={addTextBox} disabled={textBoxes.length >= MAX_TEXT_BOXES}>
-          文字を追加
+        <button className="icon-button" type="button" onClick={addTextBox} disabled={textBoxes.length >= MAX_TEXT_BOXES} aria-label="文字を追加">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <text x="12" y="17" textAnchor="middle" fontSize="12" fontWeight="700">T+</text>
+          </svg>
         </button>
-        <button className="action-button secondary" type="button" onClick={undoLastMosaic} disabled={strokeCount === 0}>
-          直前のモザイクを戻す
+        <button className="icon-button" type="button" onClick={undo} disabled={historyCount === 0} aria-label="ひとつ戻す">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M3 10h9a5 5 0 010 10H9" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M7 6l-4 4 4 4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </button>
-        <button className="action-button secondary" type="button" onClick={resetTransform}>
-          写真位置をリセット
+        <button className="icon-button" type="button" onClick={resetTransform} aria-label="写真位置をリセット">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M4 9V5a1 1 0 011-1h4M20 9V5a1 1 0 00-1-1h-4M4 15v4a1 1 0 001 1h4M20 15v4a1 1 0 01-1 1h-4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </button>
-        <button className="action-button primary-wide" type="button" onClick={finalizeImage}>
-          確定して完成画像にする
-        </button>
-        {onBackToPhotos && (
-          <button className="action-button secondary" type="button" onClick={onBackToPhotos}>
-            写真選択へ戻る
-          </button>
-        )}
-        <button className="action-button secondary" type="button" onClick={onCancel}>
-          キャンセル
-        </button>
-        {onLogout && (
-          <button className="action-button secondary" type="button" onClick={onLogout}>
-            ログアウト
-          </button>
-        )}
       </div>
 
-      <p className="notice">{assetStatus}</p>
-      <p className="notice">{status}</p>
+      <button className="action-button primary-wide" type="button" onClick={finalizeImage} aria-label="確定して完成画像にする">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+          <path d="M4 12l6 6L20 6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      {frameLoadError && <p className="notice error">{frameLoadError}</p>}
+      {editError && <p className="notice error">{editError}</p>}
     </section>
   );
 }

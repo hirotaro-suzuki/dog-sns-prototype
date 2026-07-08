@@ -270,6 +270,25 @@ p {
   color: #ffffff;
 }
 
+.icon-button.is-selected {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.icon-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: var(--line);
+  color: var(--muted);
+  background: var(--panel);
+}
+
+.icon-button.large {
+  width: 64px;
+  height: 64px;
+}
+
 .frame-choice-bar {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -393,6 +412,10 @@ p {
 }
 
 .action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   min-height: 48px;
   border: 0;
   border-radius: var(--radius);
@@ -744,6 +767,10 @@ p {
 }
 
 .mini-control-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
   min-height: 36px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
