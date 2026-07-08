@@ -59,7 +59,6 @@ export function StoreHome() {
       <CameraCapture
         store={session.store}
         staffMembers={session.staffMembers}
-        onBack={() => setIsCapturing(false)}
         onLogout={handleLogout}
       />
     );

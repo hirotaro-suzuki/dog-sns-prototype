@@ -56,11 +56,19 @@ Codexでベースを作った経緯があり、機能優先でデザインがほ
 
 ## 実装状況
 
-このセクションは実装完了後に更新する。
+2026-07-08、決定事項どおりに実装し、ローカルビルド（`npm run build`）成功まで確認済み。
+
+- `src/app/globals.css`: 配色（クリーム背景／テラコッタアクセント）、角丸拡大（`--radius`変数化）、見出しフォント変数、ログイン入力欄のインナーシャドウ＋フォーカスリング、店舗側画面用no-scrollレイアウト（`.store-app-shell`）、丸型シャッター・サムネイル帯・全画面プレビューのスタイルを追加。廃止した`PhotoPicker`専用の`.picker-panel`/`.photo-choice`等は削除。
+- `src/app/layout.tsx`: Zen Maru Gothicフォントを`<link>`で読み込み（`next/font/google`はCJKグリフの収録範囲が不安定なため、実行時にGoogle Fonts CDNから読む方式にした）。
+- `src/components/StoreLoginForm.tsx` / `src/app/store/login/page.tsx`: 店舗コードをlocalStorage（`dog-sns-last-login-code`）に記憶し次回自動プリセット＋「前回: ○○」表示。PINは数字以外を`onChange`で除去し、目のアイコンで表示/非表示切替。
+- `src/components/PhotoPreviewOverlay.tsx`（新設）: 黒背景に写真をcontain表示する全画面プレビュー。「これに決める」でスタッフ選択へ、「この写真を消す」で削除、×で閉じる。
+- `src/components/CameraCapture.tsx`: `pick`ステップを廃止し、サムネイルタップ→`PhotoPreviewOverlay`という動線に統合。「この写真で選ぶ」「やり直し」「キャンセル」「店舗ホームに戻る」の各ボタンを撮影画面から削除（ログアウトのみ残す）。シャッターは丸型ボタン化し、`isEncodingRef`によるガードで連打時の多重撮影のみ防止（タップの視覚フィードバックは維持）。常時表示のnoticeは撤去し、カメラ起動失敗時のみカメラ枠内にエラーとリトライボタンを表示、撮影データ生成失敗時のみ画面下部にエラー表示。3枚撮り切って未選択の状態はサムネイル帯のパルス演出とシャッターのグレーアウトのみで伝える。
+- `src/components/PhotoPicker.tsx`: 削除。
+- `src/components/StoreHome.tsx`: `CameraCapture`から`onBack`プロパティが無くなったことに追従し、渡すのをやめた。
 
 ## Vercel確認
 
-未実施。
+未実施（この後push・デプロイ確認を行う）。
 
 ## ユーザー確認
 

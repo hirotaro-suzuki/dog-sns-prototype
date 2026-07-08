@@ -1,9 +1,10 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import type { StoreSession } from "@/types/storeSession";
 
 const STORE_SESSION_KEY = "dog-sns-store-session";
+const LAST_LOGIN_CODE_KEY = "dog-sns-last-login-code";
 
 type LoginResponse = StoreSession & {
   message?: string;
@@ -12,11 +13,23 @@ type LoginResponse = StoreSession & {
 
 export function StoreLoginForm() {
   const [loginCode, setLoginCode] = useState("");
+  const [lastLoginCode, setLastLoginCode] = useState("");
   const [pin, setPin] = useState("");
-  const [session, setSession] = useState<StoreSession | null>(null);
+  const [showPin, setShowPin] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState("店舗コードとPINを入力してください。");
   const [detail, setDetail] = useState("");
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem(LAST_LOGIN_CODE_KEY);
+    if (!saved) return;
+    setLoginCode(saved);
+    setLastLoginCode(saved);
+  }, []);
+
+  function handlePinChange(event: ChangeEvent<HTMLInputElement>) {
+    setPin(event.target.value.replace(/\D/g, ""));
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -33,7 +46,6 @@ export function StoreLoginForm() {
       const data = (await response.json()) as LoginResponse;
 
       if (!response.ok) {
-        setSession(null);
         setMessage(data.message ?? "ログインできませんでした。");
         setDetail(data.detail ? `確認用: ${data.detail}` : "");
         return;
@@ -41,12 +53,11 @@ export function StoreLoginForm() {
 
       const nextSession = data as StoreSession;
       window.localStorage.setItem(STORE_SESSION_KEY, JSON.stringify(nextSession));
-      setSession(nextSession);
+      window.localStorage.setItem(LAST_LOGIN_CODE_KEY, loginCode);
       setMessage(`${nextSession.store.displayName} としてログインしました。`);
       setDetail("");
       window.location.assign("/store?start=capture");
     } catch {
-      setSession(null);
       setMessage("通信に失敗しました。時間をおいてもう一度お試しください。");
       setDetail("");
     } finally {
@@ -71,18 +82,50 @@ export function StoreLoginForm() {
             onChange={(event) => setLoginCode(event.target.value)}
             placeholder="店舗コード"
           />
+          {lastLoginCode && <span className="field-hint">前回: {lastLoginCode}</span>}
         </label>
 
         <label className="field-label">
           PIN
-          <input
-            autoComplete="current-password"
-            inputMode="numeric"
-            type="password"
-            value={pin}
-            onChange={(event) => setPin(event.target.value)}
-            placeholder="PIN"
-          />
+          <div className="pin-input-wrap">
+            <input
+              autoComplete="current-password"
+              inputMode="numeric"
+              type={showPin ? "text" : "password"}
+              value={pin}
+              onChange={handlePinChange}
+              placeholder="PIN"
+            />
+            <button
+              className="pin-toggle-button"
+              type="button"
+              onClick={() => setShowPin((current) => !current)}
+              aria-label={showPin ? "PINを隠す" : "PINを表示"}
+            >
+              {showPin ? (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 3l18 18" strokeLinecap="round" />
+                  <path
+                    d="M10.58 10.58a2 2 0 002.83 2.83"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M9.88 4.24A9.8 9.8 0 0112 4c5 0 9 4 10 8-.32 1.14-.9 2.28-1.68 3.32M6.6 6.6C4.6 8 3.1 10 2 12c1 4 5 8 10 8 1.5 0 2.9-.36 4.16-.98"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path
+                    d="M2 12c1-4 5-8 10-8s9 4 10 8c-1 4-5 8-10 8s-9-4-10-8z"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              )}
+            </button>
+          </div>
         </label>
 
         <button className="action-button primary-wide" type="submit" disabled={isSubmitting}>
@@ -90,16 +133,8 @@ export function StoreLoginForm() {
         </button>
       </form>
 
-      {session && (
-        <div className="login-summary">
-          <p className="eyebrow">ログイン中</p>
-          <h2>{session.store.displayName}</h2>
-          <p>{session.staffMembers.length}名の担当者を読み込みました。</p>
-        </div>
-      )}
-
       <p className="notice">{message}</p>
-      {detail && <p className="notice subtle">{detail}</p>}
+      {detail && <p className="notice error">{detail}</p>}
     </section>
   );
 }
