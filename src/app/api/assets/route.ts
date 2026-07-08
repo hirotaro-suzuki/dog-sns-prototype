@@ -12,6 +12,7 @@ type SaveAssetRequest = {
   finalImageDataUrl?: unknown;
   frameUrl?: unknown;
   printedAt?: unknown;
+  shortCaption?: unknown;
 };
 
 type StoreAssetRow = {
@@ -119,6 +120,7 @@ export async function POST(request: Request) {
   const finalImageDataUrl = normalizeString(body.finalImageDataUrl);
   const requestedFrameUrl = normalizeString(body.frameUrl);
   const printedAt = normalizeString(body.printedAt);
+  const shortCaption = normalizeString(body.shortCaption).slice(0, 40);
 
   if (!storeId || !staffId || !finalImageDataUrl) {
     return NextResponse.json(
@@ -268,6 +270,7 @@ export async function POST(request: Request) {
           final_processed_url: publicUrlData.publicUrl,
           final_storage_bucket: FINAL_IMAGE_BUCKET,
           final_storage_path: storagePath,
+          short_caption: shortCaption || null,
           frame_url_snapshot: frameUrlSnapshot,
           logo_url_snapshot: store.logo_url,
           theme_color_snapshot: store.theme_color,

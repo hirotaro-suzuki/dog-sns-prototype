@@ -530,6 +530,7 @@ export function MosaicCanvas({
   const [completedImageUrl, setCompletedImageUrl] = useState<string | null>(null);
   const [printedAt, setPrintedAt] = useState<string | null>(null);
   const [hasConsent, setHasConsent] = useState(false);
+  const [shortCaption, setShortCaption] = useState("");
   const [isSavingAsset, setIsSavingAsset] = useState(false);
   const [savedAssetCode, setSavedAssetCode] = useState<string | null>(null);
   const [frameLoadError, setFrameLoadError] = useState("");
@@ -1011,6 +1012,7 @@ export function MosaicCanvas({
       setCompletedImageUrl(nextUrl);
       setPrintedAt(null);
       setHasConsent(false);
+      setShortCaption("");
       setSavedAssetCode(null);
     } catch {
       setCompletedImageUrl(null);
@@ -1041,6 +1043,7 @@ export function MosaicCanvas({
           finalImageDataUrl: completedImageUrl,
           frameUrl: store.frameUrl,
           printedAt,
+          shortCaption,
         }),
       });
       const result = (await response.json()) as {
@@ -1131,6 +1134,14 @@ export function MosaicCanvas({
 
         {!savedAssetCode ? (
           <div className="final-action-area">
+            <input
+              className="short-caption-input"
+              type="text"
+              value={shortCaption}
+              maxLength={40}
+              placeholder="一言メモ（任意）"
+              onChange={(event) => setShortCaption(event.target.value.slice(0, 40))}
+            />
             <label className="field-label consent-label">
               <input
                 type="checkbox"
@@ -1140,8 +1151,8 @@ export function MosaicCanvas({
               お客様からSNS掲載OKをもらいました
             </label>
             <div className="toolbar">
-              <button className="icon-button" type="button" onClick={handlePrintFinalImage} aria-label="印刷">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <button className="icon-button large" type="button" onClick={handlePrintFinalImage} aria-label="印刷">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M6 9V4h12v5" strokeLinecap="round" strokeLinejoin="round" />
                   <rect x="4" y="9" width="16" height="8" rx="1.5" />
                   <path d="M8 14h8v6H8z" strokeLinecap="round" strokeLinejoin="round" />
@@ -1154,7 +1165,7 @@ export function MosaicCanvas({
                 disabled={isSavingAsset || !store || !staff || !hasConsent}
                 aria-label={isSavingAsset ? "保存中" : "保存"}
               >
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M7 18a4 4 0 01-1-7.87A5 5 0 0116 7a4.5 4.5 0 011 8.9" strokeLinecap="round" strokeLinejoin="round" />
                   <path d="M12 12v7m0-7l-3 3m3-3l3 3" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>

@@ -663,11 +663,11 @@ p {
 .final-image-frame {
   position: relative;
   overflow: hidden;
-  height: 100%;
-  width: auto;
-  max-width: 100%;
+  width: min(100%, 58dvh);
   aspect-ratio: 1 / 1;
+  border: 1px solid var(--line);
   border-radius: var(--radius);
+  background: var(--panel);
   box-shadow: var(--shadow);
 }
 
@@ -691,6 +691,23 @@ p {
   gap: 10px;
   font-weight: 400;
   color: var(--foreground);
+}
+
+.short-caption-input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fffdf8;
+  color: var(--foreground);
+  padding: 8px 12px;
+  box-shadow: inset 0 2px 4px rgba(43, 34, 22, 0.06);
+}
+
+.short-caption-input:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: inset 0 2px 4px rgba(43, 34, 22, 0.06), 0 0 0 3px color-mix(in srgb, var(--accent) 26%, transparent);
 }
 
 .confirm-row {
