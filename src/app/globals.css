@@ -625,6 +625,11 @@ p {
   gap: 18px;
 }
 
+.confirm-row {
+  display: flex;
+  justify-content: center;
+}
+
 .text-editor-panel {
   display: grid;
   gap: 18px;

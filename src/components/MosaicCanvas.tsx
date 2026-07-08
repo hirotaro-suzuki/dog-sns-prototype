@@ -1351,11 +1351,13 @@ export function MosaicCanvas({
         </button>
       </div>
 
-      <button className="action-button primary-wide" type="button" onClick={finalizeImage} aria-label="確定して完成画像にする">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-          <path d="M4 12l6 6L20 6" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
+      <div className="confirm-row">
+        <button className="photo-preview-action confirm" type="button" onClick={finalizeImage} aria-label="確定して完成画像にする">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+            <path d="M4 12l6 6L20 6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      </div>
 
       {frameLoadError && <p className="notice error">{frameLoadError}</p>}
       {editError && <p className="notice error">{editError}</p>}
