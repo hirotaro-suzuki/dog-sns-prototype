@@ -1134,14 +1134,6 @@ export function MosaicCanvas({
 
         {!savedAssetCode ? (
           <div className="final-action-area">
-            <input
-              className="short-caption-input"
-              type="text"
-              value={shortCaption}
-              maxLength={40}
-              placeholder="一言メモ（任意）"
-              onChange={(event) => setShortCaption(event.target.value.slice(0, 40))}
-            />
             <label className="field-label consent-label">
               <input
                 type="checkbox"
@@ -1150,6 +1142,14 @@ export function MosaicCanvas({
               />
               お客様からSNS掲載OKをもらいました
             </label>
+            <input
+              className="short-caption-input"
+              type="text"
+              value={shortCaption}
+              maxLength={40}
+              placeholder="一言メモ（任意）"
+              onChange={(event) => setShortCaption(event.target.value.slice(0, 40))}
+            />
             <div className="toolbar">
               <button className="icon-button large" type="button" onClick={handlePrintFinalImage} aria-label="印刷">
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

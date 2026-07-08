@@ -663,7 +663,7 @@ p {
 .final-image-frame {
   position: relative;
   overflow: hidden;
-  width: min(100%, 58dvh);
+  width: min(100%, 68dvh);
   aspect-ratio: 1 / 1;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -693,9 +693,15 @@ p {
   color: var(--foreground);
 }
 
+.consent-label input[type="checkbox"] {
+  width: auto;
+  min-height: 0;
+  flex: none;
+}
+
 .short-caption-input {
   width: 100%;
-  max-width: 26em;
+  max-width: 42em;
   min-height: 44px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
