@@ -30,8 +30,6 @@ export type StoreSessionStaff = {
   id: string;
   staffCode: string;
   displayName: string;
-  roleLabel: string | null;
-  canApproveSns: boolean;
 };
 
 export type StoreSession = {

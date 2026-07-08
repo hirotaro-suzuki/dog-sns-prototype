@@ -38,8 +38,6 @@ type StaffMemberInsert = {
   store_id: string;
   staff_code: string;
   display_name: string;
-  role_label?: string | null;
-  can_approve_sns?: boolean;
   is_active?: boolean;
   sort_order?: number;
   notes?: string | null;
@@ -150,8 +148,6 @@ export type Database = {
           store_id: string;
           staff_code: string;
           display_name: string;
-          role_label: string | null;
-          can_approve_sns: boolean;
           is_active: boolean;
           sort_order: number;
           notes: string | null;

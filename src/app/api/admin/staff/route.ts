@@ -8,8 +8,6 @@ type CreateStaffRequest = {
   storeId?: unknown;
   staffCode?: unknown;
   displayName?: unknown;
-  roleLabel?: unknown;
-  canApproveSns?: unknown;
   sortOrder?: unknown;
   notes?: unknown;
 };
@@ -19,8 +17,6 @@ type StaffRow = {
   store_id: string;
   staff_code: string;
   display_name: string;
-  role_label: string | null;
-  can_approve_sns: boolean;
   is_active: boolean;
   sort_order: number;
   notes: string | null;
@@ -75,7 +71,7 @@ export async function GET(request: Request) {
     const supabase = createServerSupabaseClient();
     let query = supabase
       .from("staff_members")
-      .select("id, store_id, staff_code, display_name, role_label, can_approve_sns, is_active, sort_order, notes")
+      .select("id, store_id, staff_code, display_name, is_active, sort_order, notes")
       .order("sort_order", { ascending: true })
       .order("display_name", { ascending: true });
 
@@ -127,13 +123,11 @@ export async function POST(request: Request) {
         store_id: storeId,
         staff_code: staffCode,
         display_name: displayName,
-        role_label: cleanText(body.roleLabel, 80),
-        can_approve_sns: Boolean(body.canApproveSns),
         is_active: true,
         sort_order: cleanNumber(body.sortOrder),
         notes: cleanText(body.notes, 500),
       })
-      .select("id, store_id, staff_code, display_name, role_label, can_approve_sns, is_active, sort_order, notes")
+      .select("id, store_id, staff_code, display_name, is_active, sort_order, notes")
       .single();
 
     if (error) {

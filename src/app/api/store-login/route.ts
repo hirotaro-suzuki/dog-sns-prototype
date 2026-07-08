@@ -66,8 +66,6 @@ type StaffLoginRow = {
   id: string;
   staff_code: string;
   display_name: string;
-  role_label: string | null;
-  can_approve_sns: boolean;
 };
 
 type StoreFrameLoginRow = {
@@ -182,7 +180,7 @@ export async function POST(request: Request) {
 
     const { data: staffData, error: staffError } = await supabase
       .from("staff_members")
-      .select("id, staff_code, display_name, role_label, can_approve_sns")
+      .select("id, staff_code, display_name")
       .eq("store_id", store.id)
       .eq("is_active", true)
       .order("sort_order", { ascending: true })
@@ -283,8 +281,6 @@ export async function POST(request: Request) {
         id: staff.id,
         staffCode: staff.staff_code,
         displayName: staff.display_name,
-        roleLabel: staff.role_label,
-        canApproveSns: staff.can_approve_sns,
       })),
       loggedInAt: new Date().toISOString(),
     };

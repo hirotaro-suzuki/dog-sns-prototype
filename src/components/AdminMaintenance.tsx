@@ -3,7 +3,7 @@
 import { FormEvent, PointerEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MAX_FRAMES_PER_STORE } from "@/lib/frameLimits";
 
-type AdminTab = "assets" | "stores" | "staff" | "frames";
+type AdminTab = "assets" | "stores" | "frames";
 type AssetReviewStatus = "new" | "candidate" | "hold" | "rejected";
 type ReviewStatusFilter = "all" | AssetReviewStatus;
 type AssetSortMode = "date" | "store";
@@ -38,8 +38,6 @@ type StaffMaster = {
   store_id: string;
   staff_code: string;
   display_name: string;
-  role_label: string | null;
-  can_approve_sns: boolean;
   is_active: boolean;
   sort_order: number;
   notes: string | null;
@@ -109,6 +107,12 @@ type StoreAssetUploadResponse = {
 
 type UpdatedAssetResponse = {
   asset?: Pick<AdminAsset, "id" | "description" | "short_caption" | "review_status" | "status" | "hidden_at" | "hidden_reason">;
+  message?: string;
+  detail?: string;
+};
+
+type DeletedAssetResponse = {
+  deletedAssetId?: string;
   message?: string;
   detail?: string;
 };
@@ -189,8 +193,6 @@ function emptyStaffDraft(storeId = ""): StaffMaster {
     store_id: storeId,
     staff_code: "",
     display_name: "",
-    role_label: "",
-    can_approve_sns: false,
     is_active: true,
     sort_order: 0,
     notes: "",
@@ -335,13 +337,12 @@ export function AdminMaintenance() {
   const canGoPreviousAsset = selectedAssetIndex > 0;
   const canGoNextAsset = selectedAssetIndex >= 0 && selectedAssetIndex < selectedAssetQueue.length - 1;
 
-  const staffStoreId = staffDraft.store_id || selectedStoreMasterId || stores[0]?.id || "";
   const visibleStaff = useMemo(
     () =>
       staffMasters.filter(
-        (staff) => (!staffStoreId || staff.store_id === staffStoreId) && (includeInactiveStaff || staff.is_active)
+        (staff) => staff.store_id === selectedStoreMasterId && (includeInactiveStaff || staff.is_active)
       ),
-    [staffMasters, staffStoreId, includeInactiveStaff]
+    [staffMasters, selectedStoreMasterId, includeInactiveStaff]
   );
   const visibleStoreMasters = useMemo(
     () => storeMasters.filter((store) => includeInactiveStores || store.is_active),
@@ -456,10 +457,6 @@ export function AdminMaintenance() {
       }
 
       setStaffMasters(data.staff);
-      setSelectedStaffId((currentId) => {
-        if (currentId && data.staff?.some((staff) => staff.id === currentId)) return currentId;
-        return data.staff?.[0]?.id ?? null;
-      });
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "担当者マスタを取得できませんでした。");
     } finally {
@@ -489,15 +486,22 @@ export function AdminMaintenance() {
   }, [selectedStoreMaster]);
 
   useEffect(() => {
-    setStaffDraft(selectedStaff ?? emptyStaffDraft(stores[0]?.id ?? ""));
-  }, [selectedStaff, stores]);
+    setStaffDraft(selectedStaff ?? emptyStaffDraft(selectedStoreMasterId ?? ""));
+  }, [selectedStaff, selectedStoreMasterId]);
 
   useEffect(() => {
-    setNewStaffDraft((current) => ({
-      ...current,
-      store_id: current.store_id || selectedStoreMasterId || stores[0]?.id || "",
-    }));
-  }, [selectedStoreMasterId, stores]);
+    setNewStaffDraft(emptyStaffDraft(selectedStoreMasterId ?? ""));
+  }, [selectedStoreMasterId]);
+
+  useEffect(() => {
+    setSelectedStaffId((currentId) => {
+      const stillValid = staffMasters.some(
+        (staff) => staff.id === currentId && staff.store_id === selectedStoreMasterId
+      );
+      if (stillValid) return currentId;
+      return staffMasters.find((staff) => staff.store_id === selectedStoreMasterId)?.id ?? null;
+    });
+  }, [selectedStoreMasterId, staffMasters]);
 
   function handlePinSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -579,6 +583,37 @@ export function AdminMaintenance() {
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "更新できませんでした。");
       return false;
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function deleteSelectedAsset() {
+    if (!selectedAsset || !adminPin) return;
+
+    const confirmed = window.confirm("この写真を完全に削除します。元に戻せません。よろしいですか？");
+    if (!confirmed) return;
+
+    setIsSaving(true);
+    setMessage("");
+
+    try {
+      const response = await fetch(`/api/admin/assets/${selectedAsset.id}`, {
+        method: "DELETE",
+        headers: { "x-admin-pin": adminPin },
+      });
+      const data = (await response.json()) as DeletedAssetResponse;
+
+      if (!response.ok || !data.deletedAssetId) {
+        setMessage(getErrorMessage(data, "写真を削除できませんでした。"));
+        return;
+      }
+
+      setAssets((current) => current.filter((asset) => asset.id !== data.deletedAssetId));
+      setAssetScreen("list");
+      setMessage("写真を削除しました。");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "写真を削除できませんでした。");
     } finally {
       setIsSaving(false);
     }
@@ -666,8 +701,6 @@ export function AdminMaintenance() {
         },
         body: JSON.stringify({
           displayName: staffDraft.display_name,
-          roleLabel: staffDraft.role_label,
-          canApproveSns: staffDraft.can_approve_sns,
           isActive: staffDraft.is_active,
           sortOrder: staffDraft.sort_order,
           notes: staffDraft.notes,
@@ -708,8 +741,6 @@ export function AdminMaintenance() {
           storeId: newStaffDraft.store_id,
           staffCode: newStaffDraft.staff_code,
           displayName: newStaffDraft.display_name,
-          roleLabel: newStaffDraft.role_label,
-          canApproveSns: newStaffDraft.can_approve_sns,
           sortOrder: newStaffDraft.sort_order,
           notes: newStaffDraft.notes,
         }),
@@ -786,9 +817,6 @@ export function AdminMaintenance() {
         </button>
         <button className={activeTab === "stores" ? "is-selected" : ""} type="button" onClick={() => setActiveTab("stores")}>
           店舗
-        </button>
-        <button className={activeTab === "staff" ? "is-selected" : ""} type="button" onClick={() => setActiveTab("staff")}>
-          担当者
         </button>
         <button className={activeTab === "frames" ? "is-selected" : ""} type="button" onClick={() => setActiveTab("frames")}>
           枠
@@ -1039,6 +1067,10 @@ export function AdminMaintenance() {
                   </button>
                 </div>
               )}
+
+              <button className="action-button danger" type="button" disabled={isSaving} onClick={() => void deleteSelectedAsset()}>
+                完全に削除する
+              </button>
             </>
           ) : (
             <p className="notice">一覧へ戻って写真を選択してください。</p>
@@ -1111,118 +1143,83 @@ export function AdminMaintenance() {
                 <button className="action-button" type="button" disabled={isSaving} onClick={saveStoreMaster}>
                   店舗を保存
                 </button>
+
+                <h2>担当者</h2>
+                <label className="admin-toggle">
+                  <input
+                    type="checkbox"
+                    checked={includeInactiveStaff}
+                    onChange={(event) => setIncludeInactiveStaff(event.target.checked)}
+                  />
+                  停止中も表示
+                </label>
+
+                <div className="admin-master-list">
+                  {visibleStaff.map((staff) => (
+                    <button
+                      key={staff.id}
+                      className={`admin-master-row${selectedStaffId === staff.id ? " is-selected" : ""}${staff.is_active ? "" : " is-archived"}`}
+                      type="button"
+                      onClick={() => setSelectedStaffId(staff.id)}
+                    >
+                      <strong>{staff.display_name}</strong>
+                      <span>{staff.staff_code}</span>
+                      <span>{staff.is_active ? "有効" : "停止中"}</span>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="admin-create-panel">
+                  <h2>担当者追加</h2>
+                  <label className="field-label">
+                    担当者コード
+                    <input value={newStaffDraft.staff_code} onChange={(event) => setNewStaffDraft((current) => ({ ...current, staff_code: event.target.value }))} />
+                  </label>
+                  <label className="field-label">
+                    表示名
+                    <input value={newStaffDraft.display_name} onChange={(event) => setNewStaffDraft((current) => ({ ...current, display_name: event.target.value }))} />
+                  </label>
+                  <button className="action-button secondary" type="button" disabled={isSaving} onClick={createStaffMember}>
+                    追加
+                  </button>
+                </div>
+
+                {selectedStaff ? (
+                  <>
+                    <dl className="settings-list">
+                      <div>
+                        <dt>担当者コード</dt>
+                        <dd>{selectedStaff.staff_code}</dd>
+                      </div>
+                    </dl>
+                    <div className="admin-form-grid">
+                      <label className="field-label">
+                        表示名
+                        <input value={staffDraft.display_name} onChange={(event) => setStaffDraft((current) => ({ ...current, display_name: event.target.value }))} />
+                      </label>
+                      <label className="field-label">
+                        並び順
+                        <input type="number" value={staffDraft.sort_order} onChange={(event) => setStaffDraft((current) => ({ ...current, sort_order: Number(event.target.value) }))} />
+                      </label>
+                    </div>
+                    <label className="admin-toggle">
+                      <input type="checkbox" checked={staffDraft.is_active} onChange={(event) => setStaffDraft((current) => ({ ...current, is_active: event.target.checked }))} />
+                      有効
+                    </label>
+                    <label className="field-label">
+                      メモ
+                      <textarea rows={3} value={nullableText(staffDraft.notes)} onChange={(event) => setStaffDraft((current) => ({ ...current, notes: event.target.value }))} />
+                    </label>
+                    <button className="action-button" type="button" disabled={isSaving} onClick={saveStaffMaster}>
+                      担当者を保存
+                    </button>
+                  </>
+                ) : (
+                  <p className="notice">担当者を選択してください。</p>
+                )}
               </>
             ) : (
               <p className="notice">店舗を選択してください。</p>
-            )}
-          </aside>
-        </section>
-      ) : null}
-
-      {activeTab === "staff" ? (
-        <section className="admin-main-grid">
-          <div className="admin-master-list">
-            <label className="field-label">
-              店舗
-              <select
-                value={staffStoreId}
-                onChange={(event) => {
-                  setStaffDraft((current) => ({ ...current, store_id: event.target.value }));
-                  setNewStaffDraft((current) => ({ ...current, store_id: event.target.value }));
-                  const firstStaff = staffMasters.find((staff) => staff.store_id === event.target.value);
-                  setSelectedStaffId(firstStaff?.id ?? null);
-                }}
-              >
-                {stores.filter((store) => store.is_active).map((store) => (
-                  <option key={store.id} value={store.id}>
-                    {store.display_name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="admin-toggle">
-              <input
-                type="checkbox"
-                checked={includeInactiveStaff}
-                onChange={(event) => setIncludeInactiveStaff(event.target.checked)}
-              />
-              停止中も表示
-            </label>
-
-            {visibleStaff.map((staff) => (
-              <button
-                key={staff.id}
-                className={`admin-master-row${selectedStaffId === staff.id ? " is-selected" : ""}${staff.is_active ? "" : " is-archived"}`}
-                type="button"
-                onClick={() => setSelectedStaffId(staff.id)}
-              >
-                <strong>{staff.display_name}</strong>
-                <span>{staff.staff_code}</span>
-                <span>{staff.is_active ? "有効" : "停止中"}</span>
-              </button>
-            ))}
-
-            <div className="admin-create-panel">
-              <h2>担当者追加</h2>
-              <label className="field-label">
-                担当者コード
-                <input value={newStaffDraft.staff_code} onChange={(event) => setNewStaffDraft((current) => ({ ...current, staff_code: event.target.value }))} />
-              </label>
-              <label className="field-label">
-                表示名
-                <input value={newStaffDraft.display_name} onChange={(event) => setNewStaffDraft((current) => ({ ...current, display_name: event.target.value }))} />
-              </label>
-              <button className="action-button secondary" type="button" disabled={isSaving} onClick={createStaffMember}>
-                追加
-              </button>
-            </div>
-          </div>
-
-          <aside className="admin-edit-panel">
-            {selectedStaff ? (
-              <>
-                <dl className="settings-list">
-                  <div>
-                    <dt>担当者コード</dt>
-                    <dd>{selectedStaff.staff_code}</dd>
-                  </div>
-                  <div>
-                    <dt>所属店舗</dt>
-                    <dd>{stores.find((store) => store.id === selectedStaff.store_id)?.display_name ?? "不明"}</dd>
-                  </div>
-                </dl>
-                <div className="admin-form-grid">
-                  <label className="field-label">
-                    表示名
-                    <input value={staffDraft.display_name} onChange={(event) => setStaffDraft((current) => ({ ...current, display_name: event.target.value }))} />
-                  </label>
-                  <label className="field-label">
-                    役割
-                    <input value={nullableText(staffDraft.role_label)} onChange={(event) => setStaffDraft((current) => ({ ...current, role_label: event.target.value }))} />
-                  </label>
-                  <label className="field-label">
-                    並び順
-                    <input type="number" value={staffDraft.sort_order} onChange={(event) => setStaffDraft((current) => ({ ...current, sort_order: Number(event.target.value) }))} />
-                  </label>
-                </div>
-                <label className="admin-toggle">
-                  <input type="checkbox" checked={staffDraft.can_approve_sns} onChange={(event) => setStaffDraft((current) => ({ ...current, can_approve_sns: event.target.checked }))} />
-                  SNS承認可
-                </label>
-                <label className="admin-toggle">
-                  <input type="checkbox" checked={staffDraft.is_active} onChange={(event) => setStaffDraft((current) => ({ ...current, is_active: event.target.checked }))} />
-                  有効
-                </label>
-                <label className="field-label">
-                  メモ
-                  <textarea rows={3} value={nullableText(staffDraft.notes)} onChange={(event) => setStaffDraft((current) => ({ ...current, notes: event.target.value }))} />
-                </label>
-                <button className="action-button" type="button" disabled={isSaving} onClick={saveStaffMaster}>
-                  担当者を保存
-                </button>
-              </>
-            ) : (
-              <p className="notice">担当者を選択してください。</p>
             )}
           </aside>
         </section>

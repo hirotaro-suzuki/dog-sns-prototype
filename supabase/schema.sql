@@ -63,8 +63,6 @@ create table if not exists public.staff_members (
   store_id uuid not null references public.stores(id) on delete restrict,
   staff_code text not null,
   display_name text not null,
-  role_label text,
-  can_approve_sns boolean not null default false,
   is_active boolean not null default true,
   sort_order integer not null default 0,
   notes text,

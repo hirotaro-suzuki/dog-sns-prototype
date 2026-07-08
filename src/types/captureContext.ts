@@ -14,7 +14,4 @@ export type CaptureStore = Pick<
   | "timezone"
 >;
 
-export type CaptureStaff = Pick<
-  StoreSessionStaff,
-  "id" | "staffCode" | "displayName" | "roleLabel" | "canApproveSns"
->;
+export type CaptureStaff = Pick<StoreSessionStaff, "id" | "staffCode" | "displayName">;

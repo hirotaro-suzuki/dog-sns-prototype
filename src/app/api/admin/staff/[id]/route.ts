@@ -6,8 +6,6 @@ export const runtime = "nodejs";
 
 type UpdateStaffRequest = {
   displayName?: unknown;
-  roleLabel?: unknown;
-  canApproveSns?: unknown;
   isActive?: unknown;
   sortOrder?: unknown;
   notes?: unknown;
@@ -18,8 +16,6 @@ type StaffRow = {
   store_id: string;
   staff_code: string;
   display_name: string;
-  role_label: string | null;
-  can_approve_sns: boolean;
   is_active: boolean;
   sort_order: number;
   notes: string | null;
@@ -90,15 +86,13 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     const { data, error } = await staffTable
       .update({
         display_name: displayName,
-        role_label: cleanText(body.roleLabel, 80),
-        can_approve_sns: Boolean(body.canApproveSns),
         is_active: Boolean(body.isActive),
         sort_order: cleanNumber(body.sortOrder),
         notes: cleanText(body.notes, 500),
         updated_at: new Date().toISOString(),
       })
       .eq("id", id)
-      .select("id, store_id, staff_code, display_name, role_label, can_approve_sns, is_active, sort_order, notes")
+      .select("id, store_id, staff_code, display_name, is_active, sort_order, notes")
       .single();
 
     if (error) {

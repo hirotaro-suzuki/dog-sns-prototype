@@ -29,8 +29,13 @@ type AssetUpdateQuery = {
   };
 };
 
+type AssetDeleteQuery = {
+  eq: (column: string, value: unknown) => Promise<{ error: SupabaseLikeError | null }>;
+};
+
 type AssetsTable = {
   update: (values: Record<string, unknown>) => AssetUpdateQuery;
+  delete: () => AssetDeleteQuery;
 };
 
 type UpdatedAssetRow = {
@@ -41,6 +46,12 @@ type UpdatedAssetRow = {
   status: "ready" | "archived";
   hidden_at: string | null;
   hidden_reason: string | null;
+};
+
+type CurrentAssetRow = {
+  id: string;
+  final_storage_bucket: string;
+  final_storage_path: string;
 };
 
 const REVIEW_STATUS_VALUES: AssetReviewStatus[] = ["new", "candidate", "hold", "rejected"];
@@ -141,6 +152,55 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   } catch (error) {
     return NextResponse.json(
       { message: error instanceof Error ? error.message : "写真情報を更新できませんでした。" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
+  const authError = verifyAdminPin(request);
+  if (authError) return authError;
+
+  const { id } = await context.params;
+
+  try {
+    const supabase = createServerSupabaseClient();
+    const assetsTable = supabase.from("assets") as unknown as AssetsTable;
+    const { data: currentAssetData, error: currentError } = await supabase
+      .from("assets")
+      .select("id, final_storage_bucket, final_storage_path")
+      .eq("id", id)
+      .maybeSingle();
+    const currentAsset = currentAssetData as CurrentAssetRow | null;
+
+    if (currentError) {
+      return NextResponse.json(
+        { message: "写真を確認できませんでした。", detail: formatSupabaseError(currentError) },
+        { status: 500 }
+      );
+    }
+
+    if (!currentAsset) {
+      return NextResponse.json({ message: "写真が見つかりませんでした。" }, { status: 404 });
+    }
+
+    if (currentAsset.final_storage_bucket && currentAsset.final_storage_path) {
+      await supabase.storage.from(currentAsset.final_storage_bucket).remove([currentAsset.final_storage_path]);
+    }
+
+    const { error } = await assetsTable.delete().eq("id", id);
+
+    if (error) {
+      return NextResponse.json(
+        { message: "写真を削除できませんでした。", detail: formatSupabaseError(error) },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ deletedAssetId: id });
+  } catch (error) {
+    return NextResponse.json(
+      { message: error instanceof Error ? error.message : "写真を削除できませんでした。" },
       { status: 500 }
     );
   }
