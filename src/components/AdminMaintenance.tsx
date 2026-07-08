@@ -305,6 +305,10 @@ export function AdminMaintenance() {
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState("");
 
+  useEffect(() => {
+    setMessage("");
+  }, [activeTab]);
+
   const selectedAsset = useMemo(
     () => assets.find((asset) => asset.id === selectedAssetId) ?? null,
     [assets, selectedAssetId]
@@ -1425,6 +1429,7 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
           return frame;
         })
       );
+      setEditingFrameId(null);
       setFrameMessage("枠を保存しました。");
     } catch (error) {
       setFrameMessage(error instanceof Error ? error.message : "枠を保存できませんでした。");
