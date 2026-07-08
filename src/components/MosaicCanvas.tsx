@@ -1124,41 +1124,42 @@ export function MosaicCanvas({
         </div>
 
         <div className="final-image-wrap">
-          <img className="print-final-image" src={completedImageUrl} alt="完成画像" />
+          <div className="final-image-frame">
+            <img className="print-final-image" src={completedImageUrl} alt="完成画像" />
+          </div>
         </div>
 
         {!savedAssetCode ? (
           <div className="final-action-area">
+            <label className="field-label consent-label">
+              <input
+                type="checkbox"
+                checked={hasConsent}
+                onChange={(event) => setHasConsent(event.target.checked)}
+              />
+              お客様からSNS掲載OKをもらいました
+            </label>
             <div className="toolbar">
-              <button className="action-button secondary" type="button" onClick={handlePrintFinalImage}>
+              <button className="icon-button" type="button" onClick={handlePrintFinalImage} aria-label="印刷">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M6 9V4h12v5" strokeLinecap="round" strokeLinejoin="round" />
                   <rect x="4" y="9" width="16" height="8" rx="1.5" />
                   <path d="M8 14h8v6H8z" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                印刷
               </button>
-              <label className="field-label consent-label">
-                <input
-                  type="checkbox"
-                  checked={hasConsent}
-                  onChange={(event) => setHasConsent(event.target.checked)}
-                />
-                お客様からSNS掲載OKをもらいました
-              </label>
+              <button
+                className="icon-button large primary"
+                type="button"
+                onClick={saveFinalImage}
+                disabled={isSavingAsset || !store || !staff || !hasConsent}
+                aria-label={isSavingAsset ? "保存中" : "保存"}
+              >
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M7 18a4 4 0 01-1-7.87A5 5 0 0116 7a4.5 4.5 0 011 8.9" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M12 12v7m0-7l-3 3m3-3l3 3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
             </div>
-            <button
-              className="action-button primary-wide"
-              type="button"
-              onClick={saveFinalImage}
-              disabled={isSavingAsset || !store || !staff || !hasConsent}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M7 18a4 4 0 01-1-7.87A5 5 0 0116 7a4.5 4.5 0 011 8.9" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M12 12v7m0-7l-3 3m3-3l3 3" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              {isSavingAsset ? "保存中" : "保存"}
-            </button>
           </div>
         ) : (
           <div className="final-action-area">

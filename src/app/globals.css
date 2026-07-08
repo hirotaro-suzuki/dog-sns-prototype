@@ -291,6 +291,17 @@ p {
   height: 64px;
 }
 
+.icon-button.primary {
+  border-color: transparent;
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.icon-button.primary:hover {
+  border-color: transparent;
+  color: #ffffff;
+}
+
 .frame-choice-bar {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -649,14 +660,22 @@ p {
   align-items: center;
 }
 
-.final-image-wrap img {
+.final-image-frame {
+  position: relative;
+  overflow: hidden;
   height: 100%;
   width: auto;
   max-width: 100%;
   aspect-ratio: 1 / 1;
-  object-fit: cover;
   border-radius: var(--radius);
   box-shadow: var(--shadow);
+}
+
+.final-image-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .final-action-area {
