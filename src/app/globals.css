@@ -1183,6 +1183,14 @@ p {
   font-style: normal;
 }
 
+.admin-card-caption {
+  display: block;
+  min-height: 1em;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .admin-card-meta em {
   width: fit-content;
   border-radius: 999px;

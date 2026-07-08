@@ -888,7 +888,7 @@ export function AdminMaintenance() {
                       <span>{formatDateTime(asset.captured_at)}</span>
                       <span>{asset.staff_display_name ?? "担当者未設定"}</span>
                       <span>{getReviewStatusLabel(asset.review_status)}</span>
-                      {asset.short_caption ? <span>{asset.short_caption}</span> : null}
+                      <span className="admin-card-caption">{asset.short_caption || " "}</span>
                       {asset.status === "archived" ? <em>非表示</em> : null}
                     </span>
                   </button>
