@@ -695,6 +695,7 @@ p {
 
 .short-caption-input {
   width: 100%;
+  max-width: 26em;
   min-height: 44px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
