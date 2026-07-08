@@ -1127,9 +1127,7 @@ export function MosaicCanvas({
         </div>
 
         <div className="final-image-wrap">
-          <div className="final-image-frame">
-            <img className="print-final-image" src={completedImageUrl} alt="完成画像" />
-          </div>
+          <img className="print-final-image" src={completedImageUrl} alt="完成画像" />
         </div>
 
         {!savedAssetCode ? (
