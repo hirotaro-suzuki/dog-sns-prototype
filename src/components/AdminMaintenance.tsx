@@ -1594,10 +1594,9 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
       <label className="field-label">
         店舗
         <select value={selectedStoreId} onChange={(event) => setSelectedStoreId(event.target.value)}>
-          {frameStores.map((store) => (
+          {frameStores.filter((store) => store.is_active).map((store) => (
             <option key={store.id} value={store.id}>
               {store.display_name}
-              {store.is_active ? "" : "（停止中）"}
             </option>
           ))}
         </select>
