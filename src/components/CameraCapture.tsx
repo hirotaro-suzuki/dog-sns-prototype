@@ -351,23 +351,25 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
         </div>
       )}
 
-      <div className="camera-stage" aria-label="カメラプレビュー">
-        <video ref={videoRef} playsInline muted />
-        {!isCameraReady && (
-          <div className="empty-camera">
-            <p>{cameraMessage}</p>
-            {canRetryCamera && (
-              <button className="action-button" type="button" onClick={startCamera}>
-                カメラ再開
-              </button>
-            )}
-          </div>
-        )}
-        {activeStore?.frameUrl ? (
-          <img className="store-frame-image" src={activeStore.frameUrl} alt="店舗フレーム" />
-        ) : (
-          <div className="frame-overlay" data-store={displayStore} data-date={getTodayLabel()} />
-        )}
+      <div className="camera-stage-wrap">
+        <div className="camera-stage" aria-label="カメラプレビュー">
+          <video ref={videoRef} playsInline muted />
+          {!isCameraReady && (
+            <div className="empty-camera">
+              <p>{cameraMessage}</p>
+              {canRetryCamera && (
+                <button className="action-button" type="button" onClick={startCamera}>
+                  カメラ再開
+                </button>
+              )}
+            </div>
+          )}
+          {activeStore?.frameUrl ? (
+            <img className="store-frame-image" src={activeStore.frameUrl} alt="店舗フレーム" />
+          ) : (
+            <div className="frame-overlay" data-store={displayStore} data-date={getTodayLabel()} />
+          )}
+        </div>
       </div>
 
       <div className="capture-control-row">

@@ -124,10 +124,20 @@ p {
 }
 
 .camera-panel {
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
   gap: 12px;
   min-height: 0;
   overflow-y: auto;
+}
+
+.camera-stage-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .login-panel {
@@ -267,8 +277,9 @@ p {
 .camera-stage {
   position: relative;
   overflow: hidden;
-  width: min(100%, 62dvh);
-  margin: 0 auto;
+  height: 100%;
+  width: auto;
+  max-width: 100%;
   aspect-ratio: 1 / 1;
   background: #1f2524;
   border: 1px solid var(--line);
