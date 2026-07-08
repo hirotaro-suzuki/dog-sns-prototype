@@ -224,26 +224,49 @@ p {
   overflow-wrap: anywhere;
 }
 
-.staff-selector {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin-bottom: 12px;
+.staff-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.staff-button {
-  min-height: 54px;
+.staff-chip {
+  min-height: 40px;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-radius: 999px;
   background: #fffdf8;
   color: var(--foreground);
   font-weight: 700;
-  padding: 12px;
+  font-size: 14px;
+  padding: 6px 16px;
 }
 
-.staff-button.is-selected {
+.staff-chip.is-selected {
   border-color: var(--accent);
   background: var(--accent);
+  color: #ffffff;
+}
+
+.icon-button {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--foreground);
+}
+
+.icon-button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.icon-button.danger {
+  border-color: transparent;
+  background: var(--danger);
   color: #ffffff;
 }
 
@@ -520,35 +543,40 @@ p {
 }
 
 .photo-preview-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 28px;
+  padding-top: 8px;
 }
 
-.form-panel,
+.photo-preview-action {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border: 0;
+  border-radius: 999px;
+  color: #ffffff;
+}
+
+.photo-preview-action.confirm {
+  width: 76px;
+  height: 76px;
+  background: var(--accent);
+}
+
+.photo-preview-action.delete {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
 .canvas-panel,
 .final-screen {
   display: grid;
   gap: 18px;
 }
 
-.selected-preview {
-  overflow: hidden;
-  aspect-ratio: 1 / 1;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--panel);
-  box-shadow: var(--shadow);
-}
-
-.selected-preview img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.form-content,
 .text-editor-panel {
   display: grid;
   gap: 18px;

@@ -80,8 +80,10 @@ export function StoreHome() {
         >
           撮影へ進む
         </button>
-        <button className="action-button secondary" type="button" onClick={handleLogout}>
-          ログアウト
+        <button className="icon-button" type="button" onClick={handleLogout} aria-label="ログアウト">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M6 6L18 18M18 6L6 18" strokeLinecap="round" />
+          </svg>
         </button>
       </div>
 

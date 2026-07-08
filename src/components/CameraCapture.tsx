@@ -2,7 +2,6 @@
 
 import type { CSSProperties } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { DogInfoForm } from "@/components/DogInfoForm";
 import { MosaicCanvas } from "@/components/MosaicCanvas";
 import { PhotoPreviewOverlay } from "@/components/PhotoPreviewOverlay";
 import { requestCameraStream, stopCameraStream } from "@/lib/camera";
@@ -20,7 +19,7 @@ const MAX_CAPTURE_EDGE = 2400;
 const CAPTURE_JPEG_QUALITY = 0.9;
 const MAX_FRAME_CHOICES = 3;
 
-type Step = "capture" | "info" | "process";
+type Step = "capture" | "process";
 
 type CameraCaptureProps = {
   store?: CaptureStore;
@@ -185,7 +184,7 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
 
   async function capturePhoto() {
     const video = videoRef.current;
-    if (!video || isEncodingRef.current || photosRef.current.length >= MAX_PHOTOS) return;
+    if (!video || isEncodingRef.current || !selectedStaffId || photosRef.current.length >= MAX_PHOTOS) return;
 
     isEncodingRef.current = true;
     const { cropX, cropY, cropSize, edge } = getCaptureSize(video);
@@ -222,7 +221,7 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
   function selectPhoto(photo: CapturedPhoto) {
     replaceSelectedPhoto(photo);
     setPreviewPhoto(null);
-    setStep("info");
+    setStep("process");
   }
 
   function deletePhoto(photo: CapturedPhoto) {
@@ -235,11 +234,6 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
   function backToCapture() {
     replaceSelectedPhoto(null);
     setStep("capture");
-  }
-
-  function confirmStaff() {
-    if (!selectedStaff) return;
-    setStep("process");
   }
 
   function retakePhotos() {
@@ -262,34 +256,11 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
     setStep("capture");
   }
 
-  const canCapture = isCameraReady && photos.length < MAX_PHOTOS;
+  const canCapture = isCameraReady && Boolean(selectedStaffId) && photos.length < MAX_PHOTOS;
   const isPhotoStockFull = photos.length >= MAX_PHOTOS;
   const displayStore = getDisplayStore(store);
   const themeStyle = getThemeStyle(store);
   const selectedStaff = staffMembers.find((staff) => staff.id === selectedStaffId);
-
-  if (step === "info" && selectedPhoto) {
-    return (
-      <div className="camera-panel" style={themeStyle}>
-        <DogInfoForm
-          photo={selectedPhoto}
-          staffMembers={staffMembers}
-          selectedStaffId={selectedStaffId}
-          onStaffChange={setSelectedStaffId}
-          onConfirm={confirmStaff}
-          onBackToPhotos={backToCapture}
-          onCancel={cancelSession}
-        />
-        {onLogout && (
-          <div className="toolbar utility-toolbar">
-            <button className="action-button secondary" type="button" onClick={handleLogout}>
-              ログアウト
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  }
 
   if (step === "process" && selectedPhoto) {
     return (
@@ -330,8 +301,10 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
           <h2>{displayStore}</h2>
         </div>
         {onLogout && (
-          <button className="action-button secondary" type="button" onClick={handleLogout}>
-            ログアウト
+          <button className="icon-button" type="button" onClick={handleLogout} aria-label="ログアウト">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M6 6L18 18M18 6L6 18" strokeLinecap="round" />
+            </svg>
           </button>
         )}
       </div>
@@ -346,6 +319,21 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
               onClick={() => setSelectedFrameId(frame.id)}
             >
               {frame.frameName}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {staffMembers.length > 0 && (
+        <div className="staff-chip-row" aria-label="担当者選択">
+          {staffMembers.map((staff) => (
+            <button
+              key={staff.id}
+              className={`staff-chip${staff.id === selectedStaffId ? " is-selected" : ""}`}
+              type="button"
+              onClick={() => setSelectedStaffId(staff.id)}
+            >
+              {staff.displayName}
             </button>
           ))}
         </div>
@@ -400,6 +388,9 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
         </span>
       </div>
 
+      {staffMembers.length === 0 && (
+        <p className="notice error">担当者が登録されていません。本部の管理画面で担当者を登録してください。</p>
+      )}
       {captureError && <p className="notice error">{captureError}</p>}
 
       {previewPhoto && (

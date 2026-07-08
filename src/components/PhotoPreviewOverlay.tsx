@@ -21,11 +21,15 @@ export function PhotoPreviewOverlay({ photo, onConfirm, onDelete, onClose }: Pho
       </div>
 
       <div className="photo-preview-actions">
-        <button className="action-button danger" type="button" onClick={onDelete}>
-          この写真を消す
+        <button className="photo-preview-action delete" type="button" onClick={onDelete} aria-label="この写真を消す">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M4 7h16M9 7V4h6v3m-9 0 1 13a2 2 0 002 2h6a2 2 0 002-2l1-13" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </button>
-        <button className="action-button primary-wide" type="button" onClick={onConfirm}>
-          これに決める
+        <button className="photo-preview-action confirm" type="button" onClick={onConfirm} aria-label="これに決める">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+            <path d="M4 12l6 6L20 6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </button>
       </div>
     </div>
