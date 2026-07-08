@@ -52,14 +52,15 @@ function getThemeStyle(store?: CaptureStore): CSSProperties | undefined {
 function getCaptureSize(video: HTMLVideoElement) {
   const sourceWidth = video.videoWidth || 1280;
   const sourceHeight = video.videoHeight || 960;
-  const scale = Math.min(1, MAX_CAPTURE_EDGE / Math.max(sourceWidth, sourceHeight));
+  // カメラ映像はcamera-stage内でobject-fit: coverにより正方形に見切れて表示されるため、
+  // 保存する画像も同じ中央正方形切り抜きにして、プレビュー表示と一致させる。
+  const cropSize = Math.min(sourceWidth, sourceHeight);
+  const cropX = (sourceWidth - cropSize) / 2;
+  const cropY = (sourceHeight - cropSize) / 2;
+  const scale = Math.min(1, MAX_CAPTURE_EDGE / cropSize);
+  const edge = Math.round(cropSize * scale);
 
-  return {
-    sourceWidth,
-    sourceHeight,
-    width: Math.round(sourceWidth * scale),
-    height: Math.round(sourceHeight * scale),
-  };
+  return { cropX, cropY, cropSize, edge };
 }
 
 export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCaptureProps) {
@@ -187,10 +188,10 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
     if (!video || isEncodingRef.current || photosRef.current.length >= MAX_PHOTOS) return;
 
     isEncodingRef.current = true;
-    const { sourceWidth, sourceHeight, width, height } = getCaptureSize(video);
+    const { cropX, cropY, cropSize, edge } = getCaptureSize(video);
     const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
+    canvas.width = edge;
+    canvas.height = edge;
 
     const context = canvas.getContext("2d");
     if (!context) {
@@ -199,7 +200,7 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
       return;
     }
 
-    context.drawImage(video, 0, 0, sourceWidth, sourceHeight, 0, 0, width, height);
+    context.drawImage(video, cropX, cropY, cropSize, cropSize, 0, 0, edge, edge);
 
     canvas.toBlob(
       (blob) => {
