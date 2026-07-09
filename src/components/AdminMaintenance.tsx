@@ -295,6 +295,7 @@ export function AdminMaintenance() {
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
   const [selectedStoreMasterId, setSelectedStoreMasterId] = useState<string | null>(null);
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
+  const [isCreatingStaff, setIsCreatingStaff] = useState(false);
   const [includeInactiveStores, setIncludeInactiveStores] = useState(false);
   const [includeInactiveStaff, setIncludeInactiveStaff] = useState(false);
   const [storeDraft, setStoreDraft] = useState<StoreMaster>(emptyStoreDraft);
@@ -337,13 +338,16 @@ export function AdminMaintenance() {
   const canGoPreviousAsset = selectedAssetIndex > 0;
   const canGoNextAsset = selectedAssetIndex >= 0 && selectedAssetIndex < selectedAssetQueue.length - 1;
 
-  const visibleStaff = useMemo(
-    () =>
-      staffMasters.filter(
-        (staff) => staff.store_id === selectedStoreMasterId && (includeInactiveStaff || staff.is_active)
-      ),
-    [staffMasters, selectedStoreMasterId, includeInactiveStaff]
-  );
+  const staffByStore = useMemo(() => {
+    const map = new Map<string, StaffMaster[]>();
+    for (const staff of staffMasters) {
+      if (!includeInactiveStaff && !staff.is_active) continue;
+      const list = map.get(staff.store_id) ?? [];
+      list.push(staff);
+      map.set(staff.store_id, list);
+    }
+    return map;
+  }, [staffMasters, includeInactiveStaff]);
   const visibleStoreMasters = useMemo(
     () => storeMasters.filter((store) => includeInactiveStores || store.is_active),
     [storeMasters, includeInactiveStores]
@@ -486,22 +490,16 @@ export function AdminMaintenance() {
   }, [selectedStoreMaster]);
 
   useEffect(() => {
-    setStaffDraft(selectedStaff ?? emptyStaffDraft(selectedStoreMasterId ?? ""));
-  }, [selectedStaff, selectedStoreMasterId]);
-
-  useEffect(() => {
-    setNewStaffDraft(emptyStaffDraft(selectedStoreMasterId ?? ""));
-  }, [selectedStoreMasterId]);
+    if (selectedStaff) setStaffDraft(selectedStaff);
+  }, [selectedStaff]);
 
   useEffect(() => {
     setSelectedStaffId((currentId) => {
-      const stillValid = staffMasters.some(
-        (staff) => staff.id === currentId && staff.store_id === selectedStoreMasterId
-      );
-      if (stillValid) return currentId;
-      return staffMasters.find((staff) => staff.store_id === selectedStoreMasterId)?.id ?? null;
+      if (!currentId) return currentId;
+      const stillValid = staffMasters.some((staff) => staff.id === currentId);
+      return stillValid ? currentId : null;
     });
-  }, [selectedStoreMasterId, staffMasters]);
+  }, [staffMasters]);
 
   function handlePinSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -753,6 +751,7 @@ export function AdminMaintenance() {
 
       setStaffMasters((current) => [...current, data.staffMember as StaffMaster]);
       setSelectedStaffId(data.staffMember.id);
+      setIsCreatingStaff(false);
       setNewStaffDraft(emptyStaffDraft(data.staffMember.store_id));
       setMessage("担当者を追加しました。");
     } catch (error) {
@@ -1086,22 +1085,69 @@ export function AdminMaintenance() {
                 checked={includeInactiveStores}
                 onChange={(event) => setIncludeInactiveStores(event.target.checked)}
               />
-              停止中も表示
+              停止中の店舗も表示
             </label>
-            <div className="admin-master-list is-horizontal">
+            <label className="admin-toggle">
+              <input
+                type="checkbox"
+                checked={includeInactiveStaff}
+                onChange={(event) => setIncludeInactiveStaff(event.target.checked)}
+              />
+              停止中の担当者も表示
+            </label>
+
+            <div className="admin-store-tree">
               {visibleStoreMasters.map((store) => (
-                <button
-                  key={store.id}
-                  className={`admin-master-row${selectedStoreMasterId === store.id ? " is-selected" : ""}${
-                    store.is_active ? "" : " is-archived"
-                  }`}
-                  type="button"
-                  onClick={() => setSelectedStoreMasterId(store.id)}
-                >
-                  <strong>{store.display_name}</strong>
-                  <span>{store.store_code}</span>
-                  <span>{store.is_active ? "有効" : "停止中"}</span>
-                </button>
+                <div key={store.id} className="admin-store-block">
+                  <button
+                    className={`admin-store-chip${selectedStoreMasterId === store.id ? " is-selected" : ""}${
+                      store.is_active ? "" : " is-archived"
+                    }`}
+                    type="button"
+                    onClick={() => {
+                      setSelectedStoreMasterId(store.id);
+                      setSelectedStaffId(null);
+                      setIsCreatingStaff(false);
+                    }}
+                  >
+                    <strong>{store.display_name}</strong>
+                    <span>{store.store_code}</span>
+                    <span>{store.is_active ? "有効" : "停止中"}</span>
+                  </button>
+
+                  <div className="admin-staff-chip-row">
+                    {(staffByStore.get(store.id) ?? []).map((staff) => (
+                      <button
+                        key={staff.id}
+                        className={`admin-staff-chip${selectedStaffId === staff.id ? " is-selected" : ""}${
+                          staff.is_active ? "" : " is-archived"
+                        }`}
+                        type="button"
+                        onClick={() => {
+                          setSelectedStoreMasterId(store.id);
+                          setSelectedStaffId(staff.id);
+                          setIsCreatingStaff(false);
+                        }}
+                      >
+                        {staff.display_name}
+                      </button>
+                    ))}
+                    <button
+                      className={`admin-staff-chip admin-staff-chip-add${
+                        isCreatingStaff && selectedStoreMasterId === store.id ? " is-selected" : ""
+                      }`}
+                      type="button"
+                      onClick={() => {
+                        setSelectedStoreMasterId(store.id);
+                        setSelectedStaffId(null);
+                        setIsCreatingStaff(true);
+                        setNewStaffDraft(emptyStaffDraft(store.id));
+                      }}
+                    >
+                      ＋追加
+                    </button>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
@@ -1152,73 +1198,43 @@ export function AdminMaintenance() {
             </aside>
 
             <aside className="admin-edit-panel">
-              {selectedStoreMaster ? (
+              {isCreatingStaff && selectedStoreMaster ? (
                 <>
-                  <h2>担当者</h2>
-                  <label className="admin-toggle">
-                    <input
-                      type="checkbox"
-                      checked={includeInactiveStaff}
-                      onChange={(event) => setIncludeInactiveStaff(event.target.checked)}
-                    />
-                    停止中も表示
+                  <h2>担当者追加</h2>
+                  <label className="field-label">
+                    担当者名
+                    <input value={newStaffDraft.display_name} onChange={(event) => setNewStaffDraft((current) => ({ ...current, display_name: event.target.value }))} />
                   </label>
-
-                  <div className="admin-master-list">
-                    {visibleStaff.map((staff) => (
-                      <button
-                        key={staff.id}
-                        className={`admin-master-row${selectedStaffId === staff.id ? " is-selected" : ""}${staff.is_active ? "" : " is-archived"}`}
-                        type="button"
-                        onClick={() => setSelectedStaffId(staff.id)}
-                      >
-                        <strong>{staff.display_name}</strong>
-                        <span>{staff.is_active ? "有効" : "停止中"}</span>
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="admin-create-panel">
-                    <h2>担当者追加</h2>
+                  <button className="action-button secondary" type="button" disabled={isSaving} onClick={createStaffMember}>
+                    追加
+                  </button>
+                </>
+              ) : selectedStaff ? (
+                <>
+                  <div className="admin-form-grid">
                     <label className="field-label">
                       担当者名
-                      <input value={newStaffDraft.display_name} onChange={(event) => setNewStaffDraft((current) => ({ ...current, display_name: event.target.value }))} />
+                      <input value={staffDraft.display_name} onChange={(event) => setStaffDraft((current) => ({ ...current, display_name: event.target.value }))} />
                     </label>
-                    <button className="action-button secondary" type="button" disabled={isSaving} onClick={createStaffMember}>
-                      追加
-                    </button>
+                    <label className="field-label">
+                      並び順
+                      <input type="number" value={staffDraft.sort_order} onChange={(event) => setStaffDraft((current) => ({ ...current, sort_order: Number(event.target.value) }))} />
+                    </label>
                   </div>
-
-                  {selectedStaff ? (
-                    <>
-                      <div className="admin-form-grid">
-                        <label className="field-label">
-                          担当者名
-                          <input value={staffDraft.display_name} onChange={(event) => setStaffDraft((current) => ({ ...current, display_name: event.target.value }))} />
-                        </label>
-                        <label className="field-label">
-                          並び順
-                          <input type="number" value={staffDraft.sort_order} onChange={(event) => setStaffDraft((current) => ({ ...current, sort_order: Number(event.target.value) }))} />
-                        </label>
-                      </div>
-                      <label className="admin-toggle">
-                        <input type="checkbox" checked={staffDraft.is_active} onChange={(event) => setStaffDraft((current) => ({ ...current, is_active: event.target.checked }))} />
-                        有効
-                      </label>
-                      <label className="field-label">
-                        メモ
-                        <textarea rows={3} value={nullableText(staffDraft.notes)} onChange={(event) => setStaffDraft((current) => ({ ...current, notes: event.target.value }))} />
-                      </label>
-                      <button className="action-button" type="button" disabled={isSaving} onClick={saveStaffMaster}>
-                        担当者を保存
-                      </button>
-                    </>
-                  ) : (
-                    <p className="notice">担当者を選択してください。</p>
-                  )}
+                  <label className="admin-toggle">
+                    <input type="checkbox" checked={staffDraft.is_active} onChange={(event) => setStaffDraft((current) => ({ ...current, is_active: event.target.checked }))} />
+                    有効
+                  </label>
+                  <label className="field-label">
+                    メモ
+                    <textarea rows={3} value={nullableText(staffDraft.notes)} onChange={(event) => setStaffDraft((current) => ({ ...current, notes: event.target.value }))} />
+                  </label>
+                  <button className="action-button" type="button" disabled={isSaving} onClick={saveStaffMaster}>
+                    担当者を保存
+                  </button>
                 </>
               ) : (
-                <p className="notice">店舗を選択してください。</p>
+                <p className="notice">担当者を選ぶか、＋追加してください。</p>
               )}
             </aside>
           </div>
