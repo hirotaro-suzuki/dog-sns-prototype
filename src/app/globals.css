@@ -661,6 +661,7 @@ p {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  touch-action: none;
 }
 
 .final-image-wrap img {
