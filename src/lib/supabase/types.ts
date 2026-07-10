@@ -98,7 +98,6 @@ type StoreFrameInsert = {
   frame_name: string;
   frame_url: string;
   is_default?: boolean;
-  is_active?: boolean;
   starts_at?: string | null;
   ends_at?: string | null;
   sort_order?: number;
@@ -217,7 +216,6 @@ export type Database = {
           frame_name: string;
           frame_url: string;
           is_default: boolean;
-          is_active: boolean;
           starts_at: string | null;
           ends_at: string | null;
           sort_order: number;

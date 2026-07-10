@@ -185,7 +185,6 @@ export async function POST(request: Request) {
         .select("frame_url")
         .eq("store_id", store.id)
         .eq("frame_url", requestedFrameUrl)
-        .eq("is_active", true)
         .maybeSingle();
       const frame = frameData as StoreFrameAssetRow | null;
 
