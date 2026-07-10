@@ -60,7 +60,7 @@ execute function public.set_updated_at();
 
 create table if not exists public.staff_members (
   id uuid primary key default gen_random_uuid(),
-  store_id uuid not null references public.stores(id) on delete restrict,
+  store_id uuid not null references public.stores(id) on delete cascade,
   staff_code text not null,
   display_name text not null,
   is_active boolean not null default true,
@@ -100,7 +100,7 @@ execute function public.set_updated_at();
 
 create table if not exists public.store_frames (
   id uuid primary key default gen_random_uuid(),
-  store_id uuid not null references public.stores(id) on delete restrict,
+  store_id uuid not null references public.stores(id) on delete cascade,
   frame_name text not null,
   frame_url text not null,
   is_default boolean not null default false,
