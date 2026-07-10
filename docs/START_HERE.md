@@ -59,6 +59,7 @@ Supabase変更は、GitHubにSQLを置いただけなのか、実環境へ適用
 * 店頭フローの最終保存で発生していた `store_frames.is_active` 参照エラーを修正し、本番保存を確認済み。
 * `20260710_safe_store_deletion.sql` はSupabaseへ適用・確認済み。
 * 店舗は「停止中かつ保存写真0件」の場合だけ削除可能。demo店舗で本番確認済み。
+* `20260710_harden_database_functions.sql` は本番Supabaseへ適用・確認済み。対象2関数の `search_path=pg_catalog`、`anon`・`authenticated` の直接実行権限がfalse、Security AdvisorのWarnings 0件を確認済み。
 
 #### 残作業
 * 写真削除時にStorage削除が失敗した場合のエラー処理を改善する。

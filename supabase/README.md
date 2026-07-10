@@ -30,9 +30,12 @@ supabase/migrations/20260706_square_frame_coordinates.sql
 
 ```text
 supabase/migrations/20260710_safe_store_deletion.sql
+supabase/migrations/20260710_harden_database_functions.sql
 ```
 
 店舗削除時の外部キーは、保存写真を守るため `assets.store_id` が `ON DELETE RESTRICT`、店舗と同時に削除する `staff_members.store_id` と `store_frames.store_id` が `ON DELETE CASCADE`。アプリ側でも「停止中かつ保存写真0件」を再確認する。
+
+Security Advisor対応では、`public.set_updated_at()` と `public.rls_auto_enable()` の `search_path=pg_catalog`、`anon`・`authenticated` の直接実行権限がfalseであることを確認済み。適用後のSecurity AdvisorはWarnings 0件。
 
 葡萄房の本店・軽井沢向け正方形枠を登録する場合は、正方形座標migrationの後に以下を実行する。
 
