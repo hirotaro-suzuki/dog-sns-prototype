@@ -26,6 +26,14 @@ supabase/migrations/20260704_frame_date_settings.sql
 supabase/migrations/20260706_square_frame_coordinates.sql
 ```
 
+2026-07-10時点で、本番Supabaseには以下も適用・確認済み。
+
+```text
+supabase/migrations/20260710_safe_store_deletion.sql
+```
+
+店舗削除時の外部キーは、保存写真を守るため `assets.store_id` が `ON DELETE RESTRICT`、店舗と同時に削除する `staff_members.store_id` と `store_frames.store_id` が `ON DELETE CASCADE`。アプリ側でも「停止中かつ保存写真0件」を再確認する。
+
 葡萄房の本店・軽井沢向け正方形枠を登録する場合は、正方形座標migrationの後に以下を実行する。
 
 ```text
@@ -122,6 +130,7 @@ PIN: 0000
 - 実店舗名、本物のPIN、実ロゴURL、実フレームURLをリポジトリに書かない。
 - 本番PINは `scripts/create-store-pin-hash.mjs` でハッシュ化してからSupabaseへ登録する。
 - 店舗や担当者を削除したい場合も、原則として物理削除ではなく `is_active = false` にする。
+- 例外として、停止中かつ保存写真0件の店舗はAdminから物理削除できる（2026-07-10にdemo店舗で本番確認済み）。
 - 写真枠は `store_frames` で管理し、現在の標準では正方形枠画像内にロゴを含める。
 - ワンチャン情報はDB項目として保存せず、完成画像に焼き込まれた文字を正とする。
 

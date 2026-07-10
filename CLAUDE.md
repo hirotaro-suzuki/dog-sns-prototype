@@ -5,6 +5,7 @@
 ## 必ず守ること
 
 - 作業対象は GitHub `hirotaro-suzuki/dog-sns-prototype` の `main`。作業環境はこの GitHub Codespaces を正とする。
+- 2026-07-10にCodex CLIをCodespacesへ導入し、共通作業規則としてリポジトリ直下に `AGENTS.md` を追加済み。Codexで作業する場合も同ファイルに従う。
 - ローカルPC、Dropbox、手元フォルダ、古い複製リポジトリは参照しない。
 - Claude Codeは、自身のツールを用いて直接ファイルを編集する。
 - 実装、ビルド確認、コミット、pushは、Claude Code自身がターミナルコマンドを実行して行う。
