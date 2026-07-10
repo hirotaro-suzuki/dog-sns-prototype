@@ -22,6 +22,11 @@ type StoreRow = {
   is_active: boolean;
   sort_order: number;
   notes: string | null;
+  asset_count: number;
+};
+
+type StoreWithAssetCountRow = Omit<StoreRow, "asset_count"> & {
+  assets: Array<{ count: number }>;
 };
 
 type StoreAssetType = "logo" | "frame";
@@ -87,6 +92,21 @@ function sanitizeStoreCode(value: string) {
   return value.trim().replace(/[^A-Za-z0-9_-]/g, "_") || "store";
 }
 
+async function removeUploadedFile(
+  supabase: ReturnType<typeof createServerSupabaseClient>,
+  storagePath: string
+) {
+  const { error } = await supabase.storage.from(STORE_ASSET_BUCKET).remove([storagePath]);
+  return error;
+}
+
+function withCleanupDetail(error: SupabaseLikeError, cleanupError: SupabaseLikeError | null) {
+  const detail = formatSupabaseError(error);
+  return cleanupError
+    ? `${detail} / アップロード済みファイルの削除にも失敗しました: ${formatSupabaseError(cleanupError)}`
+    : detail;
+}
+
 export async function GET(request: Request) {
   const authError = verifyAdminPin(request);
   if (authError) return authError;
@@ -96,7 +116,7 @@ export async function GET(request: Request) {
     const { data, error } = await supabase
       .from("stores")
       .select(
-        "id, store_code, store_name, display_name, login_code, logo_url, frame_url, theme_color, sns_display_name, instagram_account, default_hashtags, address, phone, business_hours_note, is_active, sort_order, notes"
+        "id, store_code, store_name, display_name, login_code, logo_url, frame_url, theme_color, sns_display_name, instagram_account, default_hashtags, address, phone, business_hours_note, is_active, sort_order, notes, assets(count)"
       )
       .order("sort_order", { ascending: true })
       .order("display_name", { ascending: true });
@@ -108,7 +128,12 @@ export async function GET(request: Request) {
       );
     }
 
-    return NextResponse.json({ stores: (data ?? []) as StoreRow[] });
+    const stores = ((data ?? []) as StoreWithAssetCountRow[]).map(({ assets, ...store }) => ({
+      ...store,
+      asset_count: assets[0]?.count ?? 0,
+    }));
+
+    return NextResponse.json({ stores });
   } catch (error) {
     return NextResponse.json(
       { message: error instanceof Error ? error.message : "店舗マスタを取得できませんでした。" },
@@ -189,6 +214,24 @@ export async function POST(request: Request) {
       );
     }
 
+    const { data: currentStoreData, error: currentStoreError } = await supabase
+      .from("stores")
+      .select("id")
+      .eq("id", store.id)
+      .maybeSingle();
+
+    if (currentStoreError || !currentStoreData) {
+      const cleanupError = await removeUploadedFile(supabase, storagePath);
+      const originalError = currentStoreError ?? { message: "店舗が削除されています。" };
+      return NextResponse.json(
+        {
+          message: "店舗が削除されたため、アップロードした画像を破棄しました。",
+          detail: withCleanupDetail(originalError, cleanupError),
+        },
+        { status: currentStoreError ? 500 : 409 }
+      );
+    }
+
     const { data: publicUrlData } = supabase.storage
       .from(STORE_ASSET_BUCKET)
       .getPublicUrl(storagePath);
@@ -203,8 +246,9 @@ export async function POST(request: Request) {
         .single();
 
       if (error) {
+        const cleanupError = await removeUploadedFile(supabase, storagePath);
         return NextResponse.json(
-          { message: "ロゴURLを店舗へ保存できませんでした。", detail: formatSupabaseError(error) },
+          { message: "ロゴURLを店舗へ保存できませんでした。", detail: withCleanupDetail(error, cleanupError) },
           { status: 500 }
         );
       }
@@ -217,14 +261,16 @@ export async function POST(request: Request) {
       const { data, error } = await framesTable
         .update({ frame_url: publicUrl, updated_at: new Date().toISOString() })
         .eq("id", frameId)
+        .eq("store_id", store.id)
         .select(
           "id, store_id, frame_name, frame_url, is_default, sort_order, date_enabled, date_x, date_y, date_font_size, date_color, created_at, updated_at"
         )
         .single();
 
       if (error) {
+        const cleanupError = await removeUploadedFile(supabase, storagePath);
         return NextResponse.json(
-          { message: "枠URLを保存できませんでした。", detail: formatSupabaseError(error) },
+          { message: "枠URLを保存できませんでした。", detail: withCleanupDetail(error, cleanupError) },
           { status: 500 }
         );
       }

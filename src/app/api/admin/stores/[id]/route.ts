@@ -58,6 +58,26 @@ type StoresTable = {
   update: (values: Record<string, unknown>) => StoreUpdateQuery;
 };
 
+type CurrentStoreRow = {
+  id: string;
+  store_code: string;
+  display_name: string;
+  is_active: boolean;
+};
+
+type StorageListItem = {
+  id?: string | null;
+  name: string;
+};
+
+type StoreCodeRow = {
+  id: string;
+  store_code: string;
+};
+
+const STORE_ASSET_BUCKET = "store-assets";
+const STORAGE_PAGE_SIZE = 100;
+
 function cleanText(value: unknown, maxLength: number) {
   if (typeof value !== "string") return null;
   const text = value.trim().slice(0, maxLength);
@@ -77,6 +97,57 @@ function cleanNumber(value: unknown) {
 
 function formatSupabaseError(error: SupabaseLikeError) {
   return [error.code, error.message, error.details, error.hint].filter(Boolean).join(" / ");
+}
+
+function sanitizeStoreCode(value: string) {
+  return value.trim().replace(/[^A-Za-z0-9_-]/g, "_") || "store";
+}
+
+async function listStorageFiles(
+  supabase: ReturnType<typeof createServerSupabaseClient>,
+  prefix: string
+): Promise<{ paths: string[]; error: SupabaseLikeError | null }> {
+  const paths: string[] = [];
+  let offset = 0;
+
+  while (true) {
+    const { data, error } = await supabase.storage
+      .from(STORE_ASSET_BUCKET)
+      .list(prefix, { limit: STORAGE_PAGE_SIZE, offset });
+
+    if (error) return { paths: [], error };
+
+    const items = (data ?? []) as StorageListItem[];
+    for (const item of items) {
+      const itemPath = `${prefix}/${item.name}`;
+      if (item.id) {
+        paths.push(itemPath);
+        continue;
+      }
+
+      const nested = await listStorageFiles(supabase, itemPath);
+      if (nested.error) return { paths: [], error: nested.error };
+      paths.push(...nested.paths);
+    }
+
+    if (items.length < STORAGE_PAGE_SIZE) break;
+    offset += STORAGE_PAGE_SIZE;
+  }
+
+  return { paths, error: null };
+}
+
+async function removeStorageFiles(
+  supabase: ReturnType<typeof createServerSupabaseClient>,
+  paths: string[]
+) {
+  for (let index = 0; index < paths.length; index += STORAGE_PAGE_SIZE) {
+    const chunk = paths.slice(index, index + STORAGE_PAGE_SIZE);
+    const { error } = await supabase.storage.from(STORE_ASSET_BUCKET).remove(chunk);
+    if (error) return error;
+  }
+
+  return null;
 }
 
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
@@ -142,6 +213,145 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   } catch (error) {
     return NextResponse.json(
       { message: error instanceof Error ? error.message : "店舗マスタを更新できませんでした。" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
+  const authError = verifyAdminPin(request);
+  if (authError) return authError;
+
+  const { id } = await context.params;
+
+  try {
+    const supabase = createServerSupabaseClient();
+    const { data: storeData, error: storeError } = await supabase
+      .from("stores")
+      .select("id, store_code, display_name, is_active")
+      .eq("id", id)
+      .maybeSingle();
+    const store = storeData as CurrentStoreRow | null;
+
+    if (storeError) {
+      return NextResponse.json(
+        { message: "店舗情報を確認できませんでした。", detail: formatSupabaseError(storeError) },
+        { status: 500 }
+      );
+    }
+
+    if (!store) {
+      return NextResponse.json({ message: "店舗が見つかりませんでした。" }, { status: 404 });
+    }
+
+    if (store.is_active) {
+      return NextResponse.json({ message: "稼働中の店舗は削除できません。先に停止して保存してください。" }, { status: 409 });
+    }
+
+    const { count: assetCount, error: assetCountError } = await supabase
+      .from("assets")
+      .select("id", { count: "exact", head: true })
+      .eq("store_id", store.id);
+
+    if (assetCountError) {
+      return NextResponse.json(
+        { message: "店舗の保存写真件数を確認できませんでした。", detail: formatSupabaseError(assetCountError) },
+        { status: 500 }
+      );
+    }
+
+    if ((assetCount ?? 0) > 0) {
+      return NextResponse.json(
+        { message: `保存写真が${assetCount}件あるため店舗を削除できません。` },
+        { status: 409 }
+      );
+    }
+
+    const storagePrefix = `stores/${sanitizeStoreCode(store.store_code)}`;
+    const { data: otherStoreData, error: otherStoreError } = await supabase
+      .from("stores")
+      .select("id, store_code")
+      .neq("id", store.id);
+
+    if (otherStoreError) {
+      return NextResponse.json(
+        { message: "店舗画像の保存先を確認できなかったため、店舗を削除しませんでした。", detail: formatSupabaseError(otherStoreError) },
+        { status: 500 }
+      );
+    }
+
+    const hasStoragePrefixCollision = ((otherStoreData ?? []) as StoreCodeRow[]).some(
+      (otherStore) => sanitizeStoreCode(otherStore.store_code) === sanitizeStoreCode(store.store_code)
+    );
+    if (hasStoragePrefixCollision) {
+      return NextResponse.json(
+        { message: "他店舗と画像保存先が重複しているため、安全に店舗を削除できません。" },
+        { status: 409 }
+      );
+    }
+
+    const storageFiles = await listStorageFiles(supabase, storagePrefix);
+    if (storageFiles.error) {
+      return NextResponse.json(
+        { message: "店舗画像を確認できなかったため、店舗を削除しませんでした。", detail: formatSupabaseError(storageFiles.error) },
+        { status: 500 }
+      );
+    }
+
+    const { data: deletedStoreData, error: deleteError } = await supabase
+      .from("stores")
+      .delete()
+      .eq("id", store.id)
+      .eq("is_active", false)
+      .select("id")
+      .maybeSingle();
+
+    if (deleteError) {
+      if (deleteError.code === "23503") {
+        return NextResponse.json(
+          { message: "保存写真または関連データが追加されたため、店舗を削除できませんでした。" },
+          { status: 409 }
+        );
+      }
+
+      return NextResponse.json(
+        { message: "店舗を削除できませんでした。", detail: formatSupabaseError(deleteError) },
+        { status: 500 }
+      );
+    }
+
+    if (!deletedStoreData) {
+      return NextResponse.json(
+        { message: "店舗が再び稼働中になったため、削除しませんでした。" },
+        { status: 409 }
+      );
+    }
+
+    let storageWarning: string | null = null;
+    const initialRemoveError = await removeStorageFiles(supabase, storageFiles.paths);
+    if (initialRemoveError) {
+      storageWarning = `店舗は削除しましたが、店舗画像の一部をStorageから削除できませんでした: ${formatSupabaseError(initialRemoveError)}`;
+    }
+
+    const remainingStorageFiles = await listStorageFiles(supabase, storagePrefix);
+    if (remainingStorageFiles.error) {
+      storageWarning = `店舗は削除しましたが、Storageの最終確認に失敗しました: ${formatSupabaseError(remainingStorageFiles.error)}`;
+    } else {
+      const finalRemoveError = await removeStorageFiles(supabase, remainingStorageFiles.paths);
+      if (finalRemoveError) {
+        storageWarning = `店舗は削除しましたが、Storageの最終削除に失敗しました: ${formatSupabaseError(finalRemoveError)}`;
+      } else {
+        storageWarning = null;
+      }
+    }
+
+    return NextResponse.json({
+      deletedStoreId: store.id,
+      storageWarning,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { message: error instanceof Error ? error.message : "店舗を削除できませんでした。" },
       { status: 500 }
     );
   }

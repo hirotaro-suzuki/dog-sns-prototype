@@ -16,6 +16,7 @@ type StoreSummary = {
   display_name: string;
   is_active: boolean;
   sort_order: number;
+  asset_count?: number;
 };
 
 type StoreMaster = StoreSummary & {
@@ -31,6 +32,7 @@ type StoreMaster = StoreSummary & {
   phone: string | null;
   business_hours_note: string | null;
   notes: string | null;
+  asset_count: number;
 };
 
 type StaffMaster = {
@@ -86,6 +88,8 @@ type AdminAssetsResponse = {
 type StoresResponse = {
   stores?: StoreMaster[];
   store?: Partial<StoreMaster> & { id: string };
+  deletedStoreId?: string;
+  storageWarning?: string | null;
   message?: string;
   detail?: string;
 };
@@ -164,6 +168,7 @@ const emptyStoreDraft: StoreMaster = {
   is_active: true,
   sort_order: 0,
   notes: null,
+  asset_count: 0,
 };
 
 const emptyFrameDraft: FrameDraft = {
@@ -589,6 +594,8 @@ export function AdminMaintenance() {
   async function deleteSelectedAsset() {
     if (!selectedAsset || !adminPin) return;
 
+    const deletedAssetStoreId = selectedAsset.store_id;
+
     const confirmed = window.confirm("この写真を完全に削除します。元に戻せません。よろしいですか？");
     if (!confirmed) return;
 
@@ -608,6 +615,13 @@ export function AdminMaintenance() {
       }
 
       setAssets((current) => current.filter((asset) => asset.id !== data.deletedAssetId));
+      setStoreMasters((current) =>
+        current.map((store) =>
+          store.id === deletedAssetStoreId
+            ? { ...store, asset_count: Math.max(0, store.asset_count - 1) }
+            : store
+        )
+      );
       setAssetScreen("list");
       setMessage("写真を削除しました。");
     } catch (error) {
@@ -672,6 +686,7 @@ export function AdminMaintenance() {
                 display_name: updatedStore.display_name,
                 is_active: updatedStore.is_active,
                 sort_order: updatedStore.sort_order,
+                asset_count: updatedStore.asset_count,
               }
             : store
         )
@@ -680,6 +695,49 @@ export function AdminMaintenance() {
       setMessage("店舗マスタを保存しました。");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "店舗マスタを保存できませんでした。");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function deleteStoreMaster() {
+    if (!adminPin || !selectedStoreMaster) return;
+    if (selectedStoreMaster.is_active || selectedStoreMaster.asset_count !== 0) return;
+
+    const confirmed = window.confirm(
+      `「${selectedStoreMaster.display_name}（${selectedStoreMaster.store_code}）」を完全に削除します。\n` +
+        "担当者、登録枠、ロゴ・枠画像も削除され、元に戻せません。よろしいですか？"
+    );
+    if (!confirmed) return;
+
+    setIsSaving(true);
+    setMessage("");
+
+    try {
+      const response = await fetch(`/api/admin/stores/${selectedStoreMaster.id}`, {
+        method: "DELETE",
+        headers: { "x-admin-pin": adminPin },
+      });
+      const data = (await response.json()) as StoresResponse;
+
+      if (!response.ok || !data.deletedStoreId) {
+        setMessage(getErrorMessage(data, "店舗を削除できませんでした。"));
+        return;
+      }
+
+      const deletedStoreId = data.deletedStoreId;
+      const remainingStores = storeMasters.filter((store) => store.id !== deletedStoreId);
+      setStoreMasters(remainingStores);
+      setStores((current) => current.filter((store) => store.id !== deletedStoreId));
+      setStaffMasters((current) => current.filter((staff) => staff.store_id !== deletedStoreId));
+      setSelectedStoreIds((current) => current.filter((storeId) => storeId !== deletedStoreId));
+      setSelectedStoreMasterId(remainingStores[0]?.id ?? null);
+      setSelectedStaffId(null);
+      setIsCreatingStaff(false);
+      setStoreDraft(remainingStores[0] ?? emptyStoreDraft);
+      setMessage(data.storageWarning ?? "店舗を削除しました。");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "店舗を削除できませんでした。");
     } finally {
       setIsSaving(false);
     }
@@ -1165,6 +1223,10 @@ export function AdminMaintenance() {
                       <dt>ログインコード</dt>
                       <dd>{selectedStoreMaster.login_code}</dd>
                     </div>
+                    <div>
+                      <dt>保存写真</dt>
+                      <dd>{selectedStoreMaster.asset_count}件</dd>
+                    </div>
                   </dl>
                   <div className="admin-form-grid">
                     <label className="field-label">
@@ -1191,6 +1253,15 @@ export function AdminMaintenance() {
                   <button className="action-button" type="button" disabled={isSaving} onClick={saveStoreMaster}>
                     店舗を保存
                   </button>
+                  {selectedStoreMaster.is_active ? (
+                    <p className="notice">稼働中の店舗は削除できません。先に停止して保存してください。</p>
+                  ) : selectedStoreMaster.asset_count > 0 ? (
+                    <p className="notice">保存写真があるため、この店舗は削除できません。</p>
+                  ) : (
+                    <button className="action-button danger" type="button" disabled={isSaving} onClick={deleteStoreMaster}>
+                      店舗を完全に削除
+                    </button>
+                  )}
                 </>
               ) : (
                 <p className="notice">店舗を選択してください。</p>
