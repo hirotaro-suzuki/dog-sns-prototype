@@ -7,39 +7,8 @@ import type { StoreSession } from "@/types/storeSession";
 export const runtime = "nodejs";
 
 const MAX_SESSION_FRAMES = MAX_FRAMES_PER_STORE;
-const MIN_DEMO_FRAMES = MAX_FRAMES_PER_STORE;
 const FRAME_SELECT_COLUMNS =
   "id, frame_name, frame_url, is_default, date_enabled, date_x, date_y, date_font_size, date_color";
-
-const DEMO_FRAME_DEFINITIONS = [
-  {
-    frame_name: "標準グリーン",
-    frame_path: "/test-assets/frame-standard-green.svg",
-    sort_order: 10,
-    date_x: 1030,
-    date_y: 82,
-    date_font_size: 38,
-    date_color: "#ffffff",
-  },
-  {
-    frame_name: "季節ピンク",
-    frame_path: "/test-assets/frame-season-pink.svg",
-    sort_order: 20,
-    date_x: 1035,
-    date_y: 82,
-    date_font_size: 38,
-    date_color: "#ffffff",
-  },
-  {
-    frame_name: "イベントゴールド",
-    frame_path: "/test-assets/frame-event-gold.svg",
-    sort_order: 30,
-    date_x: 635,
-    date_y: 818,
-    date_font_size: 32,
-    date_color: "#fff4d2",
-  },
-];
 
 type StoreLoginRequest = {
   loginCode?: unknown;
@@ -80,12 +49,6 @@ type StoreFrameLoginRow = {
   date_color: string;
 };
 
-type StoreFramesMutationTable = {
-  insert: (values: Array<Record<string, unknown>>) => Promise<{
-    error: { code?: string; message?: string; details?: string; hint?: string } | null;
-  }>;
-};
-
 function normalizeLoginCode(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -97,43 +60,6 @@ function normalizePin(value: unknown) {
 function formatSupabaseError(error: { code?: string; message?: string; details?: string; hint?: string }) {
   const parts = [error.code, error.message, error.details, error.hint].filter(Boolean);
   return parts.join(" / ");
-}
-
-function isDemoStore(storeCode: string) {
-  return storeCode === "DEMO_STORE";
-}
-
-function getPublicUrl(request: Request, path: string) {
-  return new URL(path, new URL(request.url).origin).toString();
-}
-
-async function ensureDemoFrames(
-  supabase: ReturnType<typeof createServerSupabaseClient>,
-  request: Request,
-  store: StoreLoginRow,
-  currentFrames: StoreFrameLoginRow[]
-) {
-  if (!isDemoStore(store.store_code) || currentFrames.length >= MIN_DEMO_FRAMES) return null;
-
-  const currentFrameUrls = new Set(currentFrames.map((frame) => frame.frame_url));
-  const rows = DEMO_FRAME_DEFINITIONS.map((frame) => ({
-    store_id: store.id,
-    frame_name: frame.frame_name,
-    frame_url: getPublicUrl(request, frame.frame_path),
-    is_default: false,
-    sort_order: frame.sort_order,
-    date_enabled: true,
-    date_x: frame.date_x,
-    date_y: frame.date_y,
-    date_font_size: frame.date_font_size,
-    date_color: frame.date_color,
-  })).filter((frame) => !currentFrameUrls.has(frame.frame_url));
-
-  if (rows.length === 0) return null;
-
-  const framesTable = supabase.from("store_frames") as unknown as StoreFramesMutationTable;
-  const { error } = await framesTable.insert(rows);
-  return error;
 }
 
 export async function POST(request: Request) {
@@ -205,7 +131,7 @@ export async function POST(request: Request) {
       .order("sort_order", { ascending: true })
       .order("frame_name", { ascending: true })
       .limit(MAX_SESSION_FRAMES);
-    let frames = (frameData ?? []) as StoreFrameLoginRow[];
+    const frames = (frameData ?? []) as StoreFrameLoginRow[];
 
     if (frameError) {
       return NextResponse.json(
@@ -215,40 +141,6 @@ export async function POST(request: Request) {
         },
         { status: 500 }
       );
-    }
-
-    const setupFrameError = await ensureDemoFrames(supabase, request, store, frames);
-    if (setupFrameError) {
-      return NextResponse.json(
-        {
-          message: "テスト用の枠を準備できませんでした。",
-          detail: formatSupabaseError(setupFrameError),
-        },
-        { status: 500 }
-      );
-    }
-
-    if (isDemoStore(store.store_code) && frames.length < MIN_DEMO_FRAMES) {
-      const { data: refreshedFrameData, error: refreshedFrameError } = await supabase
-        .from("store_frames")
-        .select(FRAME_SELECT_COLUMNS)
-        .eq("store_id", store.id)
-        .order("is_default", { ascending: false })
-        .order("sort_order", { ascending: true })
-        .order("frame_name", { ascending: true })
-        .limit(MAX_SESSION_FRAMES);
-
-      if (refreshedFrameError) {
-        return NextResponse.json(
-          {
-            message: "テスト用の枠を確認できませんでした。",
-            detail: formatSupabaseError(refreshedFrameError),
-          },
-          { status: 500 }
-        );
-      }
-
-      frames = (refreshedFrameData ?? []) as StoreFrameLoginRow[];
     }
 
     const session: StoreSession = {
