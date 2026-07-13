@@ -62,8 +62,8 @@ Supabase変更は、GitHubにSQLを置いただけなのか、実環境へ適用
 * `20260710_harden_database_functions.sql` は本番Supabaseへ適用・確認済み。対象2関数の `search_path=pg_catalog`、`anon`・`authenticated` の直接実行権限がfalse、Security AdvisorのWarnings 0件を確認済み。
 
 #### 残作業
-* 2026-07-13に、写真完全削除のStorageエラー処理と `npm run lint` の対象修正は対応済み。
-* 残っている検討項目は `docs/audit-2026-07-13.md` の「判断: 未決」の項目を正とする。
+* 2026-07-13時点で、監査指摘の大半（文書統一、残骸削除、Storageエラー処理、店舗UI改善、後付け補修の全撤去、未使用CSS/client削除、160件上限の注記）は対応済み。
+* 残っている検討項目は `docs/audit-2026-07-13.md` の「判断」欄が未決・保留の項目を正とする。特に4-3の#14（デモ枠自動補充）は「後日改めて相談」の約束になっている。
 
 #### 作業前チェック
 作業に入る前に、Claude Codeは以下を短く確認し、ユーザーに合意を取ります。

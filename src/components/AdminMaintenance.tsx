@@ -995,6 +995,12 @@ export function AdminMaintenance() {
             </div>
           </section>
 
+          {assets.length >= 160 && (
+            <p className="field-hint">
+              一覧に表示できるのは一度に160件までです。ここに出ていない写真も削除されてはいません。店舗や期間で絞り込むと表示できます。
+            </p>
+          )}
+
           <section className="admin-photo-list">
             {assets.map((asset) => {
               const isChecked = selectedAssetIds.includes(asset.id);

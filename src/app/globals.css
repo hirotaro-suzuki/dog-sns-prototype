@@ -87,14 +87,6 @@ canvas {
   margin-bottom: 20px;
 }
 
-.compact-section-heading {
-  margin-bottom: 10px;
-}
-
-.compact-section-heading h2 {
-  margin-bottom: 6px;
-}
-
 .eyebrow {
   color: var(--accent);
   font-size: 14px;
@@ -159,7 +151,6 @@ p {
 }
 
 .login-summary,
-.store-settings-panel,
 .top-action-bar {
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -189,14 +180,6 @@ p {
 
 .compact-action-bar .eyebrow {
   margin-bottom: 2px;
-}
-
-.store-settings-panel {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
-}
-
-.store-settings-panel.compact {
-  padding: 14px;
 }
 
 .settings-list {
@@ -329,11 +312,6 @@ p {
   border-radius: calc(var(--radius) - 4px);
 }
 
-.compact-button {
-  min-height: 44px;
-  padding: 8px 12px;
-}
-
 .camera-stage {
   position: relative;
   overflow: hidden;
@@ -383,20 +361,6 @@ p {
   width: 100%;
   height: 100%;
   object-fit: fill;
-}
-
-.store-logo-badge {
-  pointer-events: none;
-  position: absolute;
-  right: 24px;
-  bottom: 24px;
-  max-width: min(360px, 52%);
-  max-height: 136px;
-  object-fit: contain;
-  padding: 10px;
-  border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
 }
 
 .frame-overlay {
@@ -722,15 +686,6 @@ p {
   justify-content: center;
 }
 
-.text-editor-panel {
-  display: grid;
-  gap: 18px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--panel);
-  padding: 18px;
-}
-
 .form-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -793,18 +748,6 @@ p {
 
 .pin-toggle-button:hover {
   color: var(--accent);
-}
-
-.segmented-control {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.color-selector {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px;
 }
 
 .color-button {
@@ -932,9 +875,6 @@ p {
   color: var(--muted);
   font-size: 13px;
   font-weight: 700;
-}
-
-.text-count {
   margin: 0;
 }
 
@@ -1089,13 +1029,6 @@ p {
   color: #ffffff;
 }
 
-.admin-main-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.85fr);
-  gap: 18px;
-  align-items: start;
-}
-
 .admin-photo-list {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1194,21 +1127,6 @@ p {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
-}
-
-.frame-preview-box {
-  overflow: hidden;
-  aspect-ratio: 1 / 1;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: #fffdf8;
-}
-
-.frame-preview-box img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
 }
 
 .admin-frame-tab {
@@ -1334,20 +1252,6 @@ p {
   border-radius: var(--radius-sm);
 }
 
-.admin-create-panel {
-  display: grid;
-  gap: 10px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--panel);
-  padding: 14px;
-}
-
-.admin-create-panel h2 {
-  font-size: 22px;
-  margin-bottom: 0;
-}
-
 .admin-photo-card {
   overflow: hidden;
   display: grid;
@@ -1418,8 +1322,7 @@ p {
   border: 1px solid var(--line);
 }
 
-.admin-edit-panel textarea,
-.admin-create-panel textarea {
+.admin-edit-panel textarea {
   width: 100%;
   resize: vertical;
   border: 1px solid var(--line);
@@ -1458,10 +1361,7 @@ p {
 
   .form-grid,
   .staff-selector,
-  .segmented-control,
-  .color-selector,
   .admin-date-row,
-  .admin-main-grid,
   .admin-store-staff-grid,
   .admin-photo-list,
   .admin-form-grid,
@@ -1487,12 +1387,6 @@ p {
     width: 100%;
   }
 
-  .store-logo-badge {
-    right: 16px;
-    bottom: 16px;
-    max-width: min(320px, 62%);
-    max-height: 116px;
-  }
 }
 
 @media print {
