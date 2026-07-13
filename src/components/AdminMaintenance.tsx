@@ -836,7 +836,7 @@ export function AdminMaintenance() {
       <div className="admin-login-panel">
         <div className="page-heading">
           <p className="eyebrow">本部メンテナンス</p>
-          <h1>写真管理</h1>
+          <h1>本部管理画面</h1>
         </div>
         <form className="login-form" onSubmit={handlePinSubmit}>
           <label className="field-label">
@@ -869,13 +869,11 @@ export function AdminMaintenance() {
           className="action-button secondary"
           type="button"
           onClick={() => {
-            setAssetScreen("list");
-            void loadAssets();
-            void loadStoreMasters();
-            void loadStaffMasters();
+            window.sessionStorage.removeItem(PIN_STORAGE_KEY);
+            window.location.assign("/admin");
           }}
         >
-          再読み込み
+          ログアウト
         </button>
       </div>
 
@@ -888,6 +886,21 @@ export function AdminMaintenance() {
         </button>
         <button className={activeTab === "frames" ? "is-selected" : ""} type="button" onClick={() => setActiveTab("frames")}>
           枠
+        </button>
+      </div>
+
+      <div className="admin-tab-reload-row">
+        <button
+          className="action-button secondary"
+          type="button"
+          onClick={() => {
+            setAssetScreen("list");
+            void loadAssets();
+            void loadStoreMasters();
+            void loadStaffMasters();
+          }}
+        >
+          再読み込み
         </button>
       </div>
 
