@@ -40,7 +40,7 @@
 - Storage: Supabase Storage
 - Auth: Supabase Auth
 - 画像加工: ブラウザ内の Canvas API
-- 顔検出: 自動顔判定は原則使わず、スタッフによる手動モザイクを優先する
+- 顔検出: 使わない。スタッフによる手動モザイクのみ（未使用だった顔検出ライブラリ一式は2026-07-13に削除済み）
 - 印刷: Web標準の `window.print()` と CSS `@media print`
 - 対象端末: iPad Safari
 - 対象プリンター: Canon SELPHY、AirPrint
