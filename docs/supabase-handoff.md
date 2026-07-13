@@ -1,5 +1,7 @@
 # Supabase引き継ぎメモ
 
+最終更新: 2026-07-13
+
 この文書は、Supabase側のDB、Storage、店舗設定を別の作業者へ引き継ぐためのメモである。
 
 GitHub mainの `supabase/schema.sql` と `supabase/README.md` を正とし、この文書は運用時に迷いやすい点を補足する。
@@ -18,7 +20,7 @@ GitHub mainの `supabase/schema.sql` と `supabase/README.md` を正とし、こ
 ### final-images
 
 完成画像を保存する。
-保存対象は、印刷後にお客様からSNS掲載OKをもらった完成画像だけ。
+保存対象は、お客様からSNS掲載OKをもらった完成画像だけ。印刷は任意で、保存の前提条件ではない。
 
 保存パス:
 
@@ -58,7 +60,9 @@ GitHub mainの `supabase/schema.sql` と `supabase/README.md` を正とし、こ
 
 既存Supabase環境では、`supabase/migrations/20260706_square_frame_coordinates.sql` を適用して、日付座標の既定値と制約を正方形前提へ更新する。
 
-葡萄房の初期正方形枠は、`supabase/migrations/20260706_budoubou_square_frames.sql` で登録する。このmigrationは、本店向け2枚、軽井沢向け3枚を `store_frames` に追加し、対象店舗の既存枠を無効化して新しい正方形枠を有効化する。
+葡萄房の初期正方形枠は、`supabase/migrations/20260706_budoubou_square_frames.sql` で登録する。このmigrationは、本店向け2枚、軽井沢向け3枚を `store_frames` に追加し、対象店舗の既存枠を無効化して新しい正方形枠を有効化する（無効化は当時の `is_active` 列による仕組み）。
+
+なお `store_frames.is_active` による無効化は、その後 `20260708_store_frame_slots.sql` で廃止した。現在の枠は「存在する枠 = 有効な枠（店舗ごとに最大3枠）」で、不要な枠はレコードごと削除する。
 
 ### assets
 
@@ -114,49 +118,48 @@ rejected   使用しない
 
 ## 適用状況
 
-ユーザー操作により、Supabase SQL Editorで `supabase/migrations/20260704_admin_asset_review_fields.sql` を適用済み。
+現在の本番Supabaseは、`supabase/migrations/` の全migrationを適用済みの前提で運用している。
 
-SQL Editorの結果:
-
-```text
-Success. No rows returned
-```
-
-これにより、`assets.short_caption`、`assets.review_status`、40文字制約、確認状態値制約、検索用indexはSupabase本体へ反映済みと扱う。
-
-`supabase/migrations/20260706_square_frame_coordinates.sql` は、正方形枠へ移行するための追加migrationである。正方形枠を本登録する前にSupabase SQL Editorで適用する。
-
-`supabase/migrations/20260706_budoubou_square_frames.sql` は、葡萄房 本店2枚・葡萄房 軽井沢3枚の正方形枠を登録するための追加migrationである。`20260706_square_frame_coordinates.sql` の後に適用する。
+- `20260710_safe_store_deletion.sql` と `20260710_harden_database_functions.sql` は、2026-07-10に本番へ適用し、動作とSecurity Advisor（Warnings 0件）を確認済み（`docs/START_HERE.md` 参照）。
+- それ以前のmigrationは、各作業日のセッションログ（`docs/session-*.md`）に適用記録がある。
+- 本番DBへ適用したSQLは、必ず `supabase/migrations/` にも記録する。
 
 ## 適用手順
 
 新規Supabaseプロジェクトの場合:
 
-1. Supabase SQL Editorで `supabase/schema.sql` を実行する。
+1. Supabase SQL Editorで `supabase/schema.sql` を実行する（現行スキーマの完全版なので、migrationの追加適用は不要）。
 2. 必要に応じて `supabase/seed.example.sql` を実行する。
 3. Vercelに環境変数を設定する。
 4. 必要な店舗枠を `store_frames` に登録する。
 5. 枠画像をSupabase StorageまたはGitHub mainで管理できる場所に置き、`store_frames.frame_url` に登録する。
 
-既存Supabaseプロジェクトで別環境へ再適用する場合:
+既存Supabaseプロジェクト（初期schemaだけ適用済みの環境）へ再適用する場合は、以下を**この順番で**実行済みか確認しながら適用する:
 
-1. Supabase SQL Editorで `supabase/migrations/20260625_assets_storage_handoff.sql` を実行済みか確認する。
-2. Supabase SQL Editorで `supabase/migrations/20260704_frame_date_settings.sql` を実行済みか確認する。
-3. Supabase SQL Editorで `supabase/migrations/20260704_admin_asset_review_fields.sql` を実行する。
-4. Supabase SQL Editorで `supabase/migrations/20260706_square_frame_coordinates.sql` を実行する。
-5. Supabase SQL Editorで `supabase/migrations/20260706_budoubou_square_frames.sql` を実行する。
-6. `assets` に `short_caption` と `review_status` が追加されたことを確認する。
-7. `review_status` の既存写真が初期値 `new` になっていることを確認する。
-8. `store_frames.date_x` と `store_frames.date_y` が 0 から 1080 の範囲になっていることを確認する。
-9. 葡萄房 本店に正方形枠2枚、葡萄房 軽井沢に正方形枠3枚が追加され、有効になっていることを確認する。
-10. `final-images` と `store-assets` bucketがあることを確認する。
-11. 既存店舗の写真枠設定を必要に応じて確認する。
+1. `20260625_assets_storage_handoff.sql`
+2. `20260704_store_frames.sql`（`store_frames` テーブルの新設）
+3. `20260704_frame_date_settings.sql`
+4. `20260704_admin_asset_review_fields.sql`
+5. `20260706_square_frame_coordinates.sql`
+6. `20260706_budoubou_square_frames.sql`
+7. `20260707_budoubou_square_photo_frames.sql`（葡萄房の実ロゴ入り正方形枠への差し替え）
+8. `20260708_drop_staff_role_fields.sql`（担当者の役割属性の廃止）
+9. `20260708_store_frame_slots.sql`（枠3スロット化、`store_frames.is_active` の廃止）
+10. `20260710_safe_store_deletion.sql`（停止中かつ写真0件の店舗だけを安全に削除する関数）
+11. `20260710_harden_database_functions.sql`（DB関数の `search_path` 固定と実行権限の絞り込み）
+
+適用後の確認:
+
+1. `assets` に `short_caption` と `review_status` があり、既存写真の `review_status` が `new` になっている。
+2. `store_frames` に `is_active` 列が**残っていない**。
+3. `store_frames.date_x` と `store_frames.date_y` が 0 から 1080 の範囲になっている。
+4. 各店舗の枠が最大3枠で、意図した枠が登録されている。
+5. `final-images` と `store-assets` bucketがある。
+6. Security AdvisorでDB関数のWarningsが0件になっている。
 
 注意:
 
-- GitHub mainにAPI/UI変更が反映済みで、現Supabaseにも `20260704_admin_asset_review_fields.sql` は適用済み。
 - 別Supabase環境へ移す場合は、同じmigrationを忘れずに適用する。
-- 本番DBへ適用したSQLは、必ず `supabase/migrations/` にも記録する。今回の追加SQLはGitHub mainへ記録済み。
 - 葡萄房枠のSVGは、添付の背景透過ロゴPNGを内包した静的SVGである。Supabase Storageへ別途ロゴPNGをアップロードしなくても表示できる。
 
 ## Vercel環境変数
@@ -210,13 +213,13 @@ GitHub mainへ反映済みのDB/API/UI土台:
 - 開始日、終了日のiPad Safari標準日付入力による括弧表示を避けるため、`YYYY-MM-DD` の代理入力欄を表示する
 
 SNS投稿文の作成と保存、SNS自動投稿、Instagram連携は次フェーズ以降で検討する。
-店舗ログインコード、PINハッシュ、完全削除、Storageファイル削除はまだ画面編集対象外とする。
+店舗ログインコードとPINハッシュの画面編集はまだ対象外とする（写真の完全削除は2026-07-09に実装済み。ただしStorage削除の失敗を確認しない点が既知の課題として監査記録に残っている）。
 
 ## 保存の流れ
 
 1. 店舗ログインで店舗情報と担当者一覧を取得する。
-2. 撮影、写真選択、担当者選択、画像編集を行う。
-3. 完成画像確認画面で必要に応じて印刷する。
+2. 担当者選択、撮影、写真選択、画像編集を行う（担当者を選ぶまで撮影できない）。
+3. 完成画像確認画面で必要に応じて印刷する（印刷は任意）。
 4. お客様からSNS掲載OKをもらう。
 5. 「保存」ボタンを押す。
 6. Vercelの `/api/assets` が完成画像を `final-images` へ保存する。

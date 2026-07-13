@@ -66,10 +66,6 @@ type AssetInsert = {
   captured_at?: string;
   captured_date: string;
   sequence_number: number;
-  dog_name?: string | null;
-  dog_breed?: string | null;
-  dog_age?: string | null;
-  staff_comment?: string | null;
   description?: string | null;
   short_caption?: string | null;
   review_status?: AssetReviewStatus;
@@ -181,10 +177,6 @@ export type Database = {
           captured_at: string;
           captured_date: string;
           sequence_number: number;
-          dog_name: string | null;
-          dog_breed: string | null;
-          dog_age: string | null;
-          staff_comment: string | null;
           description: string | null;
           short_caption: string | null;
           review_status: AssetReviewStatus;
