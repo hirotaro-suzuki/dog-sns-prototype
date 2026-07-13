@@ -56,7 +56,7 @@ export function StoreLoginForm() {
       window.localStorage.setItem(LAST_LOGIN_CODE_KEY, loginCode);
       setMessage(`${nextSession.store.displayName} としてログインしました。`);
       setDetail("");
-      window.location.assign("/store?start=capture");
+      window.location.assign("/store");
     } catch {
       setMessage("通信に失敗しました。時間をおいてもう一度お試しください。");
       setDetail("");
@@ -135,6 +135,9 @@ export function StoreLoginForm() {
 
       <p className="notice">{message}</p>
       {detail && <p className="notice error">{detail}</p>}
+      <p className="notice">
+        撮影した写真は、最後にお客様からSNS掲載OKをもらうまでクラウドへ保存しません。
+      </p>
     </section>
   );
 }

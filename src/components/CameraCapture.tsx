@@ -270,23 +270,29 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
   const themeStyle = getThemeStyle(store);
   const selectedStaff = staffMembers.find((staff) => staff.id === selectedStaffId);
 
+  // 枠名はサーバー自動生成の内部識別子で人間向けではないため、枠画像そのものをボタンにする。
+  const frameChoiceBar =
+    frameChoices.length > 1 ? (
+      <div className="frame-choice-bar" aria-label="写真枠選択">
+        {frameChoices.map((frame, index) => (
+          <button
+            key={frame.id}
+            className={`frame-choice-button${selectedFrame?.id === frame.id ? " is-selected" : ""}`}
+            type="button"
+            onClick={() => setSelectedFrameId(frame.id)}
+            aria-label={`写真枠 ${index + 1} を選ぶ`}
+            aria-pressed={selectedFrame?.id === frame.id}
+          >
+            <img className="frame-choice-thumb" src={frame.frameUrl} alt="" />
+          </button>
+        ))}
+      </div>
+    ) : null;
+
   if (step === "process" && selectedPhoto) {
     return (
       <div className="camera-panel" style={themeStyle}>
-        {frameChoices.length > 1 && (
-          <div className="frame-choice-bar" aria-label="写真枠選択">
-            {frameChoices.map((frame) => (
-              <button
-                key={frame.id}
-                className={`frame-choice-button${selectedFrame?.id === frame.id ? " is-selected" : ""}`}
-                type="button"
-                onClick={() => setSelectedFrameId(frame.id)}
-              >
-                {frame.frameName}
-              </button>
-            ))}
-          </div>
-        )}
+        {frameChoiceBar}
         <MosaicCanvas
           photo={selectedPhoto}
           store={activeStore}
@@ -316,20 +322,7 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
         )}
       </div>
 
-      {frameChoices.length > 1 && (
-        <div className="frame-choice-bar" aria-label="写真枠選択">
-          {frameChoices.map((frame) => (
-            <button
-              key={frame.id}
-              className={`frame-choice-button${selectedFrame?.id === frame.id ? " is-selected" : ""}`}
-              type="button"
-              onClick={() => setSelectedFrameId(frame.id)}
-            >
-              {frame.frameName}
-            </button>
-          ))}
-        </div>
-      )}
+      {frameChoiceBar}
 
       {staffMembers.length > 0 && (
         <div className="staff-chip-row" aria-label="担当者選択">

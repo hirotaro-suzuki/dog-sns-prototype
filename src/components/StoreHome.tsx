@@ -8,31 +8,29 @@ const STORE_SESSION_KEY = "dog-sns-store-session";
 
 export function StoreHome() {
   const [session, setSession] = useState<StoreSession | null>(null);
-  const [isCapturing, setIsCapturing] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
 
   useEffect(() => {
     const storedValue = window.localStorage.getItem(STORE_SESSION_KEY);
-    if (!storedValue) return;
-
-    try {
-      const nextSession = JSON.parse(storedValue) as StoreSession;
-      const shouldStartCapture = new URLSearchParams(window.location.search).get("start") === "capture";
-      setSession(nextSession);
-      setIsCapturing(shouldStartCapture);
-
-      if (shouldStartCapture) {
-        window.history.replaceState(null, "", "/store");
+    if (storedValue) {
+      try {
+        setSession(JSON.parse(storedValue) as StoreSession);
+      } catch {
+        window.localStorage.removeItem(STORE_SESSION_KEY);
       }
-    } catch {
-      window.localStorage.removeItem(STORE_SESSION_KEY);
     }
+    setIsCheckingSession(false);
   }, []);
 
   function handleLogout() {
     window.localStorage.removeItem(STORE_SESSION_KEY);
     setSession(null);
-    setIsCapturing(false);
     window.location.assign("/store/login");
+  }
+
+  // 再読み込み時にログイン案内が一瞬表示されないよう、セッション確認が終わるまで何も出さない。
+  if (isCheckingSession) {
+    return null;
   }
 
   if (!session) {
@@ -54,42 +52,11 @@ export function StoreHome() {
     );
   }
 
-  if (isCapturing) {
-    return (
-      <CameraCapture
-        store={session.store}
-        staffMembers={session.staffMembers}
-        onLogout={handleLogout}
-      />
-    );
-  }
-
   return (
-    <section className="login-panel" aria-label="店舗ホーム">
-      <div className="login-summary">
-        <p className="eyebrow">今日のわんちゃん</p>
-        <h2>{session.store.displayName}</h2>
-        <p>{session.staffMembers.length}名の担当者を読み込みました。</p>
-      </div>
-
-      <div className="toolbar">
-        <button
-          className="action-button primary-wide"
-          type="button"
-          onClick={() => setIsCapturing(true)}
-        >
-          撮影へ進む
-        </button>
-        <button className="icon-button" type="button" onClick={handleLogout} aria-label="ログアウト">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M6 6L18 18M18 6L6 18" strokeLinecap="round" />
-          </svg>
-        </button>
-      </div>
-
-      <p className="notice">
-        撮影した写真は、最後にお客様からSNS掲載OKをもらうまでクラウドへ保存しません。
-      </p>
-    </section>
+    <CameraCapture
+      store={session.store}
+      staffMembers={session.staffMembers}
+      onLogout={handleLogout}
+    />
   );
 }

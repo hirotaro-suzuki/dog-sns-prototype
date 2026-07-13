@@ -309,20 +309,24 @@ p {
 }
 
 .frame-choice-button {
-  min-height: 48px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: #fffdf8;
-  color: var(--foreground);
-  font-weight: 700;
-  padding: 10px 12px;
+  padding: 6px;
 }
 
 .frame-choice-button.is-selected {
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 14%, #fffdf8);
-  color: var(--accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.frame-choice-thumb {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  border-radius: calc(var(--radius) - 4px);
 }
 
 .compact-button {
