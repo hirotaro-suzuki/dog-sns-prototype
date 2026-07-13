@@ -36,4 +36,6 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
-.claude/settings.local.json
+
+# Claude Code 環境固有設定（共有したい許可だけに整理できたら追跡を再検討する）
+/.claude/
