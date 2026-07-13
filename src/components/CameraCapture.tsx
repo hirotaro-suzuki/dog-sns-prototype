@@ -11,7 +11,6 @@ import {
   releaseCapturedPhoto,
   releaseCapturedPhotos,
 } from "@/lib/imageStore";
-import { phaseZeroStore } from "@/config/stores";
 import { MAX_FRAMES_PER_STORE } from "@/lib/frameLimits";
 import type { CaptureStaff, CaptureStore } from "@/types/captureContext";
 
@@ -37,7 +36,7 @@ function getTodayLabel() {
 }
 
 function getDisplayStore(store?: CaptureStore) {
-  return store?.displayName ?? phaseZeroStore.displayName;
+  return store?.displayName ?? "今日のわんちゃん";
 }
 
 function getThemeStyle(store?: CaptureStore): CSSProperties | undefined {
@@ -257,14 +256,8 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
     setStep("capture");
   }
 
-  function retakePhotos() {
-    clearCaptureData();
-    hasAutoStartedCameraRef.current = true;
-    setStep("capture");
-    void startCamera();
-  }
-
-  function cancelSession() {
+  // 保存後の「次のわんちゃんを撮る」と編集途中のキャンセルは、どちらも同じ「全部消して撮影へ戻る」動作。
+  function restartCaptureSession() {
     clearCaptureData();
     hasAutoStartedCameraRef.current = true;
     setStep("capture");
@@ -298,9 +291,9 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
           photo={selectedPhoto}
           store={activeStore}
           staff={selectedStaff}
-          onCancel={cancelSession}
+          onCancel={restartCaptureSession}
           onBackToPhotos={backToCapture}
-          onStartNext={retakePhotos}
+          onStartNext={restartCaptureSession}
           onLogout={onLogout ? handleLogout : undefined}
         />
       </div>

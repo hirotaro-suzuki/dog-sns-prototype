@@ -3,8 +3,8 @@ import "./globals.css";
 import "./frame-print-overrides.css";
 
 export const metadata: Metadata = {
-  title: "Dog SNS Prototype",
-  description: "Phase 0 camera and mosaic prototype",
+  title: "今日のわんちゃん",
+  description: "店頭で撮影・加工した写真を、SNS掲載OK後にクラウドへ保存する店舗向けアプリ",
 };
 
 export default function RootLayout({

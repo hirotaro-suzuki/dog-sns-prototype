@@ -10,6 +10,8 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
+  // ビルド生成物と依存はlint対象にしない（`.gitignore` はflat configへ反映されないため明記する）
+  { ignores: [".next/**", "out/**", "build/**", "node_modules/**"] },
   ...compat.extends("next/core-web-vitals", "next/typescript"),
 ];
 
