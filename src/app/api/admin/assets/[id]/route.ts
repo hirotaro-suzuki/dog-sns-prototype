@@ -184,8 +184,22 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
       return NextResponse.json({ message: "写真が見つかりませんでした。" }, { status: 404 });
     }
 
+    // Storage側の削除が確認できるまでDBレコードを消さない。
+    // 逆順にすると「台帳からは消えたのに画像だけ残る」状態になり得るため。
     if (currentAsset.final_storage_bucket && currentAsset.final_storage_path) {
-      await supabase.storage.from(currentAsset.final_storage_bucket).remove([currentAsset.final_storage_path]);
+      const { error: storageError } = await supabase.storage
+        .from(currentAsset.final_storage_bucket)
+        .remove([currentAsset.final_storage_path]);
+
+      if (storageError) {
+        return NextResponse.json(
+          {
+            message: "Storage上の画像を削除できなかったため、完全削除を中止しました。時間をおいてもう一度お試しください。",
+            detail: storageError.message,
+          },
+          { status: 500 }
+        );
+      }
     }
 
     const { error } = await assetsTable.delete().eq("id", id);

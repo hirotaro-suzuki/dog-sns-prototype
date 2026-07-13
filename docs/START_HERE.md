@@ -1,5 +1,5 @@
 ### START HERE for Claude Code
-最終更新: 2026-07-10
+最終更新: 2026-07-13
 
 このファイルは、新しく起動したClaude Codeが最初に読む入口です。
 目的は、毎回無駄なファイル探索を行ってトークン（コンテキスト）を消費しすぎないようにすることです。
@@ -62,8 +62,8 @@ Supabase変更は、GitHubにSQLを置いただけなのか、実環境へ適用
 * `20260710_harden_database_functions.sql` は本番Supabaseへ適用・確認済み。対象2関数の `search_path=pg_catalog`、`anon`・`authenticated` の直接実行権限がfalse、Security AdvisorのWarnings 0件を確認済み。
 
 #### 残作業
-* 写真削除時にStorage削除が失敗した場合のエラー処理を改善する。
-* `npm run lint` が `.next` の生成物まで対象にしてしまう既存設定を見直す。
+* 2026-07-13に、写真完全削除のStorageエラー処理と `npm run lint` の対象修正は対応済み。
+* 残っている検討項目は `docs/audit-2026-07-13.md` の「判断: 未決」の項目を正とする。
 
 #### 作業前チェック
 作業に入る前に、Claude Codeは以下を短く確認し、ユーザーに合意を取ります。
