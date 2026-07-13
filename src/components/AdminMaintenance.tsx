@@ -143,6 +143,43 @@ type FrameDraft = {
 };
 
 const PIN_STORAGE_KEY = "dog-sns-admin-pin";
+const MIN_RASTER_FRAME_SIZE = 1080;
+
+async function readImageDimensions(file: File) {
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    await new Promise<void>((resolve, reject) => {
+      image.onload = () => resolve();
+      image.onerror = () => reject(new Error("画像を読み込めませんでした。"));
+      image.src = objectUrl;
+    });
+    return { width: image.naturalWidth, height: image.naturalHeight };
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+async function validateFrameImageFile(file: File) {
+  let width = 0;
+  let height = 0;
+  try {
+    ({ width, height } = await readImageDimensions(file));
+  } catch {
+    return "画像として読み込めないファイルです。";
+  }
+
+  if (width <= 0 || height <= 0) {
+    return "画像の寸法を確認できませんでした。幅と高さを指定したファイルを使ってください。";
+  }
+  if (width !== height) {
+    return `枠画像は正方形にしてください（このファイルは ${width}×${height} です）。`;
+  }
+  if (file.type !== "image/svg+xml" && width < MIN_RASTER_FRAME_SIZE) {
+    return `PNG/JPEG/WebPの枠画像は ${MIN_RASTER_FRAME_SIZE}×${MIN_RASTER_FRAME_SIZE} 以上にしてください（このファイルは ${width}×${height} です）。`;
+  }
+  return "";
+}
 const REVIEW_STATUS_OPTIONS: { value: AssetReviewStatus; label: string }[] = [
   { value: "new", label: "未確認" },
   { value: "candidate", label: "投稿候補" },
@@ -1458,6 +1495,13 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
 
   async function createFrameInSlot(index: number, file: File) {
     if (!adminPin || !selectedStoreId) return;
+
+    const sizeError = await validateFrameImageFile(file);
+    if (sizeError) {
+      setFrameMessage(sizeError);
+      return;
+    }
+
     setIsFrameSaving(true);
     setFrameMessage("");
 
@@ -1586,6 +1630,13 @@ function AdminFrameMaintenance({ adminPin }: { adminPin: string }) {
 
   async function replaceEditingFrameImage(file: File) {
     if (!adminPin || !editingFrame) return;
+
+    const sizeError = await validateFrameImageFile(file);
+    if (sizeError) {
+      setFrameMessage(sizeError);
+      return;
+    }
+
     setIsFrameSaving(true);
     setFrameMessage("");
 
