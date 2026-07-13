@@ -1002,6 +1002,11 @@ p {
 }
 
 .admin-date-picker-button {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 52px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -1009,6 +1014,22 @@ p {
   color: var(--foreground);
   font-weight: 700;
   padding: 10px 12px;
+  cursor: pointer;
+}
+
+/* ボタンの上に重ねる透明の日付入力。直接タップさせることでiPadでも標準カレンダーが開く。 */
+.admin-date-picker-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .admin-toggle,
