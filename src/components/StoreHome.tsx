@@ -15,11 +15,15 @@ export function StoreHome() {
     if (storedValue) {
       try {
         setSession(JSON.parse(storedValue) as StoreSession);
+        setIsCheckingSession(false);
+        return;
       } catch {
         window.localStorage.removeItem(STORE_SESSION_KEY);
       }
     }
-    setIsCheckingSession(false);
+    // 未ログインなら案内画面を挟まず、直接ログイン画面へ移動する。
+    // replaceにすることで、戻るボタンでこのリダイレクトへ戻ってこないようにする。
+    window.location.replace("/store/login");
   }, []);
 
   function handleLogout() {
@@ -28,28 +32,9 @@ export function StoreHome() {
     window.location.assign("/store/login");
   }
 
-  // 再読み込み時にログイン案内が一瞬表示されないよう、セッション確認が終わるまで何も出さない。
-  if (isCheckingSession) {
+  // セッション確認中と、未ログインでログイン画面へ移動するまでの間は何も出さない。
+  if (isCheckingSession || !session) {
     return null;
-  }
-
-  if (!session) {
-    return (
-      <section className="login-panel" aria-label="店舗未ログイン">
-        <div className="login-summary">
-          <p className="eyebrow">Store</p>
-          <h2>店舗ログインが必要です</h2>
-          <p>店舗コードとPINでログインしてください。</p>
-        </div>
-        <button
-          className="action-button primary-wide"
-          type="button"
-          onClick={() => window.location.assign("/store/login")}
-        >
-          店舗ログインへ
-        </button>
-      </section>
-    );
   }
 
   return (

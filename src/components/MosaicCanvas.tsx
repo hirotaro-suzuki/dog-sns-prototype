@@ -892,6 +892,11 @@ export function MosaicCanvas({
       return;
     }
 
+    // 文字以外の場所を触ったら選択を解除し、編集パネルを閉じる（一般的なスマホ操作に合わせる）。
+    if (selectedTextBoxIdRef.current) {
+      clearSelectedTextBox();
+    }
+
     const geometry = getTouchGeometry(canvas, event.touches);
     gestureRef.current = {
       ...geometry,

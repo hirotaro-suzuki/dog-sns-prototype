@@ -354,7 +354,12 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
               )}
             </div>
           )}
-          {isCameraReady && isPhotoStockFull && <div className="camera-stage-full-overlay" aria-hidden="true" />}
+          {isCameraReady && isPhotoStockFull && (
+            <>
+              <div className="camera-stage-full-overlay" aria-hidden="true" />
+              <p className="camera-stage-hint">下の写真をタップして1枚選んでください</p>
+            </>
+          )}
           {activeStore?.frameUrl ? (
             <img className="store-frame-image" src={activeStore.frameUrl} alt="店舗フレーム" />
           ) : (
