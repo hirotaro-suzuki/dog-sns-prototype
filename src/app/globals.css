@@ -354,6 +354,22 @@ p {
   backdrop-filter: grayscale(1);
 }
 
+.camera-stage-hint {
+  pointer-events: none;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  margin: 0;
+  padding: 10px 20px;
+  border-radius: 999px;
+  background: rgba(31, 37, 36, 0.78);
+  color: #f5f0e8;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .store-frame-image {
   pointer-events: none;
   position: absolute;

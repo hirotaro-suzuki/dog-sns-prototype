@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties, TouchEvent } from "react";
+import type { CSSProperties, ReactNode, TouchEvent } from "react";
 import { useEffect, useReducer, useRef, useState } from "react";
 import type { CapturedPhoto } from "@/lib/imageStore";
 import type { CaptureStaff, CaptureStore } from "@/types/captureContext";
@@ -9,6 +9,8 @@ type MosaicCanvasProps = {
   photo: CapturedPhoto;
   store?: CaptureStore;
   staff?: CaptureStaff;
+  // 完成画像は選択済みの枠で焼き付け済みのため、枠選択バーは編集画面でだけ表示する。
+  frameChooser?: ReactNode;
   onCancel: () => void;
   onBackToPhotos?: () => void;
   onStartNext?: () => void;
@@ -500,6 +502,7 @@ export function MosaicCanvas({
   photo,
   store,
   staff,
+  frameChooser,
   onCancel,
   onBackToPhotos,
   onStartNext,
@@ -1025,6 +1028,11 @@ export function MosaicCanvas({
     window.print();
   }
 
+  function handleCancelSession() {
+    if (!window.confirm("撮影した写真をすべて消して、撮影からやり直します。よろしいですか？")) return;
+    onCancel();
+  }
+
   async function saveFinalImage() {
     if (!completedImageUrl || !store || !staff || !hasConsent) return;
 
@@ -1111,7 +1119,7 @@ export function MosaicCanvas({
             </svg>
           </button>
           {!savedAssetCode && (
-            <button className="icon-button" type="button" onClick={onCancel} aria-label="キャンセル">
+            <button className="icon-button" type="button" onClick={handleCancelSession} aria-label="キャンセル">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M4 7h16M9 7V4h6v3m-9 0 1 13a2 2 0 002 2h6a2 2 0 002-2l1-13" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -1120,7 +1128,8 @@ export function MosaicCanvas({
           {onLogout && (
             <button className="icon-button" type="button" onClick={onLogout} aria-label="ログアウト">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M6 6L18 18M18 6L6 18" strokeLinecap="round" />
+                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M16 17l5-5-5-5M21 12H9" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
           )}
@@ -1192,6 +1201,7 @@ export function MosaicCanvas({
 
   return (
     <section className="canvas-panel" aria-label="画像加工プレビュー">
+      {frameChooser}
       <div className="toolbar utility-toolbar">
         {onBackToPhotos && (
           <button className="icon-button" type="button" onClick={onBackToPhotos} aria-label="写真選択へ戻る">
@@ -1200,7 +1210,7 @@ export function MosaicCanvas({
             </svg>
           </button>
         )}
-        <button className="icon-button" type="button" onClick={onCancel} aria-label="キャンセル">
+        <button className="icon-button" type="button" onClick={handleCancelSession} aria-label="キャンセル">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M4 7h16M9 7V4h6v3m-9 0 1 13a2 2 0 002 2h6a2 2 0 002-2l1-13" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
@@ -1208,7 +1218,8 @@ export function MosaicCanvas({
         {onLogout && (
           <button className="icon-button" type="button" onClick={onLogout} aria-label="ログアウト">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M6 6L18 18M18 6L6 18" strokeLinecap="round" />
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M16 17l5-5-5-5M21 12H9" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
         )}

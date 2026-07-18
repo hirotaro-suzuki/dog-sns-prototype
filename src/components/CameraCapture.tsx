@@ -162,6 +162,7 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
   }
 
   function handleLogout() {
+    if (!window.confirm("ログアウトします。保存していない写真は消えます。よろしいですか？")) return;
     clearCaptureData();
     onLogout?.();
   }
@@ -292,11 +293,11 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
   if (step === "process" && selectedPhoto) {
     return (
       <div className="camera-panel" style={themeStyle}>
-        {frameChoiceBar}
         <MosaicCanvas
           photo={selectedPhoto}
           store={activeStore}
           staff={selectedStaff}
+          frameChooser={frameChoiceBar}
           onCancel={restartCaptureSession}
           onBackToPhotos={backToCapture}
           onStartNext={restartCaptureSession}
@@ -316,7 +317,8 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
         {onLogout && (
           <button className="icon-button" type="button" onClick={handleLogout} aria-label="ログアウト">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M6 6L18 18M18 6L6 18" strokeLinecap="round" />
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M16 17l5-5-5-5M21 12H9" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
         )}
@@ -357,6 +359,9 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
             <img className="store-frame-image" src={activeStore.frameUrl} alt="店舗フレーム" />
           ) : (
             <div className="frame-overlay" data-store={displayStore} data-date={getTodayLabel()} />
+          )}
+          {isCameraReady && staffMembers.length > 0 && !selectedStaffId && (
+            <p className="camera-stage-hint">担当者を選ぶと撮影できます</p>
           )}
         </div>
       </div>
