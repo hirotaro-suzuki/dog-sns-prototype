@@ -625,9 +625,20 @@ p {
   color: #ffffff;
 }
 
+/* 編集画面はスクロール無しで収める。キャンバスは残りの高さに合わせた正方形（camera-stageと同方式）。 */
 .canvas-panel {
-  display: grid;
-  gap: 18px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 14px;
+}
+
+.canvas-frame-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
 }
 
 .final-screen {
@@ -788,6 +799,10 @@ p {
 .canvas-frame {
   position: relative;
   overflow: hidden;
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: #1f2524;
@@ -902,7 +917,7 @@ p {
 .canvas-frame canvas {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;

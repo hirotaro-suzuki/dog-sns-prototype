@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties, ReactNode, TouchEvent } from "react";
+import type { CSSProperties, TouchEvent } from "react";
 import { useEffect, useReducer, useRef, useState } from "react";
 import type { CapturedPhoto } from "@/lib/imageStore";
 import type { CaptureStaff, CaptureStore } from "@/types/captureContext";
@@ -9,8 +9,6 @@ type MosaicCanvasProps = {
   photo: CapturedPhoto;
   store?: CaptureStore;
   staff?: CaptureStaff;
-  // 完成画像は選択済みの枠で焼き付け済みのため、枠選択バーは編集画面でだけ表示する。
-  frameChooser?: ReactNode;
   onCancel: () => void;
   onBackToPhotos?: () => void;
   onStartNext?: () => void;
@@ -512,7 +510,6 @@ export function MosaicCanvas({
   photo,
   store,
   staff,
-  frameChooser,
   onCancel,
   onBackToPhotos,
   onStartNext,
@@ -1217,7 +1214,6 @@ export function MosaicCanvas({
 
   return (
     <section className="canvas-panel" aria-label="画像加工プレビュー">
-      {frameChooser}
       <div className="toolbar utility-toolbar">
         {onBackToPhotos && (
           <button className="icon-button" type="button" onClick={onBackToPhotos} aria-label="写真選択へ戻る">
@@ -1242,94 +1238,96 @@ export function MosaicCanvas({
         )}
       </div>
 
-      <div className={`canvas-frame ${editMode === "mosaic" ? "is-mosaic-mode" : ""}`}>
-        <canvas
-          ref={canvasRef}
-          aria-label="加工済み画像プレビュー"
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onTouchCancel={handleTouchEnd}
-        />
-        {selectedTextBox && selectedTextEditor && (
-          <div
-            className="canvas-text-editor"
-            style={selectedTextEditor.layerStyle}
-            onTouchStart={handleSelectedTextTouchStart}
-            onTouchMove={handleSelectedTextTouchMove}
-            onTouchEnd={handleSelectedTextTouchEnd}
-            onTouchCancel={handleSelectedTextTouchEnd}
-          >
-            <input
-              className="canvas-text-input"
-              type="text"
-              value={selectedTextBox.text}
-              maxLength={MAX_TEXT_LENGTH}
-              autoComplete="off"
-              autoFocus
-              placeholder="文字"
-              style={selectedTextEditor.inputStyle}
-              onChange={(event) =>
-                updateTextBox(selectedTextBox.id, {
-                  text: event.target.value.slice(0, MAX_TEXT_LENGTH),
-                })
-              }
-            />
+      <div className="canvas-frame-wrap">
+        <div className={`canvas-frame ${editMode === "mosaic" ? "is-mosaic-mode" : ""}`}>
+          <canvas
+            ref={canvasRef}
+            aria-label="加工済み画像プレビュー"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
+          />
+          {selectedTextBox && selectedTextEditor && (
+            <div
+              className="canvas-text-editor"
+              style={selectedTextEditor.layerStyle}
+              onTouchStart={handleSelectedTextTouchStart}
+              onTouchMove={handleSelectedTextTouchMove}
+              onTouchEnd={handleSelectedTextTouchEnd}
+              onTouchCancel={handleSelectedTextTouchEnd}
+            >
+              <input
+                className="canvas-text-input"
+                type="text"
+                value={selectedTextBox.text}
+                maxLength={MAX_TEXT_LENGTH}
+                autoComplete="off"
+                autoFocus
+                placeholder="文字"
+                style={selectedTextEditor.inputStyle}
+                onChange={(event) =>
+                  updateTextBox(selectedTextBox.id, {
+                    text: event.target.value.slice(0, MAX_TEXT_LENGTH),
+                  })
+                }
+              />
 
-            <div className="canvas-text-control-panel" aria-label="選択中の文字編集">
-              <div className="canvas-text-control-row">
-                <button className="mini-control-button" type="button" onClick={levelSelectedTextBox} aria-label="水平にする">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
-                {Object.entries(TEXT_SIZE_ICON_PX).map(([size, px]) => (
-                  <button
-                    className={`mini-control-button ${selectedTextBox.size === size ? "is-selected" : ""}`}
-                    key={size}
-                    type="button"
-                    style={{ fontSize: px }}
-                    onClick={() => {
-                      pushHistory();
-                      updateTextBox(selectedTextBox.id, { size: size as TextBoxSize });
-                    }}
-                    aria-label={`文字サイズ ${TEXT_SIZE_LABELS[size as TextBoxSize]}`}
-                  >
-                    A
+              <div className="canvas-text-control-panel" aria-label="選択中の文字編集">
+                <div className="canvas-text-control-row">
+                  <button className="mini-control-button" type="button" onClick={levelSelectedTextBox} aria-label="水平にする">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
                   </button>
-                ))}
-              </div>
+                  {Object.entries(TEXT_SIZE_ICON_PX).map(([size, px]) => (
+                    <button
+                      className={`mini-control-button ${selectedTextBox.size === size ? "is-selected" : ""}`}
+                      key={size}
+                      type="button"
+                      style={{ fontSize: px }}
+                      onClick={() => {
+                        pushHistory();
+                        updateTextBox(selectedTextBox.id, { size: size as TextBoxSize });
+                      }}
+                      aria-label={`文字サイズ ${TEXT_SIZE_LABELS[size as TextBoxSize]}`}
+                    >
+                      A
+                    </button>
+                  ))}
+                </div>
 
-              <div className="canvas-text-color-row" aria-label="文字色">
-                {TEXT_COLORS.map((color) => (
-                  <button
-                    className={`mini-color-button ${selectedTextBox.color === color.value ? "is-selected" : ""}`}
-                    key={color.value}
-                    type="button"
-                    style={{ backgroundColor: color.value }}
-                    onClick={() => {
-                      pushHistory();
-                      updateTextBox(selectedTextBox.id, { color: color.value });
-                    }}
-                    aria-label={`${color.label}にする`}
-                  />
-                ))}
-                <button className="mini-control-button danger" type="button" onClick={deleteSelectedTextBox} aria-label="削除">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M4 7h16M9 7V4h6v3m-9 0 1 13a2 2 0 002 2h6a2 2 0 002-2l1-13" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
-                <button className="mini-control-button" type="button" onClick={clearSelectedTextBox} aria-label="閉じる">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M6 6L18 18M18 6L6 18" strokeLinecap="round" />
-                  </svg>
-                </button>
-              </div>
+                <div className="canvas-text-color-row" aria-label="文字色">
+                  {TEXT_COLORS.map((color) => (
+                    <button
+                      className={`mini-color-button ${selectedTextBox.color === color.value ? "is-selected" : ""}`}
+                      key={color.value}
+                      type="button"
+                      style={{ backgroundColor: color.value }}
+                      onClick={() => {
+                        pushHistory();
+                        updateTextBox(selectedTextBox.id, { color: color.value });
+                      }}
+                      aria-label={`${color.label}にする`}
+                    />
+                  ))}
+                  <button className="mini-control-button danger" type="button" onClick={deleteSelectedTextBox} aria-label="削除">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M4 7h16M9 7V4h6v3m-9 0 1 13a2 2 0 002 2h6a2 2 0 002-2l1-13" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                  <button className="mini-control-button" type="button" onClick={clearSelectedTextBox} aria-label="閉じる">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M6 6L18 18M18 6L6 18" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                </div>
 
-              <p className="text-count">あと{MAX_TEXT_LENGTH - selectedTextBox.text.length}文字</p>
+                <p className="text-count">あと{MAX_TEXT_LENGTH - selectedTextBox.text.length}文字</p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <div className="toolbar">

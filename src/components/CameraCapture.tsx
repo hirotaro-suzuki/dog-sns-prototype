@@ -297,7 +297,6 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
           photo={selectedPhoto}
           store={activeStore}
           staff={selectedStaff}
-          frameChooser={frameChoiceBar}
           onCancel={restartCaptureSession}
           onBackToPhotos={backToCapture}
           onStartNext={restartCaptureSession}
