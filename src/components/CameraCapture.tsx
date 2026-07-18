@@ -392,8 +392,8 @@ export function CameraCapture({ store, staffMembers = [], onLogout }: CameraCapt
                 onClick={() => deletePhoto(photo)}
                 aria-label={`撮影写真 ${index + 1} を消す`}
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                  <path d="M6 6L18 18M18 6L6 18" strokeLinecap="round" />
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M4 7h16M9 7V4h6v3m-9 0 1 13a2 2 0 002 2h6a2 2 0 002-2l1-13" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
             </div>
