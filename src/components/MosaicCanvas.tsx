@@ -302,6 +302,18 @@ function clampScale(scale: number) {
   return Math.min(Math.max(scale, 0.55), 4);
 }
 
+// 再描画は指の動きに合わせて毎秒何十回も走るため、縮小用の作業キャンバスは1枚を使い回す。
+let mosaicSampleBuffer: HTMLCanvasElement | null = null;
+
+function getMosaicSampleBuffer() {
+  if (!mosaicSampleBuffer) {
+    mosaicSampleBuffer = document.createElement("canvas");
+    mosaicSampleBuffer.width = MOSAIC_SAMPLE_SIZE;
+    mosaicSampleBuffer.height = MOSAIC_SAMPLE_SIZE;
+  }
+  return mosaicSampleBuffer;
+}
+
 function drawMosaicSpot(
   context: CanvasRenderingContext2D,
   point: CanvasPoint,
@@ -313,9 +325,7 @@ function drawMosaicSpot(
   const sourceHeight = Math.min(radius * 2, CANVAS_HEIGHT - sourceY);
   if (sourceWidth <= 0 || sourceHeight <= 0) return;
 
-  const buffer = document.createElement("canvas");
-  buffer.width = MOSAIC_SAMPLE_SIZE;
-  buffer.height = MOSAIC_SAMPLE_SIZE;
+  const buffer = getMosaicSampleBuffer();
   const bufferContext = buffer.getContext("2d");
   if (!bufferContext) return;
 
