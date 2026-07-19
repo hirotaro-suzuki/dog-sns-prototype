@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties, TouchEvent } from "react";
+import type { TouchEvent } from "react";
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import type { CapturedPhoto } from "@/lib/imageStore";
 import type { CaptureStaff, CaptureStore } from "@/types/captureContext";
@@ -397,18 +397,6 @@ function getTextBoxLocalBounds(
     width: width + 28,
     height,
   };
-}
-
-function getTextBoxCanvasPoint(
-  image: HTMLImageElement,
-  transform: PhotoTransform,
-  textBox: TextBox
-) {
-  return transformPhotoPointToCanvas(image, transform, textBox.point);
-}
-
-function getTextBoxCanvasRotation(transform: PhotoTransform, textBox: TextBox) {
-  return transform.rotation + textBox.rotation;
 }
 
 function drawTextBoxes(
@@ -843,28 +831,6 @@ export function MosaicCanvas({
     return true;
   }
 
-  function startSelectedTextDrag(canvasPoint: CanvasPoint) {
-    const image = imageRef.current;
-    const selectedId = selectedTextBoxIdRef.current;
-    const selected = textBoxesRef.current.find((textBox) => textBox.id === selectedId);
-    if (!image || !selectedId || !selected) return false;
-
-    const photoPoint = transformCanvasPointToPhoto(image, transformRef.current, canvasPoint);
-    if (!photoPoint) return false;
-
-    pushHistory();
-    textDragRef.current = {
-      id: selectedId,
-      offset: {
-        x: photoPoint.x - selected.point.x,
-        y: photoPoint.y - selected.point.y,
-      },
-    };
-    switchMode("text");
-    renderCanvas();
-    return true;
-  }
-
   function moveTextBox(canvasPoint: CanvasPoint) {
     const drag = textDragRef.current;
     const image = imageRef.current;
@@ -993,34 +959,6 @@ export function MosaicCanvas({
     };
   }
 
-  function handleSelectedTextTouchStart(event: TouchEvent<HTMLDivElement>) {
-    const target = event.target as HTMLElement;
-    if (target.closest(".canvas-text-control-panel")) return;
-
-    const canvas = canvasRef.current;
-    if (!canvas || event.touches.length === 0) return;
-
-    event.stopPropagation();
-    startSelectedTextDrag(getTouchPoint(canvas, event.touches[0]));
-  }
-
-  function handleSelectedTextTouchMove(event: TouchEvent<HTMLDivElement>) {
-    const canvas = canvasRef.current;
-    if (!canvas || event.touches.length === 0 || !textDragRef.current) return;
-
-    event.preventDefault();
-    event.stopPropagation();
-    moveTextBox(getTouchPoint(canvas, event.touches[0]));
-  }
-
-  function handleSelectedTextTouchEnd(event: TouchEvent<HTMLDivElement>) {
-    if (!textDragRef.current) return;
-
-    event.preventDefault();
-    event.stopPropagation();
-    textDragRef.current = null;
-  }
-
   function resetTransform() {
     pushHistory();
     transformRef.current = {
@@ -1106,31 +1044,6 @@ export function MosaicCanvas({
   }
 
   const selectedTextBox = textBoxes.find((textBox) => textBox.id === selectedTextBoxId);
-  const selectedTextEditor = (() => {
-    const image = imageRef.current;
-    if (!image || !selectedTextBox) return null;
-
-    const canvasPoint = getTextBoxCanvasPoint(image, transformRef.current, selectedTextBox);
-    const fontSize = TEXT_FONT_SIZES[selectedTextBox.size];
-    const textWidth = Math.max((selectedTextBox.text.length || 4) * fontSize * 0.72, 120);
-    const widthPercent = Math.min(72, Math.max(24, (textWidth / CANVAS_WIDTH) * 100));
-    const layerStyle: CSSProperties = {
-      left: `${(canvasPoint.x / CANVAS_WIDTH) * 100}%`,
-      top: `${(canvasPoint.y / CANVAS_HEIGHT) * 100}%`,
-    };
-    const inputStyle: CSSProperties = {
-      width: `${widthPercent}vw`,
-      maxWidth: `${widthPercent}%`,
-      color: selectedTextBox.color,
-      fontSize: `clamp(16px, ${fontSize / 16}vw, ${Math.round(fontSize * 0.72)}px)`,
-      transform: `translateY(-100%) rotate(${getTextBoxCanvasRotation(transformRef.current, selectedTextBox)}rad)`,
-    };
-
-    return {
-      layerStyle,
-      inputStyle,
-    };
-  })();
 
   if (completedImageUrl) {
     return (
@@ -1265,15 +1178,8 @@ export function MosaicCanvas({
             onTouchEnd={handleTouchEnd}
             onTouchCancel={handleTouchEnd}
           />
-          {selectedTextBox && selectedTextEditor && (
-            <div
-              className="canvas-text-editor"
-              style={selectedTextEditor.layerStyle}
-              onTouchStart={handleSelectedTextTouchStart}
-              onTouchMove={handleSelectedTextTouchMove}
-              onTouchEnd={handleSelectedTextTouchEnd}
-              onTouchCancel={handleSelectedTextTouchEnd}
-            >
+          {selectedTextBox && (
+            <div className="canvas-text-control-panel canvas-text-panel-top" aria-label="選択中の文字編集">
               <input
                 className="canvas-text-input"
                 type="text"
@@ -1281,16 +1187,13 @@ export function MosaicCanvas({
                 maxLength={MAX_TEXT_LENGTH}
                 autoComplete="off"
                 autoFocus
-                placeholder="文字"
-                style={selectedTextEditor.inputStyle}
+                placeholder="ここに文字を入力"
                 onChange={(event) =>
                   updateTextBox(selectedTextBox.id, {
                     text: event.target.value.slice(0, MAX_TEXT_LENGTH),
                   })
                 }
               />
-
-              <div className="canvas-text-control-panel" aria-label="選択中の文字編集">
                 <div className="canvas-text-control-row">
                   <button className="mini-control-button" type="button" onClick={levelSelectedTextBox} aria-label="水平にする">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1341,7 +1244,6 @@ export function MosaicCanvas({
                 </div>
 
                 <p className="text-count">あと{MAX_TEXT_LENGTH - selectedTextBox.text.length}文字</p>
-              </div>
             </div>
           )}
         </div>
