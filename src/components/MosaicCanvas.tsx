@@ -521,6 +521,30 @@ export function MosaicCanvas({
     observer.observe(node);
     frameWrapObserverRef.current = observer;
   }, []);
+  // iPadのキーボード表示中は、画面全体を「見えている高さ」に縮めて写真が隠れないようにする。
+  // レイアウトが縮めば --canvas-frame-side の実測が働き、写真は小さい正方形のまま全体が見える。
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    const applyViewportHeight = () => {
+      // ピンチズーム中は何もしない。キーボードなどで見える高さが大きく減ったときだけ縮める。
+      if (viewport.scale !== 1) return;
+      const hiddenHeight = window.innerHeight - viewport.height;
+      if (hiddenHeight > 80) {
+        document.documentElement.style.setProperty("--app-viewport-height", `${Math.round(viewport.height)}px`);
+        window.scrollTo(0, 0);
+      } else {
+        document.documentElement.style.removeProperty("--app-viewport-height");
+      }
+    };
+    applyViewportHeight();
+    viewport.addEventListener("resize", applyViewportHeight);
+    return () => {
+      viewport.removeEventListener("resize", applyViewportHeight);
+      document.documentElement.style.removeProperty("--app-viewport-height");
+    };
+  }, []);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const frameImageRef = useRef<HTMLImageElement | null>(null);
   const transformRef = useRef<PhotoTransform>({
@@ -1168,75 +1192,6 @@ export function MosaicCanvas({
         )}
       </div>
 
-      {selectedTextBox && (
-        <div className="canvas-text-control-panel canvas-text-panel-row" aria-label="選択中の文字編集">
-          <input
-            className="canvas-text-input"
-            type="text"
-            value={selectedTextBox.text}
-            maxLength={MAX_TEXT_LENGTH}
-            autoComplete="off"
-            autoFocus
-            placeholder="ここに文字を入力"
-            onChange={(event) =>
-              updateTextBox(selectedTextBox.id, {
-                text: event.target.value.slice(0, MAX_TEXT_LENGTH),
-              })
-            }
-          />
-            <div className="canvas-text-control-row">
-              <button className="mini-control-button" type="button" onClick={levelSelectedTextBox} aria-label="水平にする">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-              {Object.entries(TEXT_SIZE_ICON_PX).map(([size, px]) => (
-                <button
-                  className={`mini-control-button ${selectedTextBox.size === size ? "is-selected" : ""}`}
-                  key={size}
-                  type="button"
-                  style={{ fontSize: px }}
-                  onClick={() => {
-                    pushHistory();
-                    updateTextBox(selectedTextBox.id, { size: size as TextBoxSize });
-                  }}
-                  aria-label={`文字サイズ ${TEXT_SIZE_LABELS[size as TextBoxSize]}`}
-                >
-                  A
-                </button>
-              ))}
-            </div>
-
-            <div className="canvas-text-color-row" aria-label="文字色">
-              {TEXT_COLORS.map((color) => (
-                <button
-                  className={`mini-color-button ${selectedTextBox.color === color.value ? "is-selected" : ""}`}
-                  key={color.value}
-                  type="button"
-                  style={{ backgroundColor: color.value }}
-                  onClick={() => {
-                    pushHistory();
-                    updateTextBox(selectedTextBox.id, { color: color.value });
-                  }}
-                  aria-label={`${color.label}にする`}
-                />
-              ))}
-              <button className="mini-control-button danger" type="button" onClick={deleteSelectedTextBox} aria-label="削除">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M4 7h16M9 7V4h6v3m-9 0 1 13a2 2 0 002 2h6a2 2 0 002-2l1-13" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-              <button className="mini-control-button" type="button" onClick={clearSelectedTextBox} aria-label="閉じる">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M6 6L18 18M18 6L6 18" strokeLinecap="round" />
-                </svg>
-              </button>
-            </div>
-
-            <p className="text-count">あと{MAX_TEXT_LENGTH - selectedTextBox.text.length}文字</p>
-        </div>
-      )}
-
       <div className="canvas-frame-wrap" ref={setFrameWrapRef}>
         <div className={`canvas-frame ${editMode === "mosaic" ? "is-mosaic-mode" : ""}`}>
           <canvas
@@ -1305,6 +1260,69 @@ export function MosaicCanvas({
             <path d="M4 12l6 6L20 6" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
+        {selectedTextBox && (
+          <div className="canvas-text-control-panel canvas-text-panel-row" aria-label="選択中の文字編集">
+            <input
+              className="canvas-text-input"
+              type="text"
+              value={selectedTextBox.text}
+              maxLength={MAX_TEXT_LENGTH}
+              autoComplete="off"
+              autoFocus
+              placeholder="ここに文字を入力"
+              onChange={(event) =>
+                updateTextBox(selectedTextBox.id, {
+                  text: event.target.value.slice(0, MAX_TEXT_LENGTH),
+                })
+              }
+            />
+            <div className="canvas-text-control-row">
+              <button className="mini-control-button" type="button" onClick={levelSelectedTextBox} aria-label="水平にする">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              {Object.entries(TEXT_SIZE_ICON_PX).map(([size, px]) => (
+                <button
+                  className={`mini-control-button ${selectedTextBox.size === size ? "is-selected" : ""}`}
+                  key={size}
+                  type="button"
+                  style={{ fontSize: px }}
+                  onClick={() => {
+                    pushHistory();
+                    updateTextBox(selectedTextBox.id, { size: size as TextBoxSize });
+                  }}
+                  aria-label={`文字サイズ ${TEXT_SIZE_LABELS[size as TextBoxSize]}`}
+                >
+                  A
+                </button>
+              ))}
+              {TEXT_COLORS.map((color) => (
+                <button
+                  className={`mini-color-button ${selectedTextBox.color === color.value ? "is-selected" : ""}`}
+                  key={color.value}
+                  type="button"
+                  style={{ backgroundColor: color.value }}
+                  onClick={() => {
+                    pushHistory();
+                    updateTextBox(selectedTextBox.id, { color: color.value });
+                  }}
+                  aria-label={`${color.label}にする`}
+                />
+              ))}
+              <button className="mini-control-button danger" type="button" onClick={deleteSelectedTextBox} aria-label="削除">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M4 7h16M9 7V4h6v3m-9 0 1 13a2 2 0 002 2h6a2 2 0 002-2l1-13" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <button className="mini-control-button" type="button" onClick={clearSelectedTextBox} aria-label="閉じる">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M6 6L18 18M18 6L6 18" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {frameLoadError && <p className="notice error">{frameLoadError}</p>}

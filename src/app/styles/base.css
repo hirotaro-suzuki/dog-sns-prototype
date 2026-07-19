@@ -55,8 +55,9 @@ canvas {
 }
 
 .store-app-shell {
-  height: 100dvh;
-  min-height: 100dvh;
+  /* キーボード表示中は編集画面が--app-viewport-heightを設定し、見えている高さに縮む。 */
+  height: var(--app-viewport-height, 100dvh);
+  min-height: var(--app-viewport-height, 100dvh);
   padding-top: 12px;
   display: flex;
   flex-direction: column;
