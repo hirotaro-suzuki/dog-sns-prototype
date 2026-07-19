@@ -10,7 +10,6 @@
 }
 
 .canvas-frame-wrap {
-  position: relative;
   flex: 1;
   min-height: 0;
   display: flex;
@@ -83,11 +82,6 @@
   outline: none;
   border-color: var(--accent);
   box-shadow: inset 0 2px 4px rgba(43, 34, 22, 0.06), 0 0 0 3px color-mix(in srgb, var(--accent) 26%, transparent);
-}
-
-/* 編集画面の下段は1行のみ。チェック（確定）は右端に寄せる。 */
-.canvas-confirm-button {
-  margin-left: auto;
 }
 
 .form-grid {
@@ -228,19 +222,28 @@
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
 }
 
-/* 写真の下端に重ねる文字入力パネル（入力欄＋ボタン1列の2段箱）。
-   枠の柄と重なってよい（2026-07-19合意）。写真サイズはパネル開閉で変わらない。
-   .canvas-frame の内側はuser-select:noneのため、外側（wrap直下）に置く。 */
-.canvas-text-panel-overlay {
-  position: absolute;
-  z-index: 5;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(92%, 390px);
-  max-width: none;
+/* 下段の1行（アイコン・チェック・パネル）に入れる文字入力パネル。
+   入力欄＋ボタン1列の2段箱を、チェックボタン(76px)とほぼ同じ高さまで詰めて、
+   パネルの出入りで行の高さ＝写真の大きさが変わらないようにする。
+   幅が足りない機種ではこのパネルだけが縮む（中のボタン列は折り返し可）。 */
+.canvas-text-panel-inline {
+  flex: 1;
+  min-width: 0;
+  max-width: 430px;
+  gap: 4px;
+  padding: 5px 8px;
   background: #ffffff;
-  padding: 8px 10px;
+}
+
+.canvas-text-panel-inline .canvas-text-input {
+  font-size: 16px;
+  padding: 3px 8px;
+}
+
+.canvas-text-panel-inline .mini-control-button {
+  min-width: 34px;
+  min-height: 34px;
+  padding: 2px 8px;
 }
 
 .canvas-text-control-row,

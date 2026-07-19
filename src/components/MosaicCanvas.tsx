@@ -1,7 +1,7 @@
 "use client";
 
 import type { TouchEvent } from "react";
-import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { CapturedPhoto } from "@/lib/imageStore";
 import type { CaptureStaff, CaptureStore } from "@/types/captureContext";
 
@@ -586,7 +586,6 @@ export function MosaicCanvas({
   const [frameLoadError, setFrameLoadError] = useState("");
   const [editError, setEditError] = useState("");
   const [saveError, setSaveError] = useState("");
-  const [, refreshTextEditor] = useReducer((value: number) => value + 1, 0);
 
   function pushHistory() {
     historyRef.current.push({
@@ -610,7 +609,6 @@ export function MosaicCanvas({
     setSelectedTextBoxId(previous.selectedTextBoxId);
     setHistoryCount(historyRef.current.length);
     setCompletedImageUrl(null);
-    refreshTextEditor();
     renderCanvas();
   }
 
@@ -964,7 +962,6 @@ export function MosaicCanvas({
 
     transformRef.current = nextTransform;
     setCompletedImageUrl(null);
-    refreshTextEditor();
     renderCanvas();
   }
 
@@ -1003,7 +1000,6 @@ export function MosaicCanvas({
       rotation: 0,
     };
     setCompletedImageUrl(null);
-    refreshTextEditor();
     renderCanvas();
   }
 
@@ -1214,9 +1210,62 @@ export function MosaicCanvas({
             onTouchCancel={handleTouchEnd}
           />
         </div>
+      </div>
 
+      <div className="toolbar">
+        <button
+          className={`icon-button ${editMode === "adjust" ? "is-selected" : ""}`}
+          type="button"
+          onClick={() => switchMode("adjust")}
+          aria-label="写真を調整"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="5 9 2 12 5 15" />
+            <polyline points="9 5 12 2 15 5" />
+            <polyline points="15 19 12 22 9 19" />
+            <polyline points="19 9 22 12 19 15" />
+            <line x1="2" y1="12" x2="22" y2="12" />
+            <line x1="12" y1="2" x2="12" y2="22" />
+          </svg>
+        </button>
+        <button
+          className={`icon-button ${editMode === "mosaic" ? "is-selected" : ""}`}
+          type="button"
+          onClick={() => switchMode("mosaic")}
+          aria-label="モザイク"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path
+              d="M3 15c1.5-3 2.5-5 4-5s1 4 2.5 4 1.5-6 3-6 1.5 5 3 5 2-3 3-4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+        <button className="icon-button" type="button" onClick={addTextBox} disabled={textBoxes.length >= MAX_TEXT_BOXES} aria-label="文字を追加">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <text x="12" y="18" textAnchor="middle" fontSize="18" fontWeight="800">T</text>
+          </svg>
+        </button>
+        <button className="icon-button" type="button" onClick={undo} disabled={historyCount === 0} aria-label="ひとつ戻す">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="9 14 4 9 9 4" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M20 20v-7a4 4 0 0 0-4-4H4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        <button className="icon-button" type="button" onClick={resetTransform} aria-label="写真位置をリセット">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="3.5" />
+            <path d="M12 2v3M12 19v3M2 12h3M19 12h3" strokeLinecap="round" />
+          </svg>
+        </button>
+        <button className="photo-preview-action confirm" type="button" onClick={finalizeImage} aria-label="確定して完成画像にする">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+            <path d="M4 12l6 6L20 6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
         {selectedTextBox && (
-          <div className="canvas-text-control-panel canvas-text-panel-overlay" aria-label="選択中の文字編集">
+          <div className="canvas-text-control-panel canvas-text-panel-inline" aria-label="選択中の文字編集">
             <input
               className="canvas-text-input"
               type="text"
@@ -1278,60 +1327,6 @@ export function MosaicCanvas({
             </div>
           </div>
         )}
-      </div>
-
-      <div className="toolbar">
-        <button
-          className={`icon-button ${editMode === "adjust" ? "is-selected" : ""}`}
-          type="button"
-          onClick={() => switchMode("adjust")}
-          aria-label="写真を調整"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="5 9 2 12 5 15" />
-            <polyline points="9 5 12 2 15 5" />
-            <polyline points="15 19 12 22 9 19" />
-            <polyline points="19 9 22 12 19 15" />
-            <line x1="2" y1="12" x2="22" y2="12" />
-            <line x1="12" y1="2" x2="12" y2="22" />
-          </svg>
-        </button>
-        <button
-          className={`icon-button ${editMode === "mosaic" ? "is-selected" : ""}`}
-          type="button"
-          onClick={() => switchMode("mosaic")}
-          aria-label="モザイク"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path
-              d="M3 15c1.5-3 2.5-5 4-5s1 4 2.5 4 1.5-6 3-6 1.5 5 3 5 2-3 3-4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
-        <button className="icon-button" type="button" onClick={addTextBox} disabled={textBoxes.length >= MAX_TEXT_BOXES} aria-label="文字を追加">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <text x="12" y="18" textAnchor="middle" fontSize="18" fontWeight="800">T</text>
-          </svg>
-        </button>
-        <button className="icon-button" type="button" onClick={undo} disabled={historyCount === 0} aria-label="ひとつ戻す">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="9 14 4 9 9 4" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M20 20v-7a4 4 0 0 0-4-4H4" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-        <button className="icon-button" type="button" onClick={resetTransform} aria-label="写真位置をリセット">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="3.5" />
-            <path d="M12 2v3M12 19v3M2 12h3M19 12h3" strokeLinecap="round" />
-          </svg>
-        </button>
-        <button className="photo-preview-action confirm canvas-confirm-button" type="button" onClick={finalizeImage} aria-label="確定して完成画像にする">
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-            <path d="M4 12l6 6L20 6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
       </div>
 
       {frameLoadError && <p className="notice error">{frameLoadError}</p>}
