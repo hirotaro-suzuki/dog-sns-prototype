@@ -69,6 +69,9 @@
 
 ## 直近ログ
 
+- `docs/session-2026-07-19-admin-split.md`
+  - 大型ファイル分割ログ（audit 4-2 #7）。`AdminMaintenance.tsx` を `src/components/admin/` の4ファイル＋本体へ、`globals.css` を `src/app/styles/` の6ファイルへ分割。挙動変更なし。CSSの読み込み順は変えないこと。
+
 - `docs/session-2026-07-18-store-ui-polish.md`
   - 店舗側UI総点検（10件指摘）と1〜8の実装ログ。確認ダイアログ、案内表示、枠バーの編集画面限定、モザイク軽量化など。Vercel/iPad実機確認は未実施。
 
