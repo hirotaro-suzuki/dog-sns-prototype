@@ -1,10 +1,17 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./frame-print-overrides.css";
 
 export const metadata: Metadata = {
   title: "今日のわんちゃん",
   description: "店頭で撮影・加工した写真を、SNS掲載OK後にクラウドへ保存する店舗向けアプリ",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  // キーボード表示時にページを押し上げず、表示領域を縮めさせる（iPadOS 18.4以降で有効。古いOSでは無視される）。
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({

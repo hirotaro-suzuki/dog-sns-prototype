@@ -82,12 +82,10 @@ const MOSAIC_RADIUS = 52;
 const MOSAIC_SAMPLE_SIZE = 12;
 const MAX_TEXT_BOXES = 8;
 const MAX_TEXT_LENGTH = 15;
+// 白黒とも縁取り付きで描画されるため、2色でどんな写真でも読める（2026-07-19にパネル簡素化で2色へ）。
 const TEXT_COLORS = [
   { label: "白", value: "#ffffff" },
   { label: "黒", value: "#111111" },
-  { label: "赤", value: "#d73a31" },
-  { label: "青", value: "#1d64d8" },
-  { label: "黄", value: "#f2c94c" },
 ];
 const TEXT_SIZE_LABELS: Record<TextBoxSize, string> = {
   small: "小",
@@ -1276,7 +1274,6 @@ export function MosaicCanvas({
                 })
               }
             />
-            <div className="canvas-text-control-row">
               <button className="mini-control-button" type="button" onClick={levelSelectedTextBox} aria-label="水平にする">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
@@ -1320,7 +1317,6 @@ export function MosaicCanvas({
                   <path d="M6 6L18 18M18 6L6 18" strokeLinecap="round" />
                 </svg>
               </button>
-            </div>
           </div>
         )}
       </div>

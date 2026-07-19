@@ -195,7 +195,10 @@
 
 /* 文字の入力欄はキャンバスに重ねず、白い固定パネル内に置く（写真上の文字とダブらせない）。 */
 .canvas-text-input {
-  width: 100%;
+  /* 15文字上限に見合う幅まで。狭い画面ではここが先に縮む。 */
+  flex: 1 1 200px;
+  min-width: 130px;
+  max-width: 320px;
   border: 2px solid var(--line);
   border-radius: var(--radius-sm);
   background: #ffffff;
@@ -229,12 +232,18 @@
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
 }
 
-/* チェックボタンの右に出す薄型の文字入力パネル（入力欄＋ボタン1列）。
-   キャンバス内はuser-select:noneのため、内側に置くとiPadで入力欄が使えない。 */
+/* チェックボタンの右に出す文字入力パネル。入力欄もボタンも横一列にして、
+   チェックボタンの行（76px）より低く保つ（チェックの高さが変わらないように）。
+   キャンバス内はuser-select:noneのため、内側に置くとiPadで入力欄が使えない。
+   幅が足りない機種では入力欄が縮み、最後の手段として折り返す。 */
 .canvas-text-panel-row {
   flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
   min-width: 0;
-  max-width: 620px;
+  max-width: none;
   background: #ffffff;
   padding: 8px 10px;
 }
