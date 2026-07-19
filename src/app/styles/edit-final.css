@@ -227,14 +227,12 @@
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
 }
 
-/* キャンバス上端に重ねる白い文字入力パネル。下端はiPadのキーボードに隠れるため上端に置く。 */
-.canvas-text-panel-top {
-  position: absolute;
-  z-index: 5;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(92%, 440px);
+/* キャンバスの外（上のツールバーとキャンバスの間）に出す白い文字入力パネル。
+   キャンバス内はuser-select:noneのため、内側に置くとiPadで入力欄が使えない。
+   パネルが出た分はキャンバス側が自動で縮んで正方形を保つ（--canvas-frame-side）。 */
+.canvas-text-panel-row {
+  align-self: center;
+  width: min(100%, 480px);
   max-width: none;
   background: #ffffff;
   padding: 10px;
