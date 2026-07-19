@@ -1,0 +1,119 @@
+/* 全画面共通: リセット、色などの変数、画面の外枠、見出し */
+
+:root {
+  color-scheme: light;
+  --background: #faf6f0;
+  --foreground: #2b2420;
+  --muted: #8a7f72;
+  --panel: #ffffff;
+  --line: #ede3d6;
+  --accent: #e8734a;
+  --accent-dark: #c85a34;
+  --danger: #b84535;
+  --shadow: 0 18px 45px rgba(196, 116, 61, 0.14);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --font-heading: "Zen Maru Gothic", Arial, "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+img,
+video,
+canvas {
+  max-width: 100%;
+}
+
+.app-shell {
+  min-height: 100vh;
+  padding: 28px;
+}
+
+.store-app-shell {
+  height: 100dvh;
+  min-height: 100dvh;
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.workspace {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.store-app-shell .workspace {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.store-workspace {
+  max-width: 760px;
+}
+
+.narrow-workspace {
+  max-width: 680px;
+}
+
+.page-heading,
+.section-heading {
+  margin-bottom: 20px;
+}
+
+.eyebrow {
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+
+h1,
+h2 {
+  font-family: var(--font-heading);
+  line-height: 1.2;
+  margin: 0 0 12px;
+}
+
+h1 {
+  font-size: clamp(28px, 4vw, 44px);
+}
+
+h2 {
+  font-size: clamp(24px, 3vw, 34px);
+}
+
+p {
+  color: var(--muted);
+  line-height: 1.7;
+  margin: 0;
+}
+

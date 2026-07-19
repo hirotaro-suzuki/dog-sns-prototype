@@ -1,0 +1,95 @@
+/* 画面幅が狭いときの調整と印刷用 */
+
+@media (max-width: 720px) {
+  .app-shell {
+    padding: 18px;
+  }
+
+  .store-app-shell {
+    padding-top: 8px;
+  }
+
+  .form-grid,
+  .staff-selector,
+  .admin-date-row,
+  .admin-store-staff-grid,
+  .admin-photo-list,
+  .admin-form-grid,
+  .frame-slot-row {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-edit-panel {
+    position: static;
+  }
+
+  .settings-list div {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .top-action-bar {
+    display: grid;
+  }
+
+  .top-action-bar .action-button,
+  .action-button.primary-wide {
+    width: 100%;
+  }
+
+}
+
+@media print {
+  @page {
+    margin: 0;
+    size: 127mm 89mm landscape;
+  }
+
+  html,
+  body {
+    width: 127mm;
+    height: 89mm;
+    margin: 0;
+    padding: 0;
+    background: #ffffff;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .final-image-wrap,
+  .final-image-wrap * {
+    visibility: visible !important;
+  }
+
+  .app-shell,
+  .workspace,
+  .store-workspace,
+  .camera-panel,
+  .final-screen,
+  .final-image-wrap {
+    display: block !important;
+    width: 127mm !important;
+    max-width: none !important;
+    height: 89mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+  }
+
+  .print-final-image {
+    display: block !important;
+    width: 127mm !important;
+    height: 89mm !important;
+    max-width: none !important;
+    max-height: none !important;
+    object-fit: cover !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+}

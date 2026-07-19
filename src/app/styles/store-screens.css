@@ -1,0 +1,199 @@
+/* 店舗側: ログイン、店舗ホーム、担当者選択、共通ボタン、枠選択バー */
+
+.camera-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 12px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.camera-stage-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-panel {
+  display: grid;
+  align-content: center;
+  gap: 18px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.login-form {
+  display: grid;
+  gap: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  padding: 18px;
+  box-shadow: var(--shadow);
+}
+
+.login-summary,
+.top-action-bar {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  padding: 18px;
+}
+
+.top-action-bar {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.compact-action-bar {
+  padding: 10px 12px;
+}
+
+.top-action-bar h2 {
+  margin-bottom: 6px;
+}
+
+.compact-action-bar h2 {
+  font-size: 24px;
+  margin-bottom: 2px;
+}
+
+.compact-action-bar .eyebrow {
+  margin-bottom: 2px;
+}
+
+.settings-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.settings-list div {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.settings-list dt {
+  color: var(--foreground);
+  font-weight: 700;
+}
+
+.settings-list dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.staff-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.staff-chip {
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fffdf8;
+  color: var(--foreground);
+  font-weight: 700;
+  font-size: 14px;
+  padding: 6px 16px;
+}
+
+.staff-chip.is-selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, #fffdf8);
+  color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.icon-button {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--foreground);
+}
+
+.icon-button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.icon-button.danger {
+  border-color: transparent;
+  background: var(--danger);
+  color: #ffffff;
+}
+
+.icon-button.is-selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--panel));
+  color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.icon-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: var(--line);
+  color: var(--muted);
+  background: var(--panel);
+}
+
+.icon-button.large {
+  width: 64px;
+  height: 64px;
+}
+
+.icon-button.primary {
+  border-color: transparent;
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.icon-button.primary:hover {
+  border-color: transparent;
+  color: #ffffff;
+}
+
+.frame-choice-bar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.frame-choice-button {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fffdf8;
+  padding: 6px;
+}
+
+.frame-choice-button.is-selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, #fffdf8);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.frame-choice-thumb {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  border-radius: calc(var(--radius) - 4px);
+}
+
