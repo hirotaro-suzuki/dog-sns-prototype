@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties, TouchEvent } from "react";
-import { useEffect, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import type { CapturedPhoto } from "@/lib/imageStore";
 import type { CaptureStaff, CaptureStore } from "@/types/captureContext";
 
@@ -516,6 +516,23 @@ export function MosaicCanvas({
   onLogout,
 }: MosaicCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const frameWrapObserverRef = useRef<ResizeObserver | null>(null);
+  // 枠の一辺を「残り領域の幅と高さの小さい方」に合わせて正方形を保つ。
+  // CSSのheight:100%+aspect-ratioだけでは、残り高さが横幅を超えたとき縦長に潰れるため。
+  const setFrameWrapRef = useCallback((node: HTMLDivElement | null) => {
+    frameWrapObserverRef.current?.disconnect();
+    frameWrapObserverRef.current = null;
+    if (!node) return;
+
+    const applySide = () => {
+      const side = Math.floor(Math.min(node.clientWidth, node.clientHeight));
+      if (side > 0) node.style.setProperty("--canvas-frame-side", `${side}px`);
+    };
+    applySide();
+    const observer = new ResizeObserver(applySide);
+    observer.observe(node);
+    frameWrapObserverRef.current = observer;
+  }, []);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const frameImageRef = useRef<HTMLImageElement | null>(null);
   const transformRef = useRef<PhotoTransform>({
@@ -1238,7 +1255,7 @@ export function MosaicCanvas({
         )}
       </div>
 
-      <div className="canvas-frame-wrap">
+      <div className="canvas-frame-wrap" ref={setFrameWrapRef}>
         <div className={`canvas-frame ${editMode === "mosaic" ? "is-mosaic-mode" : ""}`}>
           <canvas
             ref={canvasRef}

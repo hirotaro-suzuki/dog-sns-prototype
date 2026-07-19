@@ -14,6 +14,7 @@
   min-height: 0;
   display: flex;
   justify-content: center;
+  align-items: center;
 }
 
 .final-screen {
@@ -174,8 +175,10 @@
 .canvas-frame {
   position: relative;
   overflow: hidden;
-  height: 100%;
-  width: auto;
+  /* 一辺はMosaicCanvasが残り領域の幅・高さの小さい方を--canvas-frame-sideに入れる。
+     未設定時（初回描画の一瞬）は従来のheight:100%方式で代用する。 */
+  height: var(--canvas-frame-side, 100%);
+  width: var(--canvas-frame-side, auto);
   max-width: 100%;
   aspect-ratio: 1 / 1;
   border: 1px solid var(--line);
