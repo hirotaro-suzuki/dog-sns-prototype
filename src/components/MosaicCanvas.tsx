@@ -519,10 +519,13 @@ export function MosaicCanvas({
     observer.observe(node);
     frameWrapObserverRef.current = observer;
   }, []);
-  // iPadのキーボード表示中は、画面全体を「見えている高さ」に縮めて写真が隠れないようにする。
-  // レイアウトが縮めば --canvas-frame-side の実測が働き、写真は小さい正方形のまま全体が見える。
+  // この画面の表示中は、画面全体の高さを常に「実際に見えている高さ」（visualViewport）に
+  // 合わせ続ける。キーボードが出ると見えている高さが必ず減るため、条件判定に頼らず
+  // 画面（写真ごと）が縮み、写真下端の文字パネルもキーボードの上に収まる。
+  // 「大きく減ったときだけ縮める」という条件付きの旧方式は、iPadOS 26実機で
+  // 発動しないケースがあったため廃止（2026-07-19）。
   // また、この画面はスクロールしない設計なので、Safariが入力欄フォーカス時に行う
-  // 押し上げスクロールを検知したら即座に打ち消す（iPadOS 26でも押し上げが残る実機報告あり）。
+  // 押し上げスクロールを検知したら即座に打ち消す。
   useEffect(() => {
     const viewport = window.visualViewport;
 
@@ -534,15 +537,13 @@ export function MosaicCanvas({
 
     const applyViewportHeight = () => {
       if (!viewport) return;
-      // ピンチズーム中は何もしない。キーボードなどで見える高さが大きく減ったときだけ縮める。
-      if (viewport.scale !== 1) return;
-      const hiddenHeight = window.innerHeight - viewport.height;
-      if (hiddenHeight > 80) {
-        document.documentElement.style.setProperty("--app-viewport-height", `${Math.round(viewport.height)}px`);
-        cancelScroll();
-      } else {
-        document.documentElement.style.removeProperty("--app-viewport-height");
+      // ピンチズーム中だけは反応しない（ズームでも見える高さが変わるため）。
+      if (Math.abs(viewport.scale - 1) > 0.01) return;
+      const height = Math.round(viewport.height);
+      if (height > 0) {
+        document.documentElement.style.setProperty("--app-viewport-height", `${height}px`);
       }
+      cancelScroll();
     };
     applyViewportHeight();
     window.addEventListener("scroll", cancelScroll);
