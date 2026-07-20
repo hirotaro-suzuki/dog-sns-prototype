@@ -63,8 +63,8 @@ AIを使った開発（いわゆるバイブコーディング）の経験があ
 
 引き継ぎの途中で「テストデータを消して本物のデータを入れる」作業を、前任の開発者と一緒に行います。手順書は `docs/production-readiness-checklist.md`。
 
-- 本物の店舗・担当者・枠の登録は **本部画面 /admin でできる**（あなたの実地訓練を兼ねる）
-- /admin でできないのは: Storage内のテスト画像の整理、デモ店舗（DEMO_STORE）の残骸確認、`public/store-frames/` 内の使われていない枠SVGの整理。ここだけSupabaseとリポジトリを直接触る
+- 担当者・枠の登録と店舗情報の編集は **本部画面 /admin でできる**（あなたの実地訓練を兼ねる）
+- /admin でできないのは: **店舗の新規作成とログインPINの設定**（PINは `scripts/create-store-pin-hash.mjs` でハッシュ化してからSupabaseへ登録する。平文PINをリポジトリに書かない）、Storage内のテスト画像の整理、デモ店舗（DEMO_STORE）の残骸確認、`public/store-frames/` 内の使われていない枠SVGの整理。ここはSupabaseとリポジトリを直接触る
 
 ## 8. 困ったとき
 
